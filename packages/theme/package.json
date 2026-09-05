@@ -1,0 +1,13 @@
+{
+  "name": "@repo/theme",
+  "version": "0.1.0",
+  "private": true,
+  "exports": {
+    ".": "./theme.css",
+    "./theme.css": "./theme.css",
+    "./custom.css": "./custom.css"
+  },
+  "files": [
+    "*.css"
+  ]
+}

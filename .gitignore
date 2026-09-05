@@ -26,7 +26,12 @@ coverage
 out/
 build
 dist
-
+apps/frontend/.next/
+apps/frontend/out/
+apps/frontend/build
+apps/frontend/dist
+apps/backend/dist
+apps/backend/build
 
 # Debug
 npm-debug.log*
@@ -36,3 +41,55 @@ yarn-error.log*
 # Misc
 .DS_Store
 *.pem
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS
+Thumbs.db
+Desktop.ini
+
+# pnpm
+pnpm-lock.yaml
+
+# TypeScript cache
+*.tsbuildinfo
+
+# Temporary files
+*.tmp
+*.temp
+.cache/
+
+# Environment files (keep .env.example if you have it)
+.env*
+!.env.example
+
+# Logs
+logs
+*.log
+
+# Package manager cache
+.cache
+.parcel-cache
+
+# Storybook
+storybook-static
+
+# Next.js
+.next
+out
+build
+dist
+.vercel
+
+# Don't ignore GitHub workflows
+!.github/workflows/*.yml
+!.github/workflows/*.yaml
+
+# Don't ignore essential config files
+!apps/frontend/.gitignore
+!apps/backend/.gitignore

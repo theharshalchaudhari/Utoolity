@@ -1,0 +1,82 @@
+@layer components {
+  .glass {
+    @apply bg-foreground/15 backdrop-blur-xl border border-border/30;
+    box-shadow: 0 8px 30px rgba(0, 0, 0, 0.12);
+  }
+
+  .glass-card {
+    @apply border border-border/40 bg-card/75 backdrop-blur-2xl;
+    box-shadow: 0 24px 60px rgba(15, 23, 42, 0.08);
+  }
+
+  .premium-scrollbar {
+    scrollbar-width: thin;
+    scrollbar-color: hsl(var(--border)) transparent;
+  }
+
+  .premium-scrollbar::-webkit-scrollbar {
+    width: 10px;
+    height: 10px;
+  }
+
+  .premium-scrollbar::-webkit-scrollbar-track {
+    background: transparent;
+  }
+
+  .premium-scrollbar::-webkit-scrollbar-thumb {
+    border: 3px solid transparent;
+    border-radius: 9999px;
+    background-clip: content-box;
+    background-color: hsl(var(--border));
+  }
+
+  .dashboard-backdrop {
+    background-image:
+      radial-gradient(circle at top left, rgba(244, 114, 182, 0.12), transparent 28%),
+      radial-gradient(circle at top right, rgba(59, 130, 246, 0.12), transparent 26%),
+      radial-gradient(circle at bottom, rgba(168, 85, 247, 0.08), transparent 22%);
+  }
+
+  .dark .dashboard-backdrop {
+    background-image: none;
+    background-color: hsl(var(--background));
+  }
+}
+
+/* OVERRIDE: Force Poppins font - this will override theme.css */
+:root {
+  --font-sans: var(--font-poppins), sans-serif !important;
+  --font-serif: var(--font-poppins), sans-serif !important;
+  --font-mono: var(--font-poppins), monospace !important;
+}
+
+.dark {
+  --font-sans: var(--font-poppins), sans-serif !important;
+  --font-serif: var(--font-poppins), sans-serif !important;
+  --font-mono: var(--font-poppins), monospace !important;
+}
+
+@layer base {
+  /* Force Poppins on everything */
+  * {
+    font-family: var(--font-poppins), sans-serif !important;
+  }
+
+  html {
+    font-family: var(--font-poppins), sans-serif !important;
+  }
+
+  body {
+    font-family: var(--font-poppins), sans-serif !important;
+  }
+
+  ::selection {
+    background: color-mix(in oklab, var(--secondary) 75%, transparent);
+    color: var(--secondary-foreground);
+  }
+
+  ::-moz-selection {
+    background: color-mix(in oklab, var(--primary) 65%, transparent);
+    color: var(--primary-foreground);
+  }
+}

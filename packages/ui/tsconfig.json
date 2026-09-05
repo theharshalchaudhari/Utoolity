@@ -1,9 +1,32 @@
 {
-  "extends": "@repo/typescript-config/react-library.json",
   "compilerOptions": {
+    "rootDir": ".",
     "outDir": "dist",
+
+    "paths": {
+      "@repo/ui": ["./index.ts"],
+      "@repo/ui/*": ["./*"],
+
+      "@repo/ui/shadcn": ["./shadcn"],
+      "@repo/ui/shadcn/*": ["./shadcn/*"],
+
+      "@repo/ui/shared": ["./shared"],
+      "@repo/ui/shared/*": ["./shared/*"],
+
+      "@repo/ui/lib": ["./lib"],
+      "@repo/ui/lib/*": ["./lib/*"]
+    },
+
     "strictNullChecks": true
   },
-  "include": ["src"],
+
+  "include": [
+    ".",
+    "shadcn",
+    "shared",
+    "lib",
+    "index.ts"
+  ],
+
   "exclude": ["node_modules", "dist"]
 }

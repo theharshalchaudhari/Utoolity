@@ -1,0 +1,19 @@
+{
+  "style": "new-york",
+  "rsc": true,
+  "tsx": true,
+  "tailwind": {
+    "config": "",
+    "css": "",
+    "baseColor": "zinc",
+    "cssVariables": true,
+    "prefix": ""
+  },
+  "aliases": {
+    "components": "@repo/ui/shadcn",
+    "utils": "@repo/ui/lib/utils",
+    "ui": "@repo/ui/shadcn",
+    "shared": "@repo/ui/shared"
+  },
+  "iconLibrary": "lucide"
+}
