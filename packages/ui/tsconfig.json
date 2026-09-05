@@ -1,32 +1,19 @@
 {
+  "extends": "@repo/typescript-config/react-library.json",
   "compilerOptions": {
-    "rootDir": ".",
-    "outDir": "dist",
-
-    "paths": {
-      "@repo/ui": ["./index.ts"],
-      "@repo/ui/*": ["./*"],
-
-      "@repo/ui/shadcn": ["./shadcn"],
-      "@repo/ui/shadcn/*": ["./shadcn/*"],
-
-      "@repo/ui/shared": ["./shared"],
-      "@repo/ui/shared/*": ["./shared/*"],
-
-      "@repo/ui/lib": ["./lib"],
-      "@repo/ui/lib/*": ["./lib/*"]
-    },
-
-    "strictNullChecks": true
+    "jsx": "react-jsx",
+    "module": "ESNext",
+    "moduleResolution": "bundler",
+    "target": "ES2020",
+    "lib": ["DOM", "DOM.Iterable", "ES2020"],
+    "strict": true,
+    "esModuleInterop": true,
+    "skipLibCheck": true,
+    "forceConsistentCasingInFileNames": true,
+    "resolveJsonModule": true,
+    "isolatedModules": true,
+    "noEmit": true
   },
-
-  "include": [
-    ".",
-    "shadcn",
-    "shared",
-    "lib",
-    "index.ts"
-  ],
-
-  "exclude": ["node_modules", "dist"]
+  "include": ["**/*.ts", "**/*.tsx"],
+  "exclude": ["node_modules"]
 }
