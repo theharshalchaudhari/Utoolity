@@ -32,9 +32,21 @@
 
   .dashboard-backdrop {
     background-image:
-      radial-gradient(circle at top left, rgba(244, 114, 182, 0.12), transparent 28%),
-      radial-gradient(circle at top right, rgba(59, 130, 246, 0.12), transparent 26%),
-      radial-gradient(circle at bottom, rgba(168, 85, 247, 0.08), transparent 22%);
+      radial-gradient(
+        circle at top left,
+        rgba(244, 114, 182, 0.12),
+        transparent 28%
+      ),
+      radial-gradient(
+        circle at top right,
+        rgba(59, 130, 246, 0.12),
+        transparent 26%
+      ),
+      radial-gradient(
+        circle at bottom,
+        rgba(168, 85, 247, 0.08),
+        transparent 22%
+      );
   }
 
   .dark .dashboard-backdrop {
@@ -43,40 +55,48 @@
   }
 }
 
-/* OVERRIDE: Force Poppins font - this will override theme.css */
+/* Override theme fonts with Nunito */
 :root {
-  --font-sans: var(--font-poppins), sans-serif !important;
-  --font-serif: var(--font-poppins), sans-serif !important;
-  --font-mono: var(--font-poppins), monospace !important;
+  --font-sans: var(--font-nunito), sans-serif !important;
+  --font-serif: var(--font-nunito), sans-serif !important;
+  --font-mono: var(--font-nunito), monospace !important;
 }
 
 .dark {
-  --font-sans: var(--font-poppins), sans-serif !important;
-  --font-serif: var(--font-poppins), sans-serif !important;
-  --font-mono: var(--font-poppins), monospace !important;
+  --font-sans: var(--font-nunito), sans-serif !important;
+  --font-serif: var(--font-nunito), sans-serif !important;
+  --font-mono: var(--font-nunito), monospace !important;
 }
 
 @layer base {
-  /* Force Poppins on everything */
+  /* Force Nunito throughout the application */
   * {
-    font-family: var(--font-poppins), sans-serif !important;
+    font-family: var(--font-nunito), sans-serif !important;
   }
 
   html {
-    font-family: var(--font-poppins), sans-serif !important;
+    font-family: var(--font-nunito), sans-serif !important;
   }
 
   body {
-    font-family: var(--font-poppins), sans-serif !important;
+    font-family: var(--font-nunito), sans-serif !important;
   }
 
   ::selection {
-    background: color-mix(in oklab, var(--secondary) 75%, transparent);
+    background: color-mix(
+      in oklab,
+      var(--secondary) 75%,
+      transparent
+    );
     color: var(--secondary-foreground);
   }
 
   ::-moz-selection {
-    background: color-mix(in oklab, var(--primary) 65%, transparent);
+    background: color-mix(
+      in oklab,
+      var(--primary) 65%,
+      transparent
+    );
     color: var(--primary-foreground);
   }
 }

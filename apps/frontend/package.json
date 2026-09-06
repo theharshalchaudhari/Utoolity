@@ -11,11 +11,15 @@
     "check-types": "next typegen && tsc --noEmit"
   },
   "dependencies": {
-    "@repo/ui": "workspace:*",
     "@repo/theme": "workspace:*",
+    "@repo/ui": "workspace:*",
+    "class-variance-authority": "catalog:",
+    "clsx": "catalog:",
+    "gsap": "catalog:",
     "next": "catalog:",
     "react": "catalog:",
-    "react-dom": "catalog:"
+    "react-dom": "catalog:",
+    "tailwind-merge": "catalog:"
   },
   "devDependencies": {
     "@repo/eslint-config": "workspace:*",
