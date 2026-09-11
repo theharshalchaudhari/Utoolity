@@ -2,7 +2,7 @@
 
 import { useRef, useEffect } from 'react'
 import gsap from 'gsap'
-import { cn } from '@/lib/utils'
+import { cn } from "cn";
 import { cva, type VariantProps } from "class-variance-authority"
 
 const gsapButtonVariants = cva(

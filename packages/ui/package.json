@@ -2,11 +2,15 @@
   "name": "@repo/ui",
   "version": "0.0.0",
   "private": true,
+  "type": "module",
   "exports": {
     ".": "./index.ts",
     "./shared/*": "./shared/*.tsx",
     "./shadcn/*": "./shadcn/*.tsx",
     "./lib/*": "./lib/*.ts"
+  },
+  "imports": {
+    "#cn": "./lib/utils.ts"
   },
   "scripts": {
     "lint": "eslint . --max-warnings 0",
@@ -14,10 +18,12 @@
     "check-types": "tsc --noEmit"
   },
   "dependencies": {
-    "@repo/theme": "workspace:*",
     "@radix-ui/react-dialog": "catalog:",
+    "@radix-ui/react-tooltip": "catalog:",
+    "@repo/theme": "workspace:*",
     "class-variance-authority": "catalog:",
     "clsx": "catalog:",
+    "cn": "catalog:",
     "lucide-react": "catalog:",
     "radix-ui": "catalog:",
     "tailwind-merge": "catalog:"

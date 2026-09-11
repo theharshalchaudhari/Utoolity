@@ -13,6 +13,7 @@
   "dependencies": {
     "@repo/theme": "workspace:*",
     "@repo/ui": "workspace:*",
+    "cn": "catalog:",
     "class-variance-authority": "catalog:",
     "clsx": "catalog:",
     "gsap": "catalog:",

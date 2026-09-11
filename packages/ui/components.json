@@ -11,7 +11,7 @@
   },
   "aliases": {
     "components": "@repo/ui/shadcn",
-    "utils": "@repo/ui/lib/utils",
+    "utils": "cn",
     "ui": "@repo/ui/shadcn",
     "shared": "@repo/ui/shared"
   },

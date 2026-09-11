@@ -9,7 +9,7 @@ export default function Home() {
 
       <div className="pointer-events-none absolute inset-x-0 -bottom-18 z-0 w-full">
         <Image
-          src="/interns.png"
+          src="/interns1.png"
           alt="Characters"
           width={1920}
           height={500}

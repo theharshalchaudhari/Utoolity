@@ -4,7 +4,7 @@ import * as React from "react"
 import * as DialogPrimitive from "@radix-ui/react-dialog"
 import { XIcon } from "lucide-react"
 
-import { cn } from "@repo/ui/lib/utils"
+import { cn } from "cn"
 import { Button } from "@repo/ui/shadcn/button"
 
 function Dialog(
@@ -59,7 +59,7 @@ function DialogOverlay({
     <DialogPrimitive.Overlay
       data-slot="dialog-overlay"
       className={cn(
-        "fixed inset-0 z-[9998] bg-black/50 backdrop-blur-sm",
+        "fixed inset-0 z-9998 bg-black/50 backdrop-blur-sm",
         "data-[state=open]:animate-in",
         "data-[state=closed]:animate-out",
         "data-[state=open]:fade-in-0",
@@ -90,7 +90,7 @@ function DialogContent({
             "fixed",
             "left-1/2",
             "top-1/2",
-            "z-[9999]",
+            "z-9999",
             "grid",
             "w-full",
             "max-w-lg",
