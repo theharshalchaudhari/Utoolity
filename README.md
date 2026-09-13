@@ -6,6 +6,7 @@
 
 - Node.js 18 or higher
 - pnpm 8.15.0 or higher
+- Python 3.9 or higher (only for the ROI Studio desktop app)
 
 ### Step 1: Clone the Repository
 
@@ -43,7 +44,7 @@ http://localhost:3000/tools/{your-tool-route}
 | Task 3 | Video Format Converter | `/tools/video-converter` |
 | Task 4 | Image Format Converter | `/tools/image-converter` |
 | Task 5 | Image Separation/Classification | `/tools/image-classification` |
-| Task 6 | Polygon ROI Annotation | `/tools/polygon-annotation` |
+| Task 6 | Polygon ROI Annotation (ROI Studio desktop app) | `/tools/polygon-annotation` |
 | Task 7 | Bounding Box Annotation | `/tools/bounding-box` |
 | Task 8 | Video Merge | `/tools/video-merge` |
 
@@ -53,6 +54,22 @@ http://localhost:3000/tools/{your-tool-route}
 pnpm build
 pnpm start
 ```
+
+### Desktop App: ROI Studio
+
+Task 6 ships as **ROI Studio**, a Python (PySide6) desktop application by
+Ashaz Qureshi, in `apps/roi-studio`. It runs natively, not inside the Next.js
+app; `/tools/polygon-annotation` is its info page. See
+[apps/roi-studio/README.md](apps/roi-studio/README.md) for the full guide.
+
+```bash
+pnpm --filter roi-studio setup   # one-time: private .venv + dependencies
+pnpm roi-studio                  # start the application
+pnpm --filter roi-studio test    # headless test suites
+```
+
+`pnpm dev` and `pnpm build` skip ROI Studio; `pnpm test` and `pnpm lint`
+include it.
 
 ---
 
@@ -213,6 +230,20 @@ packages/
     └── typescript-config/ # Shared TypeScript configuration
 ```
 
+## Desktop Apps Structure
+
+```
+apps/roi-studio/            # Task 6 - ROI Studio (Python / PySide6), by Ashaz Qureshi
+├── package.json           # pnpm/turbo scripts: setup, start, test, lint, build:exe
+├── scripts/py.mjs         # runs those scripts with the local .venv Python
+├── bootstrap.py           # one-command environment setup
+├── run.py                 # launcher
+├── roi_studio/            # application package (core/ has no Qt, ui/ is Qt)
+├── tests/                 # headless test suites
+├── build/build_exe.py     # PyInstaller executable build
+└── docs/DEPLOYMENT.md
+```
+
 ## Theme and Styling
 
 All components must use theme variables from the `@repo/theme` package. Hardcoded colors are strictly prohibited.
@@ -280,7 +311,7 @@ All text must use the Poppins font family, which is enforced through the theme a
 | Task 3 | Video Format Converter | `/tools/video-converter` |
 | Task 4 | Image Format Converter | `/tools/image-converter` |
 | Task 5 | Image Separation/Classification | `/tools/image-classification` |
-| Task 6 | Polygon ROI Annotation | `/tools/polygon-annotation` |
+| Task 6 | Polygon ROI Annotation (ROI Studio desktop app) | `/tools/polygon-annotation` |
 | Task 7 | Bounding Box Annotation | `/tools/bounding-box` |
 | Task 8 | Video Merge | `/tools/video-merge` |
 
@@ -340,6 +371,11 @@ All text must use the Poppins font family, which is enforced through the theme a
 - **Service**: `services/imageClassification.service.ts`
 
 #### Task 6: Polygon ROI Annotation
+
+> Delivered as **ROI Studio**, a desktop application by **Ashaz Qureshi**, in
+> `apps/roi-studio`. It implements every required and bonus feature below.
+> The route currently renders `components/polygon-annotation/RoiStudioInfo.tsx`;
+> the web components listed here remain the target for a future web port.
 
 - **Route**: `app/tools/polygon-annotation/page.tsx`
 - **Components**: `components/polygon-annotation/`

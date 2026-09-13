@@ -1,0 +1,28 @@
+[build-system]
+requires = ["setuptools>=64"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "roi-studio"
+version = "1.0.0"
+description = "Polygon ROI annotation for camera batches"
+readme = "README.md"
+authors = [{ name = "Ashaz Qureshi", email = "ashazahmed72@gmail.com" }]
+requires-python = ">=3.9"
+dependencies = [
+    "PySide6-Essentials>=6.5",
+    "pillow>=9.0",
+    "openpyxl>=3.0",
+]
+
+[project.scripts]
+roi-studio = "roi_studio.app:main"
+
+[project.optional-dependencies]
+build = ["pyinstaller>=6.0"]
+
+[tool.setuptools.packages.find]
+include = ["roi_studio*"]
+
+[tool.setuptools.package-data]
+roi_studio = ["resources/**/*"]

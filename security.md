@@ -439,6 +439,16 @@ const cookieOptions = {
 };
 ```
 
+## Desktop App: ROI Studio
+
+ROI Studio (`apps/roi-studio`, by Ashaz Qureshi) is a local desktop application, so the server-side upload rules above do not apply to it. Its own guarantees:
+
+- **Local writes only**: output goes to the batch folder the user opens (spreadsheet, JSON, report, `no_roi/`, `printed_roi/`, lock and audit files) and to the per-user config folder (settings, crash reports, recovery drafts). Nothing else on the machine is touched.
+- **Atomic, verified writes**: every file is written to a temporary sibling, parsed back, and only then swapped into place, with a `.bak` of the previous good copy.
+- **Optional HTTP push is off by default**: `roi_studio/core/push.py` sends nothing until an endpoint is configured, accepts only `http://` or `https://` URLs, does not retry 4xx responses, and uses the standard library only. Prefer `https://` endpoints and keep any auth header out of shared batch settings.
+- **No elevated rights**: `bootstrap.py` installs into a private `.venv` inside the app folder; no administrator access is required.
+- **Dependencies**: PySide6-Essentials, Pillow and openpyxl, pinned by minimum version in `requirements.txt` / `pyproject.toml`. Refresh with `python bootstrap.py --upgrade` and audit with `pip-audit` alongside `pnpm audit`.
+
 ## Security Checklist
 
 ### Development Phase

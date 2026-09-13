@@ -93,3 +93,9 @@ dist
 # Don't ignore essential config files
 !apps/frontend/.gitignore
 !apps/backend/.gitignore
+!apps/roi-studio/.gitignore
+
+# ROI Studio keeps its PyInstaller script in build/ (its own .gitignore
+# excludes build/_work/ and dist/)
+!apps/roi-studio/build/
+!apps/roi-studio/build/build_exe.py

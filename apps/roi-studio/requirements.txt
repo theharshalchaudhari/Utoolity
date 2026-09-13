@@ -1,0 +1,7 @@
+# ROI Studio runtime dependencies.
+# Install with:  python bootstrap.py      (recommended - builds .venv)
+#            or: python -m pip install -r requirements.txt
+
+PySide6-Essentials>=6.5   # user interface
+pillow>=9.0               # image decoding and burnt-in previews
+openpyxl>=3.0             # the .xlsx output

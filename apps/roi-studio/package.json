@@ -1,0 +1,15 @@
+{
+  "name": "roi-studio",
+  "version": "1.0.0",
+  "description": "Polygon ROI annotation desktop app (Python / PySide6)",
+  "author": "Ashaz Qureshi <ashazahmed72@gmail.com>",
+  "private": true,
+  "scripts": {
+    "setup": "node scripts/py.mjs bootstrap.py",
+    "start": "node scripts/py.mjs run.py",
+    "test": "node scripts/py.mjs tests/run_all.py",
+    "selftest": "node scripts/py.mjs run.py --selftest",
+    "lint": "node scripts/py.mjs -m compileall -q roi_studio tests run.py bootstrap.py",
+    "build:exe": "node scripts/py.mjs build/build_exe.py"
+  }
+}
