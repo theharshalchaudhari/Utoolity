@@ -17,6 +17,10 @@
     "isolatedModules": true,
     "jsx": "react-jsx",
     "incremental": true,
+    // @repo/roi-core is consumed as TypeScript source and imports its own
+    // modules with explicit .ts extensions, which is what Node needs to run
+    // its test suite directly. Safe here because this project never emits.
+    "allowImportingTsExtensions": true,
     "plugins": [
       {
         "name": "next"

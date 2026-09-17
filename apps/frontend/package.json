@@ -11,11 +11,14 @@
     "check-types": "next typegen && tsc --noEmit"
   },
   "dependencies": {
+    "@repo/roi-core": "workspace:*",
     "@repo/theme": "workspace:*",
     "@repo/ui": "workspace:*",
     "class-variance-authority": "catalog:",
     "clsx": "catalog:",
     "gsap": "catalog:",
+    "jszip": "catalog:",
+    "lucide-react": "catalog:",
     "next": "catalog:",
     "react": "catalog:",
     "react-dom": "catalog:",
@@ -30,6 +33,7 @@
     "@types/react-dom": "catalog:",
     "autoprefixer": "catalog:",
     "eslint": "catalog:",
+    "eslint-config-next": "catalog:",
     "postcss": "catalog:",
     "tailwindcss": "catalog:",
     "typescript": "catalog:"

@@ -12,9 +12,20 @@ source, with no operating-system-specific code paths.
 ## Part of Utoolity
 
 ROI Studio lives in the [Utoolity](../../README.md) monorepo as
-`apps/roi-studio` and covers Task 6, Polygon ROI Annotation. It is a desktop
-application, so it runs natively rather than inside the Next.js app; the web
-route `/tools/polygon-annotation` describes it and points here.
+`apps/roi-studio` and covers Task 6, Polygon ROI Annotation.
+
+Task 6 now also ships as a **web tool** at `/tools/polygon-annotation`, which
+runs entirely in the browser and is the default way in. This desktop build
+remains for offline work and very large batches. The two read and write the
+same `roi_annotations.xlsx`, `roi_annotations.json` and `roi_map.json`, so a
+folder can be moved between them freely — the web tool's annotation logic is a
+TypeScript port of this app's `core/` package, living in `packages/roi-core`,
+and its test suite loads a web-written spreadsheet with the loader in
+`core/store.py` to prove it.
+
+The web tool adds one thing this app does not have: multiple ROI classes. It
+records them in an extra `shape_classes` column, written only when a batch
+actually uses a class, and this app ignores that column.
 
 From the repository root the usual pnpm/turbo commands reach it:
 

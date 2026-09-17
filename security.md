@@ -439,6 +439,29 @@ const cookieOptions = {
 };
 ```
 
+## Web Tool: ROI Studio (`/tools/polygon-annotation`)
+
+The web ROI tool runs entirely in the browser. It has no API route and no
+server component, so the upload rules above do not apply to it either:
+
+- **Nothing is uploaded.** Images are read from the user's own machine through
+  the File System Access API (`showDirectoryPicker`) or a local file input, and
+  decoded in the page. No image, annotation or filename is ever sent anywhere.
+- **Writes are scoped to the folder the user picked.** The browser grants
+  access to one directory handle, after an explicit prompt, and the tool writes
+  only the ROI outputs into it (`roi_annotations.xlsx`, the two JSON files, the
+  report, `no_roi/`, `printed_roi/` and the `export_*/` trees). It cannot reach
+  anything the user did not choose.
+- **Browsers without that API never get write access.** They fall back to
+  reading dropped files and delivering every output as one ZIP download, so no
+  filesystem permission is requested at all.
+- **No persistence beyond the batch.** Nothing is written to `localStorage`,
+  IndexedDB or cookies; closing the tab drops all state.
+- **Dependencies** are `exceljs` (the spreadsheet) and `jszip` (the fallback
+  archive), both loaded lazily at save time and both audited by `pnpm audit`.
+  SheetJS was deliberately not used: the registry build is pinned at 0.18.5
+  with known prototype-pollution advisories.
+
 ## Desktop App: ROI Studio
 
 ROI Studio (`apps/roi-studio`, by Ashaz Qureshi) is a local desktop application, so the server-side upload rules above do not apply to it. Its own guarantees:

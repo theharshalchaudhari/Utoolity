@@ -55,20 +55,37 @@ pnpm build
 pnpm start
 ```
 
-### Desktop App: ROI Studio
+### Task 6: ROI Studio
 
-Task 6 ships as **ROI Studio**, a Python (PySide6) desktop application by
-Ashaz Qureshi, in `apps/roi-studio`. It runs natively, not inside the Next.js
-app; `/tools/polygon-annotation` is its info page. See
-[apps/roi-studio/README.md](apps/roi-studio/README.md) for the full guide.
+Task 6 is **ROI Studio**, by Ashaz Qureshi. It ships in two forms that read and
+write exactly the same files, so a batch can move between them freely:
+
+**The web tool** at `/tools/polygon-annotation` is the way in. It runs entirely
+in the browser — images are read from your own machine and never uploaded. In
+Chrome and Edge it uses the File System Access API to write results back into
+the image folder, exactly as the desktop app does; other browsers fall back to
+drag-and-drop with the outputs delivered as one ZIP.
+
+**The desktop app** in `apps/roi-studio` is a Python (PySide6) application for
+offline work and very large batches. See
+[apps/roi-studio/README.md](apps/roi-studio/README.md) for its full guide.
 
 ```bash
 pnpm --filter roi-studio setup   # one-time: private .venv + dependencies
-pnpm roi-studio                  # start the application
+pnpm roi-studio                  # start the desktop application
 pnpm --filter roi-studio test    # headless test suites
 ```
 
-`pnpm dev` and `pnpm build` skip ROI Studio; `pnpm test` and `pnpm lint`
+The annotation logic both share lives in `packages/roi-core`, a framework-free
+TypeScript port of the desktop app's `core/` package. Its test suite compares
+against values taken from the Python and, where the desktop virtualenv is
+present, loads a web-written spreadsheet with the desktop app's own loader:
+
+```bash
+pnpm --filter @repo/roi-core test
+```
+
+`pnpm dev` and `pnpm build` skip the desktop app; `pnpm test` and `pnpm lint`
 include it.
 
 ---
@@ -225,10 +242,26 @@ packages/
 │   ├── shadcn/            # shadcn/ui components
 │   └── shared/            # Shared components
 │
+├── roi-core/               # Task 6 annotation logic (framework-free TS)
+│   ├── src/geometry.ts    # polygons, validation, coordinate cells
+│   ├── src/model.ts       # Shape and its transforms
+│   ├── src/store.ts       # canonical rows, roi_annotations/roi_map JSON
+│   ├── src/exporters.ts   # COCO, YOLO, Pascal VOC, mask specs
+│   ├── src/report.ts      # batch stats, HTML report, coverage JSON
+│   ├── src/xlsx.ts        # the spreadsheet (exceljs)
+│   ├── src/history.ts     # undo / redo
+│   └── test/              # parity tests against the desktop app's Python
+│
 └── config/
     ├── eslint-config/     # Shared ESLint configuration
     └── typescript-config/ # Shared TypeScript configuration
 ```
+
+`packages/roi-core` is a port of `apps/roi-studio/roi_studio/core`, which
+imports no Qt so it can be tested headless. The port keeps that property: it
+touches no DOM, React or filesystem, runs under `node --test`, and its tests
+assert against values captured from the Python so both implementations keep
+producing identical files.
 
 ## Desktop Apps Structure
 
@@ -372,19 +405,25 @@ All text must use the Poppins font family, which is enforced through the theme a
 
 #### Task 6: Polygon ROI Annotation
 
-> Delivered as **ROI Studio**, a desktop application by **Ashaz Qureshi**, in
-> `apps/roi-studio`. It implements every required and bonus feature below.
-> The route currently renders `components/polygon-annotation/RoiStudioInfo.tsx`;
-> the web components listed here remain the target for a future web port.
+> Delivered as **ROI Studio** by **Ashaz Qureshi**: a web tool at the route
+> below, plus the desktop application in `apps/roi-studio`. Both implement
+> every required and bonus feature. The shared annotation logic is in
+> `packages/roi-core`; the web tool adds multiple ROI classes, which the
+> desktop app does not have.
 
 - **Route**: `app/tools/polygon-annotation/page.tsx`
 - **Components**: `components/polygon-annotation/`
-  - `AnnotationCanvas.tsx`
-  - `PolygonToolbar.tsx`
-  - `PolygonList.tsx`
-  - `ClassSelector.tsx`
-- **Hook**: `hooks/usePolygonAnnotation.ts`
-- **Service**: `services/polygonAnnotation.service.ts`
+  - `RoiStudioWorkspace.tsx` — the client root that wires everything together
+  - `AnnotationCanvas.tsx` — drawing, editing, zoom and pan
+  - `PolygonToolbar.tsx`, `PolygonList.tsx`, `ClassSelector.tsx`
+  - `Filmstrip.tsx`, `FolderPicker.tsx`, `ExportDialog.tsx`, `ShortcutSheet.tsx`
+- **Hooks**: `hooks/usePolygonAnnotation.ts` (shapes, selection, undo),
+  `hooks/useBatch.ts` (folder, images, rows), `hooks/useCanvasViewport.ts`,
+  `hooks/useShortcuts.ts`
+- **Service**: `services/polygonAnnotation.service.ts` — File System Access,
+  the ZIP fallback, and writing every output
+- **Types**: `types/roi.ts`
+- **Shared logic**: `packages/roi-core`
 
 #### Task 7: Bounding Box Annotation
 
