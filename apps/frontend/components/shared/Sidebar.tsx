@@ -1,71 +1,157 @@
 "use client";
 
+import { motion } from "framer-motion";
+import { X, UserRound } from "lucide-react";
 import Link from "next/link";
-import { usePathname } from "next/navigation";
-import { Icon } from "./Icons";
-import {
-  Tooltip,
-  TooltipContent,
-  TooltipTrigger,
-} from "@repo/ui/shadcn/tooltip";
+import { useState } from "react";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@repo/ui/shadcn/tooltip";
 
 const tools = [
-  { href: "/tools/video-to-images", label: "Video to Images" },
-  { href: "/tools/video-trim", label: "Video Trim" },
-  { href: "/tools/video-converter", label: "Video Converter" },
-  { href: "/tools/image-converter", label: "Image Converter" },
-  { href: "/tools/image-classification", label: "Image Classification" },
-  { href: "/tools/polygon-annotation", label: "Polygon Annotation" },
-  { href: "/tools/bounding-box", label: "Bounding Box" },
-  { href: "/tools/video-merge", label: "Video Merge" },
+  { name: "Chat", href: "/chat", icon: "/logo/chat.svg", scale: 1 },
+  { name: "Video to Images", href: "/tools/video-to-images", icon: "/logo/video_to_image.svg", scale: 1.17 },
+  { name: "Video Trim", href: "/tools/video-trim", icon: "/logo/video_trim.svg", scale: 1 },
+  { name: "Video Converter", href: "/tools/video-converter", icon: "/logo/video_convert.svg", scale: 1 },
+  { name: "Image Converter", href: "/tools/image-converter", icon: "/logo/img_convert.svg", scale: 1 },
+  { name: "Image Classification", href: "/tools/image-classification", icon: "/logo/img_classification.svg", scale: 1.1 },
+  { name: "Polygon Annotation", href: "/tools/polygon-annotation", icon: "/logo/polygon_annotation.svg", scale: 0.9 },
+  { name: "Bounding Box", href: "/tools/bounding-box", icon: "/logo/bounding_box.svg", scale: 0.9 },
+  { name: "Video Merge", href: "/tools/video-merge", icon: "/logo/video_merge.svg", scale: 0.95 },
 ];
 
-const Sidebar = () => {
-  const pathname = usePathname();
-
-  const activeIndex = tools.findIndex((t) => pathname === t.href);
-
-  const isActive = (path: string) => pathname === path;
+function Sidebar() {
+  const [collapsed, setCollapsed] = useState(false);
 
   return (
-    <aside className="fixed top-6 bottom-6 left-4 z-50 flex w-19 flex-col items-center overflow-visible rounded-full bg-foreground shadow-[0_10px_40px_rgba(0,0,0,0.15)]">
-      <nav className="relative flex w-full flex-col items-center">
-        {activeIndex !== -1 && (
-          <div
-            className="pointer-events-none absolute top-0 left-0 z-0 h-14 w-full rounded-r-[28px] bg-background transition-transform duration-500 ease-[cubic-bezier(0.65,0,0.35,1)]"
+    <TooltipProvider delayDuration={150}>
+      <div className="fixed bottom-5 left-4 top-5 z-50 flex flex-col items-start gap-2">
+        <motion.div
+          animate={{ width: collapsed ? 64 : 240 }}
+          transition={{ duration: 0.38, ease: [0.22, 1, 0.36, 1] }}
+          className="relative h-14 shrink-0 overflow-hidden rounded-[var(--radius-lg)] border border-background/10 bg-foreground shadow-lg"
+        >
+          <button
+            type="button"
+            onClick={() => setCollapsed((value) => !value)}
+            aria-label={collapsed ? "Expand sidebar" : "Collapse sidebar"}
+            className="group absolute left-0 top-0 flex h-14 w-14 items-center justify-center rounded-[var(--radius-lg)]"
+          >
+            <span
+              className="h-10 w-10 shrink-0 bg-background transition-colors duration-200 group-hover:bg-primary"
+              style={{
+                mask: "url(/logo/cms_logo.svg) center / contain no-repeat",
+                WebkitMask: "url(/logo/cms_logo.svg) center / contain no-repeat",
+                transform: "scale(1)",
+              }}
+            />
+          </button>
+
+          <button
+            type="button"
+            onClick={() => setCollapsed(true)}
+            aria-label="Collapse sidebar"
+            className="absolute right-3 top-1/2 flex h-10 w-10 -translate-y-1/2 items-center justify-center text-background transition-colors duration-200 hover:text-primary"
             style={{
-              transform: `translateY(${activeIndex * 56}px)`,
+              opacity: collapsed ? 0 : 1,
+              pointerEvents: collapsed ? "none" : "auto",
             }}
           >
-            <div className="absolute -top-4.5 right-0 h-9 w-9 rounded-br-[36px] bg-foreground" />
-            <div className="absolute -bottom-4.5 right-0 h-9 w-9 rounded-tr-[36px] bg-foreground" />
-          </div>
-        )}
+            <X className="h-5 w-5" strokeWidth={1.5} />
+          </button>
+        </motion.div>
 
-        {tools.map((tool) => (
-          <Tooltip key={tool.href}>
-            <TooltipTrigger asChild>
+        <motion.div
+          animate={{ width: collapsed ? 64 : 240 }}
+          transition={{ duration: 0.38, ease: [0.22, 1, 0.36, 1] }}
+          className="relative flex min-h-0 flex-1 flex-col overflow-hidden rounded-[var(--radius-lg)] border border-background/10 bg-foreground shadow-lg"
+        >
+          <nav className="min-h-0 flex-1 overflow-y-auto overflow-x-hidden py-5">
+            <div className="space-y-2">
+              {tools.map((tool) => {
+                const link = (
+                  <Link
+                    href={tool.href}
+                    className="group relative flex h-11 w-full items-center text-background transition-colors duration-200 hover:text-primary"
+                  >
+                    <span
+                      className="absolute left-3 h-9 w-10 shrink-0 bg-background transition-colors duration-200 group-hover:bg-primary"
+                      style={{
+                        mask: `url(${tool.icon}) center / contain no-repeat`,
+                        WebkitMask: `url(${tool.icon}) center / contain no-repeat`,
+                        transform: `scale(${tool.scale})`,
+                      }}
+                    />
+
+                    {!collapsed && (
+                      <motion.span
+                        initial={{ opacity: 0 }}
+                        animate={{ opacity: 1 }}
+                        transition={{ duration: 0.18, delay: 0.24 }}
+                        className="absolute left-[60px] whitespace-nowrap text-sm font-semibold"
+                      >
+                        {tool.name}
+                      </motion.span>
+                    )}
+                  </Link>
+                );
+
+                return collapsed ? (
+                  <Tooltip key={tool.href}>
+                    <TooltipTrigger asChild>{link}</TooltipTrigger>
+                    <TooltipContent side="right" sideOffset={10}>
+                      {tool.name}
+                    </TooltipContent>
+                  </Tooltip>
+                ) : (
+                  <div key={tool.href}>{link}</div>
+                );
+              })}
+            </div>
+          </nav>
+
+          <div className="shrink-0 border-t border-background/10 px-2 py-3">
+            {collapsed ? (
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Link
+                    href="/profile"
+                    className="group relative flex h-11 w-full items-center text-background transition-colors duration-200 hover:text-primary"
+                  >
+                    <UserRound
+                      className="absolute left-3 h-6 w-6 shrink-0"
+                      strokeWidth={1.5}
+                    />
+                  </Link>
+                </TooltipTrigger>
+
+                <TooltipContent side="right" sideOffset={10}>
+                  Profile
+                </TooltipContent>
+              </Tooltip>
+            ) : (
               <Link
-                href={tool.href}
-                className="relative z-10 flex h-14 w-19 items-center justify-center"
+                href="/profile"
+                className="group relative flex h-11 w-full items-center text-background transition-colors duration-200 hover:text-primary"
               >
-                <Icon
-                  name="Icon1"
-                  size={30}
-                  className={
-                    isActive(tool.href) ? "text-foreground" : "text-background"
-                  }
+                <UserRound
+                  className="absolute left-3 h-6 w-6 shrink-0"
+                  strokeWidth={1.5}
                 />
+
+                <motion.span
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  transition={{ duration: 0.18, delay: 0.24 }}
+                  className="absolute left-[60px] whitespace-nowrap text-sm font-semibold"
+                >
+                  Profile
+                </motion.span>
               </Link>
-            </TooltipTrigger>
-            <TooltipContent side="right" sideOffset={10}>
-              <p>{tool.label}</p>
-            </TooltipContent>
-          </Tooltip>
-        ))}
-      </nav>
-    </aside>
+            )}
+          </div>
+        </motion.div>
+      </div>
+    </TooltipProvider>
   );
-};
+}
 
 export default Sidebar;
