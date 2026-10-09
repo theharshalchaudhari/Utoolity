@@ -26,15 +26,36 @@ export async function api<T>(
     headers.delete("Content-Type");
   }
 
-  const response = await fetch(
-    `${API_URL.replace(/\/+$/, "")}/${path.replace(/^\/+/, "")}`,
-    {
-      ...options,
-      headers,
-      credentials: "include",
-      cache: "no-store",
-    },
-  );
+  let response: Response;
+  let lastError: unknown;
+
+  for (let attempt = 0; attempt < 2; attempt += 1) {
+    try {
+      response = await fetch(
+        `${API_URL.replace(/\/+$/, "")}/${path.replace(/^\/+/, "")}`,
+        {
+          ...options,
+          headers,
+          credentials: "include",
+          cache: "no-store",
+        },
+      );
+      break;
+    } catch (error) {
+      lastError = error;
+      if (attempt === 1) {
+        throw new Error(
+          `Unable to reach the backend at ${API_URL}.`,
+          { cause: error },
+        );
+      }
+      await new Promise((resolve) => window.setTimeout(resolve, 250));
+    }
+  }
+
+  if (!response!) {
+    throw lastError instanceof Error ? lastError : new Error("Network request failed.");
+  }
 
   const contentType = response.headers.get("content-type");
   const text = await response.text();

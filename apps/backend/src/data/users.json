@@ -7,7 +7,10 @@
       "displayName": "Harshal Chaudhari",
       "password": "12345678",
       "macId": "5C:87:9C:EF:FC:7C",
-      "role": "intern"
+      "role": "intern",
+      "preferences": {
+        "utoolity.wallpaper": "Wraith"
+      }
     }
   ]
 }

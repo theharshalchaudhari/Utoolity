@@ -27,6 +27,151 @@
     background: transparent;
   }
 
+  [data-animation="off"] *,
+  [data-animation="off"] *::before,
+  [data-animation="off"] *::after {
+    animation-duration: 120ms !important;
+    transition-duration: 120ms !important;
+  }
+
+  .desktop-window {
+    background:
+      linear-gradient(
+        135deg,
+        color-mix(in oklab, var(--card) 92%, transparent),
+        color-mix(in oklab, var(--background) 86%, transparent)
+      );
+    backdrop-filter: blur(32px) saturate(1.25);
+  }
+
+  .desktop-background {
+    background:
+      radial-gradient(ellipse at 0% 0%, color-mix(in oklab, var(--primary) 25%, transparent), transparent 38%),
+      radial-gradient(ellipse at 100% 0%, color-mix(in oklab, var(--accent) 22%, transparent), transparent 35%),
+      radial-gradient(ellipse at 70% 100%, color-mix(in oklab, var(--secondary) 24%, transparent), transparent 44%),
+      linear-gradient(145deg, var(--background), color-mix(in oklab, var(--background) 72%, var(--primary)));
+  }
+
+  .desktop-background-wash {
+    background:
+      radial-gradient(ellipse 50% 38% at 25% 20%, color-mix(in oklab, #7c3aed 18%, transparent), transparent 70%),
+      radial-gradient(ellipse 45% 35% at 78% 25%, color-mix(in oklab, #06b6d4 15%, transparent), transparent 70%),
+      radial-gradient(ellipse 55% 40% at 55% 90%, color-mix(in oklab, #ec4899 12%, transparent), transparent 72%);
+    filter: blur(18px) saturate(1.15);
+    transform: scale(1.08);
+  }
+
+  .desktop-background-vignette {
+    background: radial-gradient(ellipse at center, transparent 25%, color-mix(in oklab, var(--background) 38%, transparent) 100%);
+  }
+
+  [data-wallpaper="bloom"] .desktop-background {
+    background:
+      radial-gradient(ellipse at 18% 20%, #db2777 0%, transparent 42%),
+      radial-gradient(ellipse at 82% 78%, #7c3aed 0%, transparent 46%),
+      linear-gradient(135deg, #170b2f, #2a123f 48%, #090d1d);
+  }
+
+  [data-wallpaper="mesh"] .desktop-background {
+    background:
+      radial-gradient(ellipse at 20% 15%, #14b8a6 0%, transparent 38%),
+      radial-gradient(ellipse at 85% 70%, #2563eb 0%, transparent 42%),
+      linear-gradient(135deg, #071c2b, #111a45 52%, #241044);
+  }
+
+  [data-wallpaper="horizon"] .desktop-background {
+    background:
+      radial-gradient(ellipse at 50% 0%, #8b5cf6 0%, transparent 40%),
+      radial-gradient(ellipse at 70% 100%, #10b981 0%, transparent 45%),
+      linear-gradient(180deg, #19133b, #101b42 54%, #082d35);
+  }
+
+  [data-wallpaper="aurora"] .desktop-background {
+    background:
+      radial-gradient(ellipse at 12% 20%, #22c55e 0%, transparent 38%),
+      radial-gradient(ellipse at 88% 15%, #e11d48 0%, transparent 35%),
+      linear-gradient(135deg, #11143a, #062d35 50%, #280f2d);
+  }
+
+  [data-wallpaper="dunes"] .desktop-background {
+    background:
+      radial-gradient(ellipse at 25% 15%, #fb7185 0%, transparent 40%),
+      radial-gradient(ellipse at 80% 88%, #14b8a6 0%, transparent 40%),
+      linear-gradient(145deg, #29152c, #1a2938 52%, #082e32);
+  }
+
+  [data-wallpaper="gemini"] .desktop-background {
+    background:
+      radial-gradient(ellipse at 12% 14%, #38bdf8 0%, transparent 40%),
+      radial-gradient(ellipse at 82% 74%, #f472b6 0%, transparent 45%),
+      linear-gradient(135deg, #142b62, #55318e 52%, #381b58);
+  }
+
+  [data-wallpaper="chroma"] .desktop-background {
+    background:
+      radial-gradient(ellipse at 20% 20%, #34d399 0%, transparent 38%),
+      radial-gradient(ellipse at 82% 78%, #f59e0b 0%, transparent 42%),
+      linear-gradient(135deg, #073a3d, #551b42 55%, #4a2a0b);
+  }
+
+  [data-wallpaper="expressive"] .desktop-background {
+    background:
+      radial-gradient(ellipse at 20% 10%, #a78bfa 0%, transparent 38%),
+      radial-gradient(ellipse at 80% 90%, #fb7185 0%, transparent 44%),
+      linear-gradient(135deg, #21134d, #451a4c 52%, #102d5d);
+  }
+
+  [data-wallpaper="ribbons"] .desktop-background {
+    background:
+      radial-gradient(ellipse at 14% 80%, #22d3ee 0%, transparent 38%),
+      radial-gradient(ellipse at 85% 15%, #8b5cf6 0%, transparent 42%),
+      linear-gradient(135deg, #1a1647, #084b61 52%, #101d4a);
+  }
+
+  [data-wallpaper="pixel"] .desktop-background,
+  [data-wallpaper="swatches"] .desktop-background {
+    background:
+      radial-gradient(ellipse at 20% 20%, #f59e0b 0%, transparent 35%),
+      radial-gradient(ellipse at 80% 80%, #10b981 0%, transparent 42%),
+      linear-gradient(135deg, #15245a, #4a2c1b 52%, #082f32);
+  }
+
+  [data-wallpaper="orbit"] .desktop-background,
+  [data-wallpaper="nightfall"] .desktop-background {
+    background:
+      radial-gradient(ellipse at 70% 18%, #2563eb 0%, transparent 42%),
+      radial-gradient(ellipse at 25% 82%, #4c1d95 0%, transparent 42%),
+      linear-gradient(135deg, #030712, #0f1b3d 56%, #10152e);
+  }
+
+  [data-wallpaper="plain"] .desktop-background {
+    background: var(--background);
+  }
+
+  [data-wallpaper="wraith"] .desktop-background {
+    background:
+      radial-gradient(ellipse at 15% 10%, #334155 0%, transparent 38%),
+      radial-gradient(ellipse at 88% 18%, #312e81 0%, transparent 42%),
+      radial-gradient(ellipse at 55% 100%, #0f172a 0%, transparent 48%),
+      linear-gradient(145deg, #020617, #1e1b4b 52%, #0f172a);
+  }
+
+  .settings-surface {
+    font-size: 1.05rem;
+  }
+
+  .settings-surface .text-xs {
+    font-size: 0.8rem;
+  }
+
+  .settings-surface .text-sm {
+    font-size: 0.95rem;
+  }
+
+  .settings-surface .text-xl {
+    font-size: 1.4rem;
+  }
+
   .premium-scrollbar::-webkit-scrollbar-thumb {
     border: 3px solid transparent;
     border-radius: 9999px;
@@ -57,6 +202,172 @@
     background-image: none;
     background-color: var(--background);
   }
+
+  .lockscreen-shell {
+    isolation: isolate;
+    -webkit-tap-highlight-color: transparent;
+    background:
+      radial-gradient(circle at 15% 10%, color-mix(in oklab, var(--primary) 22%, transparent), transparent 32%),
+      radial-gradient(circle at 85% 15%, color-mix(in oklab, var(--accent) 28%, transparent), transparent 30%),
+      radial-gradient(circle at 50% 100%, color-mix(in oklab, var(--secondary) 24%, transparent), transparent 42%),
+      var(--background);
+    box-shadow: inset 0 0 0 1px color-mix(in oklab, var(--border) 45%, transparent);
+  }
+
+  .lockscreen-wallpaper {
+    background:
+      radial-gradient(ellipse at 15% 10%, #334155 0%, transparent 38%),
+      radial-gradient(ellipse at 88% 18%, #312e81 0%, transparent 42%),
+      radial-gradient(ellipse at 55% 100%, #0f172a 0%, transparent 48%),
+      linear-gradient(145deg, #020617, #1e1b4b 52%, #0f172a);
+  }
+
+  [data-wallpaper="bloom"] .lockscreen-wallpaper { background: linear-gradient(135deg, #170b2f, #2a123f 48%, #090d1d); }
+  [data-wallpaper="mesh"] .lockscreen-wallpaper { background: linear-gradient(135deg, #071c2b, #111a45 52%, #241044); }
+  [data-wallpaper="horizon"] .lockscreen-wallpaper { background: linear-gradient(180deg, #19133b, #101b42 54%, #082d35); }
+  [data-wallpaper="aurora"] .lockscreen-wallpaper { background: linear-gradient(135deg, #11143a, #062d35 50%, #280f2d); }
+  [data-wallpaper="dunes"] .lockscreen-wallpaper { background: linear-gradient(145deg, #29152c, #1a2938 52%, #082e32); }
+  [data-wallpaper="orbit"] .lockscreen-wallpaper,
+  [data-wallpaper="nightfall"] .lockscreen-wallpaper { background: linear-gradient(135deg, #030712, #0f1b3d 56%, #10152e); }
+  [data-wallpaper="plain"] .lockscreen-wallpaper { background: #0f172a; }
+  [data-wallpaper="gemini"] .lockscreen-wallpaper { background: linear-gradient(135deg, #142b62, #55318e 52%, #381b58); }
+  [data-wallpaper="chroma"] .lockscreen-wallpaper { background: linear-gradient(135deg, #073a3d, #551b42 55%, #4a2a0b); }
+  [data-wallpaper="expressive"] .lockscreen-wallpaper { background: linear-gradient(135deg, #21134d, #451a4c 52%, #102d5d); }
+  [data-wallpaper="pixel"] .lockscreen-wallpaper,
+  [data-wallpaper="swatches"] .lockscreen-wallpaper { background: linear-gradient(135deg, #15245a, #4a2c1b 52%, #082f32); }
+  [data-wallpaper="ribbons"] .lockscreen-wallpaper { background: linear-gradient(135deg, #1a1647, #084b61 52%, #101d4a); }
+
+  .desktop-logo {
+    filter:
+      brightness(0)
+      invert(1)
+      drop-shadow(0 0 34px rgb(255 255 255 / 24%));
+  }
+
+  .desktop-context-menu {
+    background: rgb(28 29 37 / 96%);
+    border: 1px solid rgb(255 255 255 / 10%);
+    box-shadow: 0 18px 50px rgb(0 0 0 / 42%);
+    animation: desktop-menu-in 140ms cubic-bezier(0.22, 1, 0.36, 1);
+  }
+
+  @keyframes desktop-menu-in {
+    from { opacity: 0; transform: scale(0.96); }
+    to { opacity: 1; transform: scale(1); }
+  }
+
+  .desktop-canvas,
+  .desktop-canvas * {
+    user-select: none;
+  }
+
+  .desktop-canvas input,
+  .desktop-canvas textarea,
+  .desktop-canvas [contenteditable="true"] {
+    user-select: text;
+  }
+
+  .lockscreen-orb {
+    position: absolute;
+    z-index: -1;
+    width: 42%;
+    aspect-ratio: 1;
+    border-radius: 9999px;
+    filter: blur(90px);
+    opacity: 0.42;
+    pointer-events: none;
+  }
+
+  .lockscreen-orb-one {
+    top: -24%;
+    left: -12%;
+    background: var(--primary);
+  }
+
+  .lockscreen-orb-two {
+    top: -20%;
+    right: -10%;
+    background: var(--accent);
+  }
+
+  .lockscreen-orb-three {
+    bottom: -35%;
+    left: 28%;
+    background: var(--secondary);
+  }
+
+  .lockscreen-shell:fullscreen {
+    width: 100vw;
+    height: 100vh;
+    min-height: 100vh;
+    border-radius: 0;
+  }
+
+  .lockscreen-unlocked {
+    pointer-events: none;
+    opacity: 0;
+    transform: scale(1.02);
+    transition:
+      opacity 350ms ease,
+      transform 350ms ease;
+  }
+
+  [data-animation="off"] *,
+  [data-animation="off"] *::before,
+  [data-animation="off"] *::after {
+    animation-duration: 0.001ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.001ms !important;
+    scroll-behavior: auto !important;
+  }
+
+  [data-grain="soft"]::after,
+  [data-grain="strong"]::after {
+    content: "";
+    position: fixed;
+    inset: 0;
+    pointer-events: none;
+    z-index: 70;
+    opacity: 0.08;
+    background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 180 180' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='.5'/%3E%3C/svg%3E");
+  }
+
+  [data-grain="strong"]::after {
+    opacity: 0.16;
+  }
+
+  .lockscreen-enter {
+    animation: lockscreen-drop-in 350ms cubic-bezier(0.22, 1, 0.36, 1)
+      both;
+  }
+
+  .lockscreen-exit {
+    animation: lockscreen-rise-out 350ms cubic-bezier(0.55, 0, 1, 0.45)
+      both;
+    pointer-events: none;
+  }
+
+  @keyframes lockscreen-drop-in {
+    from {
+      opacity: 0;
+      transform: translateY(-100%);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+
+  @keyframes lockscreen-rise-out {
+    from {
+      opacity: 1;
+      transform: translateY(0);
+    }
+    to {
+      opacity: 0;
+      transform: translateY(-100%);
+    }
+  }
 }
 
 :root {
@@ -74,6 +385,83 @@
 @layer base {
   * {
     font-family: var(--font-nunito), sans-serif !important;
+  }
+
+  @layer components {
+    .desktop-background {
+      background:
+        radial-gradient(ellipse at 0% 0%, color-mix(in oklab, var(--primary) 25%, transparent), transparent 38%),
+        radial-gradient(ellipse at 100% 0%, color-mix(in oklab, var(--accent) 22%, transparent), transparent 35%),
+        radial-gradient(ellipse at 70% 100%, color-mix(in oklab, var(--secondary) 24%, transparent), transparent 44%),
+        linear-gradient(145deg, var(--background), color-mix(in oklab, var(--background) 72%, var(--primary)));
+    }
+
+    .desktop-background-wash {
+      background:
+        radial-gradient(ellipse 50% 38% at 25% 20%, color-mix(in oklab, #7c3aed 18%, transparent), transparent 70%),
+        radial-gradient(ellipse 45% 35% at 78% 25%, color-mix(in oklab, #06b6d4 15%, transparent), transparent 70%),
+        radial-gradient(ellipse 55% 40% at 55% 90%, color-mix(in oklab, #ec4899 12%, transparent), transparent 72%);
+      filter: blur(18px) saturate(1.15);
+      transform: scale(1.08);
+    }
+
+    [data-wallpaper="bloom"] .desktop-background {
+      background: radial-gradient(ellipse at 18% 20%, #db2777 0%, transparent 42%), radial-gradient(ellipse at 82% 78%, #7c3aed 0%, transparent 46%), linear-gradient(135deg, #170b2f, #2a123f 48%, #090d1d);
+    }
+
+    [data-wallpaper="mesh"] .desktop-background {
+      background: radial-gradient(ellipse at 20% 15%, #14b8a6 0%, transparent 38%), radial-gradient(ellipse at 85% 70%, #2563eb 0%, transparent 42%), linear-gradient(135deg, #071c2b, #111a45 52%, #241044);
+    }
+
+    [data-wallpaper="horizon"] .desktop-background {
+      background: radial-gradient(ellipse at 50% 0%, #8b5cf6 0%, transparent 40%), radial-gradient(ellipse at 70% 100%, #10b981 0%, transparent 45%), linear-gradient(180deg, #19133b, #101b42 54%, #082d35);
+    }
+
+    [data-wallpaper="aurora"] .desktop-background {
+      background: radial-gradient(ellipse at 12% 20%, #22c55e 0%, transparent 38%), radial-gradient(ellipse at 88% 15%, #e11d48 0%, transparent 35%), linear-gradient(135deg, #11143a, #062d35 50%, #280f2d);
+    }
+
+    [data-wallpaper="dunes"] .desktop-background {
+      background: radial-gradient(ellipse at 25% 15%, #fb7185 0%, transparent 40%), radial-gradient(ellipse at 80% 88%, #14b8a6 0%, transparent 40%), linear-gradient(145deg, #29152c, #1a2938 52%, #082e32);
+    }
+
+    [data-wallpaper="gemini"] .desktop-background {
+      background: radial-gradient(ellipse at 12% 14%, #38bdf8 0%, transparent 40%), radial-gradient(ellipse at 82% 74%, #f472b6 0%, transparent 45%), linear-gradient(135deg, #142b62, #55318e 52%, #381b58);
+    }
+
+    [data-wallpaper="chroma"] .desktop-background {
+      background: radial-gradient(ellipse at 20% 20%, #34d399 0%, transparent 38%), radial-gradient(ellipse at 82% 78%, #f59e0b 0%, transparent 42%), linear-gradient(135deg, #073a3d, #551b42 55%, #4a2a0b);
+    }
+
+    [data-wallpaper="expressive"] .desktop-background {
+      background: radial-gradient(ellipse at 20% 10%, #a78bfa 0%, transparent 38%), radial-gradient(ellipse at 80% 90%, #fb7185 0%, transparent 44%), linear-gradient(135deg, #21134d, #451a4c 52%, #102d5d);
+    }
+
+    [data-wallpaper="pixel"] .desktop-background,
+    [data-wallpaper="swatches"] .desktop-background {
+      background: radial-gradient(ellipse at 20% 20%, #f59e0b 0%, transparent 35%), radial-gradient(ellipse at 80% 80%, #10b981 0%, transparent 42%), linear-gradient(135deg, #15245a, #4a2c1b 52%, #082f32);
+    }
+
+    [data-wallpaper="ribbons"] .desktop-background {
+      background: radial-gradient(ellipse at 14% 80%, #22d3ee 0%, transparent 38%), radial-gradient(ellipse at 85% 15%, #8b5cf6 0%, transparent 42%), linear-gradient(135deg, #1a1647, #084b61 52%, #101d4a);
+    }
+
+    [data-wallpaper="orbit"] .desktop-background,
+    [data-wallpaper="nightfall"] .desktop-background {
+      background: radial-gradient(ellipse at 70% 18%, #2563eb 0%, transparent 42%), radial-gradient(ellipse at 25% 82%, #4c1d95 0%, transparent 42%), linear-gradient(135deg, #030712, #0f1b3d 56%, #10152e);
+    }
+
+    [data-wallpaper="plain"] .desktop-background {
+      background: var(--background);
+    }
+
+    [data-animation="off"] *,
+    [data-animation="off"] *::before,
+    [data-animation="off"] *::after {
+      animation-duration: 120ms !important;
+      transition-duration: 120ms !important;
+      scroll-behavior: auto !important;
+    }
   }
 
   html {

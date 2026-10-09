@@ -7,22 +7,14 @@ import {
   useState,
   type FormEvent,
 } from "react";
-import gsap from "gsap";
-import { Draggable } from "gsap/Draggable";
 import {
-  ArrowLeft,
-  ArrowRight,
-  Eye,
-  EyeOff,
   LockKeyhole,
   Maximize,
   ShieldCheck,
   WifiOff,
 } from "lucide-react";
 import { api } from "../../lib/api";
-import "./Lockcard.css";
-
-gsap.registerPlugin(Draggable);
+import { useClock } from "../shared/useClock";
 
 type LockProfile = {
   id: string;
@@ -32,12 +24,11 @@ type LockProfile = {
 };
 
 type LockProfileResponse = {
-  user: {
+  user?: {
     id: string;
     hostname: string;
     displayName: string;
     role: "intern";
-    locked?: boolean;
   };
 };
 
@@ -53,17 +44,26 @@ type UnlockResponse = {
 
 type LockcardProps = {
   socketDisconnected: boolean;
+  initialAuthenticated?: boolean;
+  initialState?: LockscreenState;
   onUnlock?: () => void;
 };
 
+type LockscreenState = "sleep" | "locked";
+
 const HOSTNAME_STORAGE_KEY = "utoolity.hostname";
+const INACTIVITY_TIMEOUT_MS = 60_000;
 
 function getGreeting(date: Date): string {
   const hour = date.getHours();
 
+  if (hour >= 22 || hour < 5) return "STILL UP?";
+  if (hour < 9) return "EARLY BIRD?";
   if (hour < 12) return "GOOD MORNING";
+  if (hour < 14) return "LUNCH O'CLOCK?";
   if (hour < 17) return "GOOD AFTERNOON";
-  return "GOOD EVENING";
+  if (hour < 20) return "GOOD EVENING";
+  return "CALLING IT A DAY?";
 }
 
 function getInitialProfile(hostname = ""): LockProfile {
@@ -75,46 +75,113 @@ function getInitialProfile(hostname = ""): LockProfile {
   };
 }
 
-function Lockcard({ socketDisconnected, onUnlock }: LockcardProps) {
+function Lockcard({
+  socketDisconnected,
+  initialAuthenticated = false,
+  initialState = "locked",
+  onUnlock,
+}: LockcardProps) {
   const cardRef = useRef<HTMLElement>(null);
-  const draggableRef = useRef<Draggable[]>([]);
-  const dismissedRef = useRef(false);
-
+  const transitionTimerRef = useRef<ReturnType<typeof setTimeout> | undefined>(
+    undefined,
+  );
+  const inactivityTimerRef = useRef<ReturnType<typeof setTimeout> | undefined>(
+    undefined,
+  );
+  const now = useClock();
   const [profile, setProfile] = useState<LockProfile | null>(null);
-  const [hydrated, setHydrated] = useState(false);
-  const [now, setNow] = useState<Date | null>(null);
   const [hostname, setHostname] = useState("");
   const [password, setPassword] = useState("");
-  const [passwordMode, setPasswordMode] = useState(false);
-  const [showPassword, setShowPassword] = useState(false);
   const [loadingProfile, setLoadingProfile] = useState(true);
   const [checking, setChecking] = useState(false);
   const [error, setError] = useState("");
   const [fullscreen, setFullscreen] = useState(false);
+  const [authenticated, setAuthenticated] = useState<boolean | null>(
+    initialAuthenticated,
+  );
+  const [lockscreenState, setLockscreenState] =
+    useState<LockscreenState>(initialState);
+  const [leaving, setLeaving] = useState(false);
 
-  useEffect(() => {
-    setHydrated(true);
+  const clearInactivityTimer = useCallback(() => {
+    if (inactivityTimerRef.current) {
+      clearTimeout(inactivityTimerRef.current);
+      inactivityTimerRef.current = undefined;
+    }
   }, []);
 
-  const canEnterPassword = Boolean(
-    !loadingProfile &&
-      profile?.locked === true &&
-      hostname.trim().length > 0,
-  );
+  const relock = useCallback(() => {
+    clearInactivityTimer();
+    setPassword("");
+    setError("");
+    setProfile((current) =>
+      current ? { ...current, locked: true } : current,
+    );
+  }, [clearInactivityTimer]);
 
-  const canSubmitUnlock = Boolean(
-    !checking &&
-      !loadingProfile &&
-      profile !== null &&
-      hostname.trim().length > 0,
-  );
+  const lock = useCallback(() => {
+    setLockscreenState("locked");
+    setError("");
+  }, []);
 
-  // A regular browser cannot read a Windows hostname itself. Ask the Next.js
-  // frontend server for its hostname; use injected/saved values only as fallback.
+  const startInactivityTimer = useCallback(() => {
+    clearInactivityTimer();
+    inactivityTimerRef.current = setTimeout(relock, INACTIVITY_TIMEOUT_MS);
+  }, [clearInactivityTimer, relock]);
+
+  const leaveLockscreen = useCallback(() => {
+    if (leaving) return;
+
+    setLeaving(true);
+    transitionTimerRef.current = setTimeout(() => {
+      onUnlock?.();
+    }, 350);
+  }, [leaving, onUnlock]);
+
+  useEffect(() => {
+    const savedWallpaper =
+      window.localStorage.getItem("utoolity.wallpaper") ?? "Wraith";
+    document.documentElement.dataset.wallpaper = savedWallpaper.toLowerCase();
+    void api<{ preferences: Record<string, string> }>("/api/auth/preferences")
+      .then(({ preferences }) => {
+        const wallpaper = preferences["utoolity.wallpaper"];
+        if (wallpaper) {
+          window.localStorage.setItem("utoolity.wallpaper", wallpaper);
+          document.documentElement.dataset.wallpaper = wallpaper.toLowerCase();
+        }
+      })
+      .catch(() => {
+        // The cached wallpaper remains active while the backend reconnects.
+      });
+  }, []);
+
   useEffect(() => {
     let active = true;
 
     async function loadProfile() {
+      let hasAuthenticatedSession = initialAuthenticated;
+
+      if (!initialAuthenticated) {
+        try {
+          await api("/api/auth/me");
+          hasAuthenticatedSession = true;
+        } catch (cause) {
+          const message = cause instanceof Error ? cause.message : "";
+          const isExpectedUnauthenticated =
+            message === "Not authenticated." ||
+            message === "Session user no longer exists." ||
+            message.includes("(401)");
+
+          if (!isExpectedUnauthenticated) {
+            console.error("Could not verify the current session:", cause);
+          }
+        }
+      }
+
+      if (!active) return;
+      setAuthenticated(hasAuthenticatedSession);
+      setLockscreenState(hasAuthenticatedSession ? "sleep" : "locked");
+
       const injectedHostname = (
         window as Window & { __UTOOLITY_DEVICE_HOSTNAME__?: string }
       ).__UTOOLITY_DEVICE_HOSTNAME__?.trim();
@@ -122,18 +189,14 @@ function Lockcard({ socketDisconnected, onUnlock }: LockcardProps) {
         .getItem(HOSTNAME_STORAGE_KEY)
         ?.trim();
 
-      // Ask the Next.js frontend server for its machine hostname. Browsers do
-      // not have permission to read the Windows hostname directly.
       let frontendHostname = "";
       try {
-        const hostnameResponse = await fetch("/internal/device-hostname", {
-          method: "GET",
+        const response = await fetch("/internal/device-hostname", {
           cache: "no-store",
           credentials: "same-origin",
         });
-
-        if (hostnameResponse.ok) {
-          const payload: unknown = await hostnameResponse.json();
+        if (response.ok) {
+          const payload: unknown = await response.json();
           if (
             typeof payload === "object" &&
             payload !== null &&
@@ -142,50 +205,38 @@ function Lockcard({ socketDisconnected, onUnlock }: LockcardProps) {
           ) {
             frontendHostname = payload.hostname.trim();
           }
-        } else {
-          console.error(
-            "Could not resolve frontend hostname:",
-            hostnameResponse.status,
-          );
         }
-      } catch (hostnameError) {
-        console.error("Could not resolve frontend hostname:", hostnameError);
+      } catch (cause) {
+        console.error("Could not resolve frontend hostname:", cause);
       }
 
-      // The fresh frontend hostname takes priority over any stale saved value.
       const deviceHostname =
         frontendHostname || injectedHostname || savedHostname || "";
 
+      if (!active) return;
+      setHostname(deviceHostname);
+
       if (!deviceHostname) {
-        if (active) {
-          setHostname("");
-          setProfile({
-            id: "unknown",
-            hostname: "",
-            displayName: "Device not identified",
-            locked: true,
-          });
-          setError(
-            "This browser has no assigned workstation identity. The device hostname must be provisioned before sign-in.",
-          );
-          setLoadingProfile(false);
-        }
+        setProfile({
+          id: "unknown",
+          hostname: "",
+          displayName: "Device not identified",
+          locked: true,
+        });
+        setError("This device has no assigned workstation identity.");
+        setLoadingProfile(false);
         return;
       }
 
-      if (active) {
-        setHostname(deviceHostname);
-        setProfile(getInitialProfile(deviceHostname));
-      }
+      setProfile(getInitialProfile(deviceHostname));
 
       try {
         const response = await api<LockProfileResponse>(
           `/api/lockscreen/me?hostname=${encodeURIComponent(deviceHostname)}`,
         );
-
         if (!active) return;
 
-        const user = response?.user;
+        const user = response.user;
         if (!user || user.id === "guest") {
           setProfile({
             id: "guest",
@@ -194,25 +245,18 @@ function Lockcard({ socketDisconnected, onUnlock }: LockcardProps) {
             locked: true,
           });
           setError("This workstation is not registered on the server.");
-          return;
+        } else {
+          setProfile({ ...user, locked: true });
+          setError("");
         }
-
-        setProfile({
-          id: user.id,
-          hostname: user.hostname,
-          displayName: user.displayName,
-          locked: true,
-        });
-        setError("");
       } catch (cause) {
         if (!active) return;
-
         console.error("Failed to load lockscreen profile:", cause);
         setProfile(getInitialProfile(deviceHostname));
         setError(
           cause instanceof Error
             ? `Unable to load the device profile: ${cause.message}`
-            : "Unable to contact the backend. Check the API URL and server.",
+            : "Unable to contact the backend.",
         );
       } finally {
         if (active) setLoadingProfile(false);
@@ -220,168 +264,77 @@ function Lockcard({ socketDisconnected, onUnlock }: LockcardProps) {
     }
 
     void loadProfile();
-
     return () => {
       active = false;
+      clearInactivityTimer();
+      if (transitionTimerRef.current) {
+        clearTimeout(transitionTimerRef.current);
+      }
     };
-  }, []);
+  }, [clearInactivityTimer]);
 
-  // Initialize the clock after hydration and update every second.
   useEffect(() => {
-    const update = () => setNow(new Date());
-    update();
-
-    const interval = window.setInterval(update, 1000);
-    return () => window.clearInterval(interval);
-  }, []);
-
-  const dismissCard = useCallback(() => {
-    const card = cardRef.current;
-
-    if (!card || dismissedRef.current) return;
-    dismissedRef.current = true;
-
-    gsap.to(card, {
-      y: -(window.innerHeight + card.offsetHeight + 80),
-      opacity: 0,
-      duration: 0.65,
-      ease: "power3.in",
-      overwrite: true,
-    });
-  }, []);
-
-  // Enable drag-to-dismiss only while disconnected and locked.
-  useEffect(() => {
-    const card = cardRef.current;
-
-    if (!card || !socketDisconnected || !profile?.locked) {
-      draggableRef.current.forEach((instance) => instance.kill());
-      draggableRef.current = [];
+    if (!profile || authenticated !== true || lockscreenState !== "sleep") {
       return;
     }
 
-    let active = true;
-
-    async function initializeDraggable() {
-      const { Draggable: DraggablePlugin } = await import("gsap/Draggable");
-      if (!active || !cardRef.current) return;
-
-      gsap.registerPlugin(DraggablePlugin);
-      draggableRef.current.forEach((instance) => instance.kill());
-
-      draggableRef.current = DraggablePlugin.create(card, {
-        type: "x,y",
-        trigger: card,
-        dragClickables: false,
-        minimumMovement: 2,
-        onPress() {
-          gsap.to(card, {
-            scale: 0.995,
-            duration: 0.12,
-            overwrite: true,
-          });
-        },
-        onRelease() {
-          gsap.to(card, {
-            scale: 1,
-            duration: 0.15,
-            overwrite: true,
-          });
-        },
-        onDragEnd() {
-          dismissCard();
-        },
-      });
-    }
-
-    void initializeDraggable();
+    const sleepTimer = setTimeout(lock, 10 * 60 * 1000);
+    const wakeToDesktop = () => leaveLockscreen();
+    window.addEventListener("pointerdown", wakeToDesktop, { passive: true });
+    window.addEventListener("keydown", wakeToDesktop);
 
     return () => {
-      active = false;
-      draggableRef.current.forEach((instance) => instance.kill());
-      draggableRef.current = [];
+      clearTimeout(sleepTimer);
+      window.removeEventListener("pointerdown", wakeToDesktop);
+      window.removeEventListener("keydown", wakeToDesktop);
     };
-  }, [socketDisconnected, profile?.locked, dismissCard]);
+  }, [authenticated, leaveLockscreen, lock, lockscreenState, profile]);
+
+  useEffect(() => {
+    if (!profile || lockscreenState !== "locked") return;
+
+    const activityEvents = ["pointerdown", "keydown", "mousemove", "touchstart"];
+    const handleActivity = () => startInactivityTimer();
+    activityEvents.forEach((event) =>
+      window.addEventListener(event, handleActivity, { passive: true }),
+    );
+    startInactivityTimer();
+
+    return () => {
+      activityEvents.forEach((event) =>
+        window.removeEventListener(event, handleActivity),
+      );
+      clearInactivityTimer();
+    };
+  }, [clearInactivityTimer, lockscreenState, profile, startInactivityTimer]);
 
   const handleUnlock = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
-
     const assignedHostname = hostname.trim();
-
-    if (!assignedHostname) {
-      setError(
-        "This browser has no assigned workstation identity. Contact the administrator to enroll this device.",
-      );
-      return;
-    }
-
-    if (!password || checking) return;
+    if (!assignedHostname || !password || checking || !profile) return;
 
     setChecking(true);
     setError("");
 
     try {
-      // Refresh the profile using the provisioned workstation hostname.
-      const profileResponse = await api<LockProfileResponse>(
-        `/api/lockscreen/me?hostname=${encodeURIComponent(assignedHostname)}`,
-      );
-      const candidate = profileResponse?.user;
-
-      if (!candidate || candidate.id === "guest") {
-        setProfile({
-          id: "guest",
-          hostname: assignedHostname,
-          displayName: "Unregistered workstation",
-          locked: true,
-        });
-        setError("This workstation is not registered on the server.");
-        return;
-      }
-
-      // The user is only asked for the password. The hostname comes from the
-      // enrolled device identity, not from a form field.
       const response = await api<UnlockResponse>("/api/lockscreen/unlock", {
         method: "POST",
-        body: JSON.stringify({
-          hostname: assignedHostname,
-          password,
-        }),
+        body: JSON.stringify({ hostname: assignedHostname, password }),
       });
-
-      if (!response?.success) {
+      if (!response.success) {
         setError("Unable to unlock this device.");
         return;
       }
 
-      const authenticatedUser = response.user ?? candidate;
-
-      setProfile({
-        id: authenticatedUser.id,
-        hostname: authenticatedUser.hostname,
-        displayName: authenticatedUser.displayName,
-        locked: false,
-      });
-      setHostname(authenticatedUser.hostname);
-      window.localStorage.setItem(
-        HOSTNAME_STORAGE_KEY,
-        authenticatedUser.hostname,
-      );
-
-      onUnlock?.();
-
-      gsap.to(cardRef.current, {
-        y: -(window.innerHeight + 100),
-        opacity: 0,
-        duration: 0.65,
-        ease: "power3.in",
-        overwrite: true,
-      });
+      const user = response.user ?? profile;
+      setProfile({ ...user, locked: false });
+      setHostname(user.hostname);
+      window.localStorage.setItem(HOSTNAME_STORAGE_KEY, user.hostname);
+      leaveLockscreen();
     } catch (cause) {
       console.error("Lockscreen authentication failed:", cause);
       setError(
-        cause instanceof Error
-          ? cause.message
-          : "Authentication failed. Please try again.",
+        cause instanceof Error ? cause.message : "Authentication failed.",
       );
     } finally {
       setChecking(false);
@@ -402,197 +355,116 @@ function Lockcard({ socketDisconnected, onUnlock }: LockcardProps) {
   };
 
   useEffect(() => {
-    const handleFullscreenChange = () => {
+    const handleFullscreenChange = () =>
       setFullscreen(Boolean(document.fullscreenElement));
-    };
-
     document.addEventListener("fullscreenchange", handleFullscreenChange);
-    return () => {
-      document.removeEventListener(
-        "fullscreenchange",
-        handleFullscreenChange,
-      );
-    };
+    return () =>
+      document.removeEventListener("fullscreenchange", handleFullscreenChange);
   }, []);
+
+  const isLocked = profile?.locked !== false;
 
   return (
     <section
       ref={cardRef}
       aria-label="Lock screen"
-      className="lockcard relative isolate flex h-full min-h-140 w-full select-text flex-col items-center justify-center overflow-hidden rounded-xl border border-white/8 text-foreground shadow-2xl"
+      className={`lockscreen-shell lockscreen-wallpaper relative isolate flex h-full min-h-dvh w-full flex-col items-center justify-center overflow-hidden rounded-xl text-foreground ${
+        leaving ? "lockscreen-exit" : "lockscreen-enter"
+      }`}
     >
-      <div
-        aria-hidden="true"
-        className="pointer-events-none absolute inset-0 -z-10 overflow-hidden"
-      >
-        <div className="lockcard-glow lockcard-glow-blue" />
-        <div className="lockcard-glow lockcard-glow-purple" />
-        <div className="lockcard-glow lockcard-glow-pink" />
-        <div className="lockcard-glow lockcard-glow-teal" />
-        <div className="absolute inset-0 bg-background/15 backdrop-blur-[75px]" />
-        <div className="absolute inset-0 bg-linear-to-br from-white/4 via-transparent to-black/20" />
-      </div>
+      <div aria-hidden="true" className="lockscreen-orb lockscreen-orb-one" />
+      <div aria-hidden="true" className="lockscreen-orb lockscreen-orb-two" />
+      <div aria-hidden="true" className="lockscreen-orb lockscreen-orb-three" />
 
       <button
         type="button"
         onClick={toggleFullscreen}
         aria-label={fullscreen ? "Exit fullscreen" : "Enter fullscreen"}
-        className="absolute top-4 right-4 z-20 flex size-11 items-center justify-center rounded-full border border-white/8 bg-black/25 text-white/80 shadow-lg backdrop-blur-xl transition hover:bg-black/40 hover:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+        className="absolute top-5 right-5 z-20 rounded-full border border-border/60 bg-card/50 p-3 text-foreground/70 backdrop-blur-xl transition hover:bg-card hover:text-foreground"
       >
-        <Maximize className="size-4.25" />
+        <Maximize className="size-4" />
       </button>
 
       <div className="relative z-10 flex w-full max-w-3xl flex-col items-center px-5 py-12 text-center">
-        <p className="mb-3 text-xs font-bold tracking-[0.2em] text-white/65 sm:text-sm">
-          {now ? getGreeting(now) : "\u00A0"}
+        <p className="text-xl font-bold tracking-[0.24em] text-muted-foreground">
+          {getGreeting(now)}
         </p>
-
         <time
-          dateTime={now?.toISOString()}
-          suppressHydrationWarning
-          className="font-sans text-[clamp(5rem,15vw,11.5rem)] leading-none font-black tracking-[-0.085em] text-white/90 tabular-nums"
+          dateTime={now.toISOString()}
+          className="mt-3 font-mono text-[clamp(1rem,16vw,11.5rem)] leading-none font-black tracking-[-0.08em] text-foreground tabular-nums"
         >
-          {now
-            ? now.toLocaleTimeString(undefined, {
-                hour: "2-digit",
-                minute: "2-digit",
-                hour12: false,
-              })
-            : "--:--"}
+          {now.toLocaleTimeString(undefined, {
+            hour: "numeric",
+            minute: "2-digit",
+            hour12: true,
+          })}
         </time>
-
-        <p className="mt-5 text-base font-semibold tracking-tight text-white/75 sm:text-xl">
-          {now
-            ? now.toLocaleDateString(undefined, {
-                weekday: "long",
-                month: "long",
-                day: "numeric",
-              })
-            : "\u00A0"}
+        <p className="mt-5 text-base font-semibold text-muted-foreground sm:text-xl">
+          {now.toLocaleDateString(undefined, {
+            weekday: "long",
+            month: "long",
+            day: "numeric",
+          })}
         </p>
 
         <div className="mt-12 flex w-full flex-col items-center">
-          <div className="mb-4 flex size-20.5 items-center justify-center rounded-full border-2 border-white/25 bg-white/10 shadow-[0_0_0_4px_rgba(255,255,255,0.05)]">
-            <LockKeyhole className="size-8 text-white/85" />
+          <div className="mb-4 flex size-20 items-center justify-center rounded-full border border-border/70 bg-card/60 shadow-[0_0_0_8px_color-mix(in_oklab,var(--border)_20%,transparent)]">
+            <LockKeyhole className="size-8 text-foreground/85" />
           </div>
-
-          <h1 className="max-w-full wrap-break-word text-lg font-bold tracking-tight text-white/90">
+          <h1 className="max-w-full wrap-break-word text-xl font-bold text-foreground">
             {loadingProfile
               ? "Loading profile..."
               : profile?.displayName ?? "Assigned workstation"}
           </h1>
 
-          {profile?.hostname && (
-            <p className="mt-1 text-xs tracking-wide text-white/45">
-              {profile.hostname}
-            </p>
-          )}
-
-          {error && !passwordMode && (
-            <p role="alert" className="mt-3 max-w-md text-sm text-destructive">
-              {error}
-            </p>
-          )}
-
-          {!passwordMode ? (
-            <>
-              <p className="mt-7 text-sm text-white/55">
-                {socketDisconnected ? "Drag to dismiss" : "Tap to unlock"}
-              </p>
-
-              <button
-                type="button"
-                disabled={!hydrated || !canEnterPassword}
-                onClick={() => {
-                  setError("");
-                  setPasswordMode(true);
-                }}
-                className="mt-3 inline-flex items-center gap-2 rounded-full px-4 py-2 text-sm font-medium text-white/70 transition hover:bg-white/7 hover:text-white disabled:cursor-not-allowed disabled:opacity-50"
-              >
-                <LockKeyhole className="size-4" />
-                Enter password
-                <ArrowRight className="size-3.5" />
-              </button>
-            </>
-          ) : (
+          {isLocked && lockscreenState === "locked" ? (
             <form
               onSubmit={handleUnlock}
-              className="mt-6 w-full max-w-xs space-y-3 text-left"
+              className="mt-8 flex w-full max-w-sm flex-col items-center"
             >
-              <label
-                htmlFor="lockcard-password"
-                className="block text-sm font-medium text-white/80"
+              <p className="mb-4 text-sm font-medium tracking-wide text-muted-foreground">
+                Tap to unlock
+              </p>
+              <input
+                aria-label="Password"
+                type="password"
+                value={password}
+                onChange={(event) => setPassword(event.target.value)}
+                placeholder="••••••••"
+                autoComplete="current-password"
+                autoFocus
+                disabled={loadingProfile || checking || !hostname}
+                className="w-full rounded-2xl border border-border/70 bg-input/70 px-5 py-4 text-center font-mono text-3xl tracking-[0.45em] text-foreground outline-none backdrop-blur-xl placeholder:text-muted-foreground focus:border-ring focus:ring-2 focus:ring-ring/35 disabled:opacity-50"
+              />
+              <button
+                type="submit"
+                aria-label="Unlock"
+                disabled={loadingProfile || checking || !password || !hostname}
+                className="mt-4 inline-flex items-center gap-2 rounded-full bg-primary px-5 py-2.5 text-sm font-semibold text-primary-foreground transition hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-50"
               >
-                Password
-              </label>
-
-              <div className="flex items-center rounded-xl border border-white/15 bg-background/25 backdrop-blur-xl focus-within:border-ring focus-within:ring-2 focus-within:ring-ring/30">
-                <input
-                  id="lockcard-password"
-                  type={showPassword ? "text" : "password"}
-                  value={password}
-                  onChange={(event) => setPassword(event.target.value)}
-                  placeholder="Enter your password"
-                  autoComplete="current-password"
-                  required
-                  disabled={checking}
-                  className="min-w-0 flex-1 bg-transparent px-4 py-3 text-sm text-white outline-none placeholder:text-white/40"
-                />
-
-                <button
-                  type="button"
-                  aria-label={showPassword ? "Hide password" : "Show password"}
-                  onClick={() => setShowPassword((value) => !value)}
-                  className="mr-2 rounded-md p-2 text-white/60 hover:text-white"
-                >
-                  {showPassword ? (
-                    <EyeOff className="size-4" />
-                  ) : (
-                    <Eye className="size-4" />
-                  )}
-                </button>
-              </div>
-
+                <ShieldCheck className="size-4" />
+                {checking ? "Checking..." : "Unlock"}
+              </button>
               {error && (
-                <p role="alert" className="text-sm text-destructive">
+                <p role="alert" className="mt-3 text-sm text-destructive">
                   {error}
                 </p>
               )}
-
-              <button
-                type="submit"
-                disabled={!hydrated || !canSubmitUnlock}
-                className="flex w-full items-center justify-center gap-2 rounded-xl bg-primary px-4 py-3 text-sm font-semibold text-primary-foreground transition hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-60"
-              >
-                <ShieldCheck className="size-4" />
-                {checking ? "Verifying..." : "Unlock"}
-              </button>
-
-              <button
-                type="button"
-                onClick={() => {
-                  setPasswordMode(false);
-                  setPassword("");
-                  setError("");
-                }}
-                className="flex w-full items-center justify-center gap-2 py-2 text-sm text-white/60 hover:text-white"
-              >
-                <ArrowLeft className="size-4" />
-                Back
-              </button>
             </form>
+          ) : (
+            <p className="mt-8 text-sm font-medium tracking-wide text-muted-foreground">
+              Tap or press any key to wake
+            </p>
           )}
         </div>
       </div>
 
-      {socketDisconnected && (
-        <div className="absolute bottom-5 left-1/2 z-10 flex -translate-x-1/2 items-center gap-2 whitespace-nowrap rounded-full border border-white/8 bg-black/20 px-3 py-2 text-xs text-white/60 backdrop-blur-xl">
+      {socketDisconnected && isLocked && (
+        <div className="absolute bottom-5 left-1/2 z-10 flex -translate-x-1/2 items-center gap-2 whitespace-nowrap rounded-full border border-border/60 bg-card/50 px-3 py-2 text-xs text-muted-foreground backdrop-blur-xl">
           <WifiOff className="size-3.5" />
           Connection lost
         </div>
       )}
-
-      <div className="pointer-events-none absolute bottom-3 left-1/2 z-10 h-1.25 w-30 -translate-x-1/2 rounded-full bg-white/30" />
     </section>
   );
 }

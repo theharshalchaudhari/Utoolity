@@ -1,6 +1,6 @@
 
 import type { FastifyInstance, FastifyRequest } from "fastify";
-import { readFile } from "node:fs/promises";
+import { readFile, writeFile } from "node:fs/promises";
 import { fileURLToPath } from "node:url";
 
 type InternUser = {
@@ -10,6 +10,7 @@ type InternUser = {
   password: string;
   macId: string;
   role: "intern";
+  preferences?: Record<string, string>;
 };
 
 type UsersFile = {
@@ -31,6 +32,18 @@ type AuthSession = {
   role?: "intern";
   save(callback: (error?: Error) => void): void;
   destroy(callback: (error?: Error) => void): void;
+};
+
+const preferenceKeys = new Set([
+  "utoolity.wallpaper",
+  "utoolity.lockscreen",
+  "utoolity.animations",
+  "utoolity.grain",
+  "utoolity.theme",
+  "utoolity.icon-size",
+]);
+const defaultPreferences: Record<string, string> = {
+  "utoolity.wallpaper": "Wraith",
 };
 
 function getSession(request: FastifyRequest): AuthSession {
@@ -55,6 +68,14 @@ async function readUsers(): Promise<InternUser[]> {
   }
 
   return parsed.users as InternUser[];
+}
+
+async function writeUsers(users: InternUser[]): Promise<void> {
+  await writeFile(
+    usersFilePath,
+    `${JSON.stringify({ users }, null, 2)}\n`,
+    "utf8",
+  );
 }
 
 function publicUser(user: InternUser): PublicUser {
@@ -194,6 +215,52 @@ export default async function authRoutes(app: FastifyInstance) {
     if (!userId) {
       return reply.code(401).send({
         message: "Not authenticated.",
+      });
+
+      app.get("/auth/preferences", async (request, reply) => {
+        const userId = getSession(request).userId;
+        if (!userId) return reply.code(401).send({ message: "Not authenticated." });
+
+        try {
+          const users = await readUsers();
+          const user = findById(users, userId);
+          if (!user) return reply.code(401).send({ message: "Session user no longer exists." });
+          return { preferences: { ...defaultPreferences, ...(user.preferences ?? {}) } };
+        } catch (error) {
+          request.log.error(error, "Unable to load user preferences");
+          return reply.code(500).send({ message: "Unable to load preferences." });
+        }
+      });
+
+      app.patch<{ Body: Record<string, unknown> }>("/auth/preferences", async (request, reply) => {
+        const userId = getSession(request).userId;
+        if (!userId) return reply.code(401).send({ message: "Not authenticated." });
+
+        const entries = Object.entries(request.body ?? {});
+        if (
+          entries.length === 0 ||
+          entries.some(
+            ([key, value]) =>
+              !preferenceKeys.has(key) ||
+              typeof value !== "string" ||
+              value.length > 100,
+          )
+        ) {
+          return reply.code(400).send({ message: "Invalid preference payload." });
+        }
+
+        try {
+          const users = await readUsers();
+          const user = findById(users, userId);
+          if (!user) return reply.code(401).send({ message: "Session user no longer exists." });
+          user.preferences = { ...defaultPreferences, ...(user.preferences ?? {}) };
+          for (const [key, value] of entries) user.preferences[key] = value as string;
+          await writeUsers(users);
+          return { preferences: user.preferences };
+        } catch (error) {
+          request.log.error(error, "Unable to save user preferences");
+          return reply.code(500).send({ message: "Unable to save preferences." });
+        }
       });
     }
 
