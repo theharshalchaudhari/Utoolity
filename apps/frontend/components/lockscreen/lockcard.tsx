@@ -81,7 +81,7 @@ function Lockcard({ socketDisconnected, onUnlock }: LockcardProps) {
   const dismissedRef = useRef(false);
 
   const [profile, setProfile] = useState<LockProfile | null>(null);
-  const [mounted, setMounted] = useState(false);
+  const [hydrated, setHydrated] = useState(false);
   const [now, setNow] = useState<Date | null>(null);
   const [hostname, setHostname] = useState("");
   const [password, setPassword] = useState("");
@@ -92,24 +92,22 @@ function Lockcard({ socketDisconnected, onUnlock }: LockcardProps) {
   const [error, setError] = useState("");
   const [fullscreen, setFullscreen] = useState(false);
 
-  // The server render and the first browser render must use identical state.
-  // Until the first effect runs, both password buttons remain disabled.
   useEffect(() => {
-    setMounted(true);
+    setHydrated(true);
   }, []);
 
-  const canEnterPassword =
-    mounted &&
+  const canEnterPassword = Boolean(
     !loadingProfile &&
-    profile?.locked === true &&
-    hostname.trim().length > 0;
+      profile?.locked === true &&
+      hostname.trim().length > 0,
+  );
 
-  const canSubmitUnlock =
-    mounted &&
+  const canSubmitUnlock = Boolean(
     !checking &&
-    !loadingProfile &&
-    profile !== null &&
-    hostname.trim().length > 0;
+      !loadingProfile &&
+      profile !== null &&
+      hostname.trim().length > 0,
+  );
 
   // A regular browser cannot read a Windows hostname itself. Ask the Next.js
   // frontend server for its hostname; use injected/saved values only as fallback.
@@ -504,7 +502,7 @@ function Lockcard({ socketDisconnected, onUnlock }: LockcardProps) {
 
               <button
                 type="button"
-                disabled={!canEnterPassword}
+                disabled={!hydrated || !canEnterPassword}
                 onClick={() => {
                   setError("");
                   setPasswordMode(true);
@@ -563,7 +561,7 @@ function Lockcard({ socketDisconnected, onUnlock }: LockcardProps) {
 
               <button
                 type="submit"
-                disabled={!canSubmitUnlock}
+                disabled={!hydrated || !canSubmitUnlock}
                 className="flex w-full items-center justify-center gap-2 rounded-xl bg-primary px-4 py-3 text-sm font-semibold text-primary-foreground transition hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-60"
               >
                 <ShieldCheck className="size-4" />
