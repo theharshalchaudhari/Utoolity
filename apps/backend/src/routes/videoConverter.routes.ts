@@ -1,10 +1,9 @@
-import { Router } from 'express';
-import { upload } from '../middleware/upload.middleware';
-import * as controller from '../controllers/videoConverter.controller';
+import type { FastifyPluginAsync } from "fastify";
+import * as controller from "../controllers/videoConverter.controller.js";
 
-const router = Router();
+const videoConverterRoutes: FastifyPluginAsync = async (app) => {
+  app.post("/", controller.convert);
+  app.get<{ Params: { jobId: string } }>("/status/:jobId", controller.getStatus);
+};
 
-router.post('/', upload.array('videos'), controller.convert);
-router.get('/status/:jobId', controller.getStatus);
-
-export default router;
+export default videoConverterRoutes;

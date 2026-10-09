@@ -1,10 +1,9 @@
-import { Router } from 'express';
-import { upload } from '../middleware/upload.middleware';
-import * as controller from '../controllers/imageClassification.controller';
+import type { FastifyPluginAsync } from "fastify";
+import * as controller from "../controllers/imageClassification.controller.js";
 
-const router = Router();
+const imageClassificationRoutes: FastifyPluginAsync = async (app) => {
+  app.post("/", controller.classify);
+  app.get<{ Params: { jobId: string } }>("/status/:jobId", controller.getStatus);
+};
 
-router.post('/', upload.array('images'), controller.classify);
-router.get('/status/:jobId', controller.getStatus);
-
-export default router;
+export default imageClassificationRoutes;

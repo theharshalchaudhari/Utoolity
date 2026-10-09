@@ -1,13 +1,17 @@
-import { randomUUID } from 'node:crypto';
+
+import type { UploadedFile } from "../types/uploaded-file.js";
+import {
+  createUploadJobResult,
+  getJobStatus,
+} from "./service-utils.js";
 
 export async function convert(
-  files: Express.Multer.File[],
+  files: UploadedFile[],
   settings: Record<string, unknown>,
 ) {
-  const jobId = randomUUID();
-  return { jobId, status: 'processing', files, settings };
+  return createUploadJobResult(files, settings, "processing");
 }
 
 export async function getStatus(jobId: string) {
-  return { jobId, status: 'completed' };
+  return getJobStatus(jobId);
 }

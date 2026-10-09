@@ -1,10 +1,13 @@
-import { Router } from 'express';
-import { upload } from '../middleware/upload.middleware';
-import * as controller from '../controllers/videoToImages.controller';
 
-const router = Router();
+import type { FastifyPluginAsync } from "fastify";
+import * as controller from "../controllers/videoToImages.controller.js";
 
-router.post('/', upload.array('videos'), controller.extract);
-router.get('/status/:jobId', controller.getStatus);
+const videoToImagesRoutes: FastifyPluginAsync = async (app) => {
+  app.post("/", controller.extract);
+  app.get<{ Params: { jobId: string } }>(
+    "/status/:jobId",
+    controller.getStatus,
+  );
+};
 
-export default router;
+export default videoToImagesRoutes;

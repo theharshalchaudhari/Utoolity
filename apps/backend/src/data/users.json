@@ -1,0 +1,13 @@
+
+{
+  "users": [
+    {
+      "id": "L-MHP-IXMT2",
+      "hostname": "L-MHP-IXMT2",
+      "displayName": "Harshal Chaudhari",
+      "password": "12345678",
+      "macId": "5C:87:9C:EF:FC:7C",
+      "role": "intern"
+    }
+  ]
+}

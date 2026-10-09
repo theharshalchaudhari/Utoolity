@@ -1,10 +1,9 @@
-import { Router } from 'express';
-import { upload } from '../middleware/upload.middleware';
-import * as controller from '../controllers/polygonAnnotation.controller';
+import type { FastifyPluginAsync } from "fastify";
+import * as controller from "../controllers/polygonAnnotation.controller.js";
 
-const router = Router();
+const polygonAnnotationRoutes: FastifyPluginAsync = async (app) => {
+  app.post("/", controller.save);
+  app.get<{ Params: { jobId: string } }>("/status/:jobId", controller.getStatus);
+};
 
-router.post('/', upload.array('images'), controller.save);
-router.get('/status/:jobId', controller.getStatus);
-
-export default router;
+export default polygonAnnotationRoutes;

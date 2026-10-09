@@ -1,10 +1,9 @@
-import { Router } from 'express';
-import { upload } from '../middleware/upload.middleware';
-import * as controller from '../controllers/boundingBox.controller';
+import type { FastifyPluginAsync } from "fastify";
+import * as controller from "../controllers/boundingBox.controller.js";
 
-const router = Router();
+const boundingBoxRoutes: FastifyPluginAsync = async (app) => {
+  app.post("/", controller.save);
+  app.get<{ Params: { jobId: string } }>("/status/:jobId", controller.getStatus);
+};
 
-router.post('/', upload.array('files'), controller.save);
-router.get('/status/:jobId', controller.getStatus);
-
-export default router;
+export default boundingBoxRoutes;

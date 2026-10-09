@@ -12,6 +12,7 @@
   },
   "dependencies": {
     "@repo/theme": "workspace:*",
+    "axios": "catalog:",
     "@repo/ui": "workspace:*",
     "class-variance-authority": "catalog:",
     "clsx": "catalog:",
