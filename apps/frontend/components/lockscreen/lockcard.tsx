@@ -81,6 +81,7 @@ function Lockcard({ socketDisconnected, onUnlock }: LockcardProps) {
   const dismissedRef = useRef(false);
 
   const [profile, setProfile] = useState<LockProfile | null>(null);
+  const [mounted, setMounted] = useState(false);
   const [now, setNow] = useState<Date | null>(null);
   const [hostname, setHostname] = useState("");
   const [password, setPassword] = useState("");
@@ -91,10 +92,27 @@ function Lockcard({ socketDisconnected, onUnlock }: LockcardProps) {
   const [error, setError] = useState("");
   const [fullscreen, setFullscreen] = useState(false);
 
-  // Resolve the assigned workstation identity from a provisioned device value.
-  // A normal browser cannot read the Windows hostname directly. The optional
-  // global can be supplied by a trusted desktop wrapper/local agent; localStorage
-  // supports browsers that were already enrolled by the previous setup flow.
+  // The server render and the first browser render must use identical state.
+  // Until the first effect runs, both password buttons remain disabled.
+  useEffect(() => {
+    setMounted(true);
+  }, []);
+
+  const canEnterPassword =
+    mounted &&
+    !loadingProfile &&
+    profile?.locked === true &&
+    hostname.trim().length > 0;
+
+  const canSubmitUnlock =
+    mounted &&
+    !checking &&
+    !loadingProfile &&
+    profile !== null &&
+    hostname.trim().length > 0;
+
+  // A regular browser cannot read a Windows hostname itself. Ask the Next.js
+  // frontend server for its hostname; use injected/saved values only as fallback.
   useEffect(() => {
     let active = true;
 
@@ -105,7 +123,40 @@ function Lockcard({ socketDisconnected, onUnlock }: LockcardProps) {
       const savedHostname = window.localStorage
         .getItem(HOSTNAME_STORAGE_KEY)
         ?.trim();
-      const deviceHostname = injectedHostname || savedHostname || "";
+
+      // Ask the Next.js frontend server for its machine hostname. Browsers do
+      // not have permission to read the Windows hostname directly.
+      let frontendHostname = "";
+      try {
+        const hostnameResponse = await fetch("/internal/device-hostname", {
+          method: "GET",
+          cache: "no-store",
+          credentials: "same-origin",
+        });
+
+        if (hostnameResponse.ok) {
+          const payload: unknown = await hostnameResponse.json();
+          if (
+            typeof payload === "object" &&
+            payload !== null &&
+            "hostname" in payload &&
+            typeof payload.hostname === "string"
+          ) {
+            frontendHostname = payload.hostname.trim();
+          }
+        } else {
+          console.error(
+            "Could not resolve frontend hostname:",
+            hostnameResponse.status,
+          );
+        }
+      } catch (hostnameError) {
+        console.error("Could not resolve frontend hostname:", hostnameError);
+      }
+
+      // The fresh frontend hostname takes priority over any stale saved value.
+      const deviceHostname =
+        frontendHostname || injectedHostname || savedHostname || "";
 
       if (!deviceHostname) {
         if (active) {
@@ -453,7 +504,7 @@ function Lockcard({ socketDisconnected, onUnlock }: LockcardProps) {
 
               <button
                 type="button"
-                disabled={loadingProfile || !profile?.locked || !hostname}
+                disabled={!canEnterPassword}
                 onClick={() => {
                   setError("");
                   setPasswordMode(true);
@@ -512,7 +563,7 @@ function Lockcard({ socketDisconnected, onUnlock }: LockcardProps) {
 
               <button
                 type="submit"
-                disabled={checking || loadingProfile || !profile || !hostname}
+                disabled={!canSubmitUnlock}
                 className="flex w-full items-center justify-center gap-2 rounded-xl bg-primary px-4 py-3 text-sm font-semibold text-primary-foreground transition hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-60"
               >
                 <ShieldCheck className="size-4" />

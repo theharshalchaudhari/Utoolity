@@ -1,3 +1,4 @@
+
 import Fastify from "fastify";
 import cors from "@fastify/cors";
 import cookie from "@fastify/cookie";
@@ -17,6 +18,7 @@ import videoMergeRoutes from "./routes/videoMerge.routes.js";
 import { errorMiddleware } from "./middleware/error.middleware.js";
 
 const sessionSecret = process.env.SESSION_SECRET;
+const isProduction = process.env.NODE_ENV === "production";
 
 if (!sessionSecret || Buffer.byteLength(sessionSecret, "utf8") < 32) {
   throw new Error(
@@ -24,16 +26,79 @@ if (!sessionSecret || Buffer.byteLength(sessionSecret, "utf8") < 32) {
   );
 }
 
-const frontendUrl = process.env.FRONTEND_URL ?? "http://localhost:3000";
+const allowedOrigins = new Set(
+  (process.env.FRONTEND_URL ?? "http://localhost:3000")
+    .split(",")
+    .map((origin) => origin.trim())
+    .filter(Boolean),
+);
+
+function isAllowedDevelopmentOrigin(origin: string): boolean {
+  try {
+    const url = new URL(origin);
+
+    if (url.protocol !== "http:") {
+      return false;
+    }
+
+    const hostname = url.hostname.toLowerCase();
+
+    if (hostname === "localhost" || hostname === "127.0.0.1") {
+      return true;
+    }
+
+    const octets = hostname.split(".").map(Number);
+
+    if (
+      octets.length !== 4 ||
+      octets.some(
+        (octet) =>
+          !Number.isInteger(octet) || octet < 0 || octet > 255,
+      )
+    ) {
+      return false;
+    }
+
+    const [first, second] = octets;
+
+    return (
+      first === 10 ||
+      (first === 192 && second === 168) ||
+      (first === 172 && second >= 16 && second <= 31)
+    );
+  } catch {
+    return false;
+  }
+}
 
 const app = Fastify({
   logger: true,
   bodyLimit: 50 * 1024 * 1024,
 });
 
+// Configure the error handler before registering routes.
+app.setErrorHandler(errorMiddleware);
+
 await app.register(cors, {
-  origin: frontendUrl,
   credentials: true,
+
+  origin(origin, callback) {
+    // Requests without an Origin header (for example, server-side health checks).
+    if (!origin) {
+      return callback(null, true);
+    }
+
+    const isAllowed =
+      allowedOrigins.has(origin) ||
+      (!isProduction && isAllowedDevelopmentOrigin(origin));
+
+    if (isAllowed) {
+      return callback(null, origin);
+    }
+
+    app.log.warn({ origin }, "Blocked request by CORS policy");
+    return callback(new Error("Origin is not allowed by CORS"), false);
+  },
 });
 
 await app.register(cookie);
@@ -45,7 +110,7 @@ await app.register(session, {
     path: "/",
     httpOnly: true,
     sameSite: "lax",
-    secure: process.env.NODE_ENV === "production",
+    secure: isProduction,
     maxAge: 8 * 60 * 60,
   },
   saveUninitialized: false,
@@ -98,7 +163,5 @@ await app.register(boundingBoxRoutes, {
 await app.register(videoMergeRoutes, {
   prefix: "/api/tools/video-merge",
 });
-
-app.setErrorHandler(errorMiddleware);
 
 export default app;
