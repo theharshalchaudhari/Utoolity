@@ -21,8 +21,15 @@ type PolygonCanvasProps = {
   onCanvasClick: (point: Point) => void;
   onSelectPoint: (index: number | null) => void;
   onMovePoint: (index: number, point: Point) => void;
+  onMovePolygonPoint: (polygonId: string, index: number, point: Point) => void;
+  onSelectPolygon: (polygonId: string | null) => void;
+  onAddPointToPolygon: (polygonId: string, edgeIndex: number, point: Point) => void;
+  onDeletePolygonPoint: (polygonId: string, index: number) => void;
+  selectedPolygonId: string | null;
+  removeMode?: boolean;
   onCompletePolygon: () => void;
   onZoomChange?: (zoom: number) => void;
+  onImageSizeChange?: (size: { width: number; height: number }) => void;
 };
 
 const MIN_ZOOM = 1;
@@ -45,8 +52,15 @@ export function PolygonCanvas({
   onCanvasClick,
   onSelectPoint,
   onMovePoint,
+  onMovePolygonPoint,
+  onSelectPolygon,
+  onAddPointToPolygon,
+  onDeletePolygonPoint,
+  selectedPolygonId,
+  removeMode = false,
   onCompletePolygon,
   onZoomChange,
+  onImageSizeChange,
 }: PolygonCanvasProps) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
@@ -54,8 +68,10 @@ export function PolygonCanvas({
 
   const [zoom, setZoom] = useState(1);
   const [imageLoaded, setImageLoaded] = useState(false);
+  const [hoveredPoint, setHoveredPoint] = useState<{ polygonId: string | null; index: number } | null>(null);
 
   const zoomRef = useRef(1);
+  const fitScaleRef = useRef(1);
   const offsetRef = useRef({ x: 0, y: 0 });
 
   const isPanningRef = useRef(false);
@@ -63,6 +79,7 @@ export function PolygonCanvas({
   const panOffsetStartRef = useRef({ x: 0, y: 0 });
 
   const editingPointRef = useRef<number | null>(null);
+  const editingPolygonRef = useRef<string | null>(null);
 
   const setZoomValue = useCallback(
     (value: number) => {
@@ -104,8 +121,9 @@ export function PolygonCanvas({
       };
     }
 
-    const imageWidth = image.naturalWidth * zoomRef.current;
-    const imageHeight = image.naturalHeight * zoomRef.current;
+    const scale = fitScaleRef.current * zoomRef.current;
+    const imageWidth = image.naturalWidth * scale;
+    const imageHeight = image.naturalHeight * scale;
 
     return {
       x: (width - imageWidth) / 2 + offsetRef.current.x,
@@ -116,13 +134,18 @@ export function PolygonCanvas({
   }, [getCanvasSize]);
 
   const resetZoom = useCallback(() => {
+    const image = imageRef.current;
+    const { width, height } = getCanvasSize();
+    const fit = image && width && height
+      ? Math.min(1, width / image.naturalWidth, height / image.naturalHeight)
+      : 1;
     offsetRef.current = {
       x: 0,
       y: 0,
     };
 
-    setZoomValue(1);
-  }, [setZoomValue]);
+    setZoomValue(fit);
+  }, [getCanvasSize, setZoomValue]);
 
   const zoomIn = useCallback(() => {
     setZoomValue(zoomRef.current + BUTTON_ZOOM_STEP);
@@ -147,10 +170,10 @@ export function PolygonCanvas({
       return {
         x:
           (clientX - rect.left - transform.x) /
-          zoomRef.current,
+          (fitScaleRef.current * zoomRef.current),
         y:
           (clientY - rect.top - transform.y) /
-          zoomRef.current,
+          (fitScaleRef.current * zoomRef.current),
       };
     },
     [getImageTransform],
@@ -163,10 +186,10 @@ export function PolygonCanvas({
       return {
         x:
           transform.x +
-          point.x * zoomRef.current,
+          point.x * fitScaleRef.current * zoomRef.current,
         y:
           transform.y +
-          point.y * zoomRef.current,
+          point.y * fitScaleRef.current * zoomRef.current,
       };
     },
     [getImageTransform],
@@ -204,6 +227,53 @@ export function PolygonCanvas({
     },
     [imageToScreen, points],
   );
+
+  const findPolygonPointAtScreenPosition = useCallback(
+    (screenX: number, screenY: number) => {
+      for (let polygonIndex = polygons.length - 1; polygonIndex >= 0; polygonIndex -= 1) {
+        const polygon = polygons[polygonIndex];
+        for (let pointIndex = polygon.points.length - 1; pointIndex >= 0; pointIndex -= 1) {
+          const point = imageToScreen(polygon.points[pointIndex]);
+          if (Math.hypot(point.x - screenX, point.y - screenY) <= Math.max(12, POINT_RADIUS * 2)) {
+            return { polygonId: polygon.id, index: pointIndex };
+          }
+        }
+      }
+      return null;
+    },
+    [imageToScreen, polygons],
+  );
+
+  const findNearestPolygonEdge = useCallback((point: Point) => {
+    let nearest: { polygonId: string; edgeIndex: number; distance: number } | undefined;
+    for (const polygon of polygons) {
+      for (const [index, start] of polygon.points.entries()) {
+        const end = polygon.points[(index + 1) % polygon.points.length];
+        const dx = end.x - start.x;
+        const dy = end.y - start.y;
+        const lengthSquared = dx * dx + dy * dy || 1;
+        const t = Math.max(0, Math.min(1, ((point.x - start.x) * dx + (point.y - start.y) * dy) / lengthSquared));
+        const distance = Math.hypot(point.x - (start.x + t * dx), point.y - (start.y + t * dy));
+        if (!nearest || distance < nearest.distance) nearest = { polygonId: polygon.id, edgeIndex: index, distance };
+      }
+    }
+    return nearest ?? null;
+  }, [polygons]);
+
+  const findPolygonAtImagePoint = useCallback((point: Point) => {
+    for (const polygon of polygons) {
+      let inside = false;
+      for (let index = 0, previous = polygon.points.length - 1; index < polygon.points.length; previous = index++) {
+        const current = polygon.points[index];
+        const prior = polygon.points[previous];
+        const intersects = ((current.y > point.y) !== (prior.y > point.y)) &&
+          point.x < ((prior.x - current.x) * (point.y - current.y)) / (prior.y - current.y) + current.x;
+        if (intersects) inside = !inside;
+      }
+      if (inside) return polygon.id;
+    }
+    return null;
+  }, [polygons]);
 
   const drawPoint = useCallback(
     (
@@ -329,11 +399,15 @@ export function PolygonCanvas({
         ctx,
         polygon.points,
         true,
-        false,
+        polygon.id === selectedPolygonId,
       );
 
       polygon.points.forEach((point) => {
-        drawPoint(ctx, point, false);
+        drawPoint(
+          ctx,
+          point,
+          hoveredPoint?.polygonId === polygon.id && hoveredPoint.index === polygon.points.indexOf(point),
+        );
       });
     });
 
@@ -355,30 +429,6 @@ export function PolygonCanvas({
       });
     }
 
-    if (
-      tool === "annotate" &&
-      points.length >= 3
-    ) {
-      const firstPoint = imageToScreen(points[0]);
-
-      ctx.beginPath();
-
-      ctx.arc(
-        firstPoint.x,
-        firstPoint.y,
-        CLOSE_DISTANCE,
-        0,
-        Math.PI * 2,
-      );
-
-      ctx.strokeStyle =
-        "rgba(34, 197, 94, 0.3)";
-
-      ctx.lineWidth = 1;
-      ctx.setLineDash([4, 4]);
-      ctx.stroke();
-      ctx.setLineDash([]);
-    }
   }, [
     drawPoint,
     drawPolygon,
@@ -388,7 +438,9 @@ export function PolygonCanvas({
     points,
     polygons,
     selectedPointIndex,
+    selectedPolygonId,
     tool,
+    hoveredPoint,
   ]);
 
   const resizeCanvas = useCallback(() => {
@@ -431,6 +483,15 @@ export function PolygonCanvas({
       );
     }
 
+    const image = imageRef.current;
+    if (image && zoomRef.current === MIN_ZOOM) {
+      fitScaleRef.current = Math.min(
+        1,
+        rect.width / image.naturalWidth,
+        rect.height / image.naturalHeight,
+      );
+    }
+
     draw();
   }, [draw]);
 
@@ -460,7 +521,15 @@ export function PolygonCanvas({
         y: 0,
       };
 
+      const { width, height } = getCanvasSize();
+      fitScaleRef.current = width && height
+        ? Math.min(1, width / image.naturalWidth, height / image.naturalHeight)
+        : 1;
       setZoomValue(1);
+      onImageSizeChange?.({
+        width: image.naturalWidth,
+        height: image.naturalHeight,
+      });
     };
 
     image.onerror = () => {
@@ -474,7 +543,7 @@ export function PolygonCanvas({
       image.onload = null;
       image.onerror = null;
     };
-  }, [imageSrc, setZoomValue]);
+  }, [getCanvasSize, imageSrc, onImageSizeChange, setZoomValue]);
 
   useEffect(() => {
     const container = containerRef.current;
@@ -494,7 +563,7 @@ export function PolygonCanvas({
 
   useEffect(() => {
     draw();
-  }, [draw]);
+  }, [draw, zoom]);
 
   useEffect(() => {
     const handleZoomIn = () => zoomIn();
@@ -600,17 +669,37 @@ export function PolygonCanvas({
         );
 
       if (tool === "edit") {
-        if (pointIndex !== null) {
+        const polygonPoint = findPolygonPointAtScreenPosition(screenX, screenY);
+        if (removeMode && polygonPoint) {
+          onDeletePolygonPoint(polygonPoint.polygonId, polygonPoint.index);
+          onSelectPolygon(polygonPoint.polygonId);
+          return;
+        }
+        if (event.altKey) {
+          const edge = findNearestPolygonEdge(imagePoint);
+          if (edge) {
+            onAddPointToPolygon(edge.polygonId, edge.edgeIndex, imagePoint);
+            onSelectPolygon(edge.polygonId);
+          }
+          return;
+        }
+        if (polygonPoint) {
+          onSelectPolygon(polygonPoint.polygonId);
+          onSelectPoint(polygonPoint.index);
+          editingPointRef.current = polygonPoint.index;
+          editingPolygonRef.current = polygonPoint.polygonId;
+          canvas.setPointerCapture(event.pointerId);
+        } else if (pointIndex !== null) {
           onSelectPoint(pointIndex);
-
           editingPointRef.current =
             pointIndex;
-
+          editingPolygonRef.current = null;
           canvas.setPointerCapture(
             event.pointerId,
           );
         } else {
           onSelectPoint(null);
+          onSelectPolygon(findPolygonAtImagePoint(imagePoint));
         }
 
         return;
@@ -636,7 +725,7 @@ export function PolygonCanvas({
           imagePoint,
           points[0],
           CLOSE_DISTANCE /
-            zoomRef.current,
+            (fitScaleRef.current * zoomRef.current),
         )
       ) {
         onCompletePolygon();
@@ -651,9 +740,16 @@ export function PolygonCanvas({
       onCanvasClick,
       onCompletePolygon,
       onSelectPoint,
+      onSelectPolygon,
+      onAddPointToPolygon,
+      onDeletePolygonPoint,
+      findNearestPolygonEdge,
+      findPolygonPointAtScreenPosition,
+      findPolygonAtImagePoint,
       points,
       screenToImage,
       tool,
+      removeMode,
     ],
   );
 
@@ -681,6 +777,17 @@ export function PolygonCanvas({
 
         draw();
         return;
+      }
+
+      const canvas = canvasRef.current;
+      if (canvas && tool === "edit") {
+        const rect = canvas.getBoundingClientRect();
+        setHoveredPoint(findPolygonPointAtScreenPosition(
+          event.clientX - rect.left,
+          event.clientY - rect.top,
+        ));
+      } else {
+        setHoveredPoint(null);
       }
 
       const editingIndex =
@@ -722,12 +829,13 @@ export function PolygonCanvas({
         );
       }
 
-      onMovePoint(
-        editingIndex,
-        imagePoint,
-      );
+      if (editingPolygonRef.current) {
+        onMovePolygonPoint(editingPolygonRef.current, editingIndex, imagePoint);
+      } else {
+        onMovePoint(editingIndex, imagePoint);
+      }
     },
-    [draw, onMovePoint, screenToImage, tool],
+    [draw, findPolygonPointAtScreenPosition, onMovePoint, onMovePolygonPoint, screenToImage, tool],
   );
 
   const handlePointerUp = useCallback(
@@ -754,6 +862,7 @@ export function PolygonCanvas({
         editingPointRef.current !== null
       ) {
         editingPointRef.current = null;
+        editingPolygonRef.current = null;
 
         if (
           canvas?.hasPointerCapture(
@@ -840,19 +949,21 @@ export function PolygonCanvas({
       const oldTransform =
         getImageTransform();
 
+      const oldScale = fitScaleRef.current * oldZoom;
       const imageX =
         (mouseX - oldTransform.x) /
-        oldZoom;
+        oldScale;
 
       const imageY =
         (mouseY - oldTransform.y) /
-        oldZoom;
+        oldScale;
 
+      const newScale = fitScaleRef.current * nextZoom;
       const newImageWidth =
-        image.naturalWidth * nextZoom;
+        image.naturalWidth * newScale;
 
       const newImageHeight =
-        image.naturalHeight * nextZoom;
+        image.naturalHeight * newScale;
 
       const centeredX =
         (canvas.clientWidth -
@@ -868,12 +979,12 @@ export function PolygonCanvas({
         x:
           mouseX -
           centeredX -
-          imageX * nextZoom,
+          imageX * newScale,
 
         y:
           mouseY -
           centeredY -
-          imageY * nextZoom,
+          imageY * newScale,
       };
 
       setZoomValue(nextZoom);

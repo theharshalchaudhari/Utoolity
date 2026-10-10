@@ -64,7 +64,11 @@ export default function Profile({ onSleep }: ProfileProps) {
   };
 
   if (profileState === "loading" || profileState === "unauthenticated") {
-    return null;
+    return (
+      <div className="fixed left-5 top-4 z-50 rounded-full border border-border bg-background px-3.5 py-2 text-sm font-semibold text-foreground shadow-lg">
+        {profile?.displayName ?? "Profile"}
+      </div>
+    );
   }
 
   if (profileState === "error" || !profile) {

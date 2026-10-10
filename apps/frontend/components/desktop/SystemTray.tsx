@@ -2,6 +2,7 @@
 
 import { useCallback, useState } from "react";
 import AllWindows from "./SystemTray/AllWindows";
+import type { WindowSummary } from "./SystemTray/AllWindows";
 import Search, { type SearchItem } from "./SystemTray/Search";
 import Notifications from "./SystemTray/Notifications";
 import DateTime from "./SystemTray/DateTime";
@@ -10,13 +11,19 @@ type Panel = "search" | "notifications" | "datetime" | null;
 
 type SystemTrayProps = {
   searchItems?: SearchItem[];
-  onAllWindows?: () => void;
+  windows?: WindowSummary[];
+  onFocusWindow?: (key: string) => void;
+  onCloseWindow?: (key: string) => void;
+  onSleep?: () => void;
   onLock?: () => void;
 };
 
 export default function SystemTray({
   searchItems = [],
-  onAllWindows,
+  windows = [],
+  onFocusWindow = () => undefined,
+  onCloseWindow = () => undefined,
+  onSleep,
   onLock,
 }: SystemTrayProps) {
   const [panel, setPanel] = useState<Panel>(null);
@@ -29,7 +36,11 @@ export default function SystemTray({
 
   return (
     <div className="fixed right-4 top-4 z-[80] flex items-center gap-2">
-      <AllWindows onClick={onAllWindows} />
+      <AllWindows
+        windows={windows}
+        onFocus={onFocusWindow}
+        onClose={onCloseWindow}
+      />
 
       <Search
         items={searchItems}
@@ -48,6 +59,7 @@ export default function SystemTray({
         open={panel === "datetime"}
         onToggle={() => togglePanel("datetime")}
         onClose={closePanel}
+        onSleep={onSleep}
         onLock={onLock}
       />
     </div>

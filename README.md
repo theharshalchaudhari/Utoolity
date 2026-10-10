@@ -1,1170 +1,716 @@
-# Media Utility Tool
+# Utoolity V2 — Media Utility Platform
 
-````markdown
-## Getting Started
+Utoolity is a pnpm monorepo built with **Next.js, React, TypeScript, Tailwind CSS, and Fastify**. It provides reusable media-processing tools through a shared frontend and backend architecture.
 
-### Prerequisites
+This README replaces the previous README and serves as the primary technical reference for interns and AI coding assistants. Read it before making changes. Reuse the existing architecture, components, API conventions, and workspace configuration instead of building an independent project.
 
-- Node.js 18 or higher
-- pnpm 8.15.0 or higher
-- FFmpeg installed on your system (required for backend video/image processing)
+## 1. Project Architecture
 
-Verify FFmpeg is installed:
+| Location | Responsibility |
+|---|---|
+| `apps/frontend/` | Next.js pages, components, hooks, and API clients |
+| `apps/backend/` | Fastify routes, validation, file handling, and processing |
+| `packages/ui/` | Shared shadcn components |
+| `packages/theme/` | Tweakcn theme variables |
+| `packages/config/` | Shared project configuration |
+| `pnpm-workspace.yaml` | Workspace packages and dependency catalog |
+
+### Mandatory rules
+
+- Use **Fastify + TypeScript** for all new backend endpoints.
+- Do not introduce Express, Multer, Python, or a separate backend application.
+- Use `@fastify/multipart` for new Fastify multipart handling.
+- Keep frontend presentation separate from backend processing.
+- Reuse existing API clients, hooks, shared folder selectors, and UI components.
+- Validate all incoming data and never trust client-provided filesystem paths.
+- Inspect existing code before creating a new utility or duplicating functionality.
+
+## 2. Fork, Clone, and Submit a Pull Request
+
+All contributions must be made through a fork of the original repository. Do not clone the original repository to create an independent project.
+
+Original repository:
+
+`https://github.com/theharshalchaudhari/Utoolity`
+
+### Step 1 — Fork the repository
+
+Open the original repository on GitHub and select **Fork**. Create the fork under your own GitHub account.
+
+Your fork will have a URL similar to:
+
+`https://github.com/YOUR_USERNAME/Utoolity`
+
+Replace `YOUR_USERNAME` with your GitHub username.
+
+### Step 2 — Clone your fork
+
+Clone your fork, not the original repository.
 
 ```bash
-ffmpeg -version
-```
-
-If not installed, download from https://ffmpeg.org/download.html and add it to your PATH.
-
-### Step 1: Clone the Repository
-
-```bash
-git clone https://github.com/theharshalchaudhari/Utoolity.git
+git clone https://github.com/YOUR_USERNAME/Utoolity.git
 cd Utoolity
 ```
 
-### Step 2: Install Dependencies
+Configure the remotes:
+
+```bash
+git remote rename origin fork
+git remote add upstream https://github.com/theharshalchaudhari/Utoolity.git
+git remote -v
+```
+
+- `fork` points to your fork, where you have permission to push.
+- `upstream` points to the original Utoolity repository.
+
+### Step 3 — Work on `main` only
+
+**Do not create an additional feature branch.** For assigned intern tasks, work directly on the `main` branch of your fork and submit the pull request from that branch.
+
+Before starting, synchronize your fork with upstream:
+
+```bash
+git switch main
+git fetch upstream
+git merge --ff-only upstream/main
+git push fork main
+```
+
+If the fast-forward merge fails, stop and resolve the divergence properly. Do not force-push or overwrite work without understanding the difference.
+
+Implement your assigned changes on your fork's `main` branch. Commit only the relevant source changes.
+
+### Step 4 — Validate and commit
+
+```bash
+git status
+git diff --check
+git diff
+```
+
+Run the relevant type checks, lint commands, and builds before committing.
+
+```bash
+git add <relevant-files>
+git commit -m "feat: implement assigned task"
+git push fork main
+```
+
+Replace `<relevant-files>` with the actual files you changed. Never stage environment secrets, local datasets, caches, or generated artifacts.
+
+### Step 5 — Create the pull request
+
+Open your fork on GitHub and select **Contribute → Open pull request**, or use the repository's pull-request interface.
+
+Configure the pull request as follows:
+
+| Setting | Value |
+|---|---|
+| Base repository | `theharshalchaudhari/Utoolity` |
+| Base branch | `main` |
+| Head repository | `YOUR_USERNAME/Utoolity` |
+| Compare branch | `main` |
+
+The direction must be:
+
+`YOUR_USERNAME/Utoolity:main` → `theharshalchaudhari/Utoolity:main`
+
+Do not submit a PR against your own fork. Do not create a separate branch for this workflow.
+
+Include a description of the changes, affected features, validation commands and actual results, screenshots where relevant, and any known limitations. Review the diff before creating the PR and address requested changes through subsequent commits on your fork's `main`.
+
+## 3. Workspace and Dependencies
+
+The existing workspace is defined by the root `pnpm-workspace.yaml`:
+
+```yaml
+packages:
+  - "apps/*"
+  - "packages/*"
+  - "packages/config/*"
+```
+
+The root catalog is the source of truth for dependency versions.
+
+Important catalog entries include:
+
+| Dependency | Version |
+|---|---|
+| React / React DOM | `19.2.6` |
+| Next.js | `16.2.11` |
+| Tailwind CSS | `4.3.0` |
+| TypeScript | `6.0.3` |
+| Turborepo | `2.9.16` |
+| Fastify | `5.6.2` |
+| `@fastify/cookie` | `11.0.2` |
+| `@fastify/cors` | `11.1.0` |
+| `@fastify/session` | `11.1.0` |
+| `@fastify/multipart` | `^9.0.3` |
+| Sharp | `0.33.4` |
+| Zod | `3.23.8` |
+| Axios | `1.20.0` |
+| Lucide React | `1.17.0` |
+
+The full catalog in `pnpm-workspace.yaml` is authoritative.
+
+### Dependency rules
+
+- Use `"catalog:"` for dependencies managed by the workspace catalog.
+- Use `"workspace:*"` for internal workspace packages.
+- Never hardcode catalog-managed versions in individual `package.json` files.
+- Do not independently upgrade dependencies without a concrete requirement.
+- Preserve the existing pnpm configuration and lockfile.
+- Do not create nested workspaces or duplicate shared dependencies.
+
+### Installation
+
+Check the root `package.json` for the expected Node.js and pnpm versions, then run:
 
 ```bash
 pnpm install
 ```
 
-### Step 3: Set Up Environment Variables
+Configure local environment files using the existing `.env.example` files and application configuration. Never commit real secrets, session keys, access tokens, or private API credentials.
 
-**Frontend** — create `apps/frontend/.env.local`:
-
-```env
-NEXT_PUBLIC_API_URL=http://localhost:5000/api
-```
-
-**Backend** — create `apps/backend/.env`:
-
-```env
-PORT=5000
-FRONTEND_URL=http://localhost:3000
-UPLOAD_DIR=./uploads
-OUTPUT_DIR=./outputs
-```
-
-### Step 4: Start Development Servers
-
-Run both frontend and backend together:
+Start development using the existing root scripts:
 
 ```bash
 pnpm dev
 ```
 
-Or run them separately:
+Inspect `package.json` before assuming any script exists.
+
+## 4. Shared shadcn Components and Theme
+
+### Installing shadcn components
+
+Shared shadcn components belong in `packages/ui/`.
 
 ```bash
-pnpm dev:frontend    # Frontend at http://localhost:3000
-pnpm dev:backend     # Backend at http://localhost:5000
+cd packages/ui
+pnpm dlx shadcn@latest add button card dialog input switch tabs tooltip
 ```
 
-- Frontend: `http://localhost:3000`
-- Backend: `http://localhost:5000`
+Install only the components required for your task. Check generated imports, aliases, exports, and the existing `cn` convention.
 
-### Step 5: Access Your Assigned Tool
+For third-party registries, configure the exact registry endpoint provided by the component's official documentation. Do not invent registry URLs.
 
-Navigate to your tool's route:
+### Theme rules
 
-```
-http://localhost:3000/tools/{your-tool-route}
-```
+**Use the existing Tweakcn theme through Tailwind CSS. Do not hardcode colors.**
 
-| Task | Tool Name | Route Path |
-|------|-----------|------------|
-| Task 1 | Video to Images | `/tools/video-to-images` |
-| Task 2 | Video Trim | `/tools/video-trim` |
-| Task 3 | Video Format Converter | `/tools/video-converter` |
-| Task 4 | Image Format Converter | `/tools/image-converter` |
-| Task 5 | Image Separation/Classification | `/tools/image-classification` |
-| Task 6 | Polygon ROI Annotation | `/tools/polygon-annotation` |
-| Task 7 | Bounding Box Annotation | `/tools/bounding-box` |
-| Task 8 | Video Merge | `/tools/video-merge` |
+Use semantic classes such as:
 
-### Step 6: Production Build
+- `bg-background`, `text-foreground`
+- `bg-card`, `text-card-foreground`
+- `bg-primary`, `text-primary-foreground`
+- `bg-muted`, `text-muted-foreground`
+- `border-border`, `bg-accent`, `ring-ring`
 
-```bash
-pnpm build
-pnpm start
-```
+Do not introduce hex, RGB, HSL, or fixed palette colors in feature components. Reuse shared shadcn components, the existing typography, and the configured theme variables. Avoid separate CSS files when Tailwind utilities and existing theme configuration are sufficient.
 
----
+## 5. Utoolity V2 — Augmentation
 
-## How to Use This README
+The augmentation feature contains four tasks: image-only augmentation, image-and-annotation augmentation, class balancing, and synthetic image generation.
 
-### For Contributors
+### Required locations
 
-1. Read the entire README to understand the project structure and guidelines
-2. Identify your assigned task from the Task Allocation section
-3. Review the Component and File Ownership section for your specific tool
-4. Follow the Development Guidelines when building your tool
-5. Ensure all Required Features are implemented
-6. Use theme variables throughout (no hardcoded colors)
-7. Submit your work for review
+```text
+apps/frontend/
+├── app/tools/augmentation/page.tsx
+├── api/augmentation.api.ts
+├── hooks/useAugmentation.ts
+└── components/augmentation/
+    ├── AugmentationImportButton.tsx
+    └── ...
 
-### For AI Assistants
-
-When providing assistance, follow this structure:
-
-1. Ask which task number or tool name the user is working on
-2. Provide guidance specific to that tool's components, hooks, and API files
-3. Ensure all code follows the theme guidelines and file structure
-4. Reference the appropriate route path and file locations
-5. Verify implementation against the Required Features checklist
-6. Confirm proper use of shadcn/ui components from `@repo/ui`
-7. Ensure TypeScript types are properly defined
-8. Remember: frontend uses `api/` (HTTP calls), backend uses `services/` (media processing)
-
-## Project Overview
-
-A comprehensive web-based media utility platform built with Next.js, TypeScript, and Tailwind CSS. This monorepo project consists of multiple video and image processing tools with a **separated frontend and backend architecture**.
-
-- **Frontend** (`apps/frontend/`) — UI, state, user interactions. Calls the backend via HTTP.
-- **Backend** (`apps/backend/`) — All media processing (FFmpeg, Sharp), file I/O, business logic.
-- **Shared Packages** (`packages/`) — Theme, UI components, configs.
-
-## Architecture Overview
-
-### Responsibility Split (Read This First)
-
-| Layer | Location | Job | Naming |
-|-------|----------|-----|--------|
-| Frontend UI | `apps/frontend/app/`, `apps/frontend/components/` | Render UI, handle user input | — |
-| Frontend state | `apps/frontend/hooks/` | Manage state, call `api/` | `useXxx.ts` |
-| Frontend HTTP | `apps/frontend/api/` | Call backend endpoints | `xxx.api.ts` |
-| Backend routing | `apps/backend/src/routes/` | Map URL → controller | `xxx.routes.ts` |
-| Backend HTTP | `apps/backend/src/controllers/` | Parse request, call service | `xxx.controller.ts` |
-| Backend processing | `apps/backend/src/services/` | FFmpeg / Sharp / file I/O | `xxx.service.ts` |
-
-**Rules to avoid confusion:**
-
-- Frontend NEVER contains media processing logic.
-- Backend NEVER renders UI.
-- Frontend uses `api/` (not "services") for HTTP calls.
-- Backend uses `services/` (not "api") for processing logic.
-
-### Data Flow
-
-```
-User
-  ↓
-Frontend Component (components/<tool>/)
-  ↓
-Frontend Hook (hooks/useXxx.ts)
-  ↓
-Frontend API client (api/xxx.api.ts)  →  HTTP  →
-                                        Backend Route (routes/xxx.routes.ts)
-                                          ↓
-                                        Backend Controller (controllers/xxx.controller.ts)
-                                          ↓
-                                        Backend Service (services/xxx.service.ts)  →  FFmpeg / Sharp
-                                          ↓
-                                        Response (JSON + file URL)
-  ←  HTTP  ←
-Frontend Hook updates state
-  ↓
-Frontend Component re-renders
+apps/backend/src/
+├── app.ts
+├── routes/augmentation.routes.ts
+└── augmentation/
+    ├── sher.ts
+    └── ...
 ```
 
-## Repository Structure
+All augmentation processing modules must live in `apps/backend/src/augmentation/`. All feature UI components must live in `apps/frontend/components/augmentation/`.
 
-```
-apps/
-├── frontend/                          # Next.js frontend (UI only)
-│   │
-│   ├── app/                           # Routes only - NO component logic
-│   │   ├── (auth)/                    # Authentication routes
-│   │   ├── dashboard/                 # Dashboard route
-│   │   ├── tools/                     # All tool routes
-│   │   │   ├── page.tsx               # Tools listing page
-│   │   │   ├── video-to-images/page.tsx
-│   │   │   ├── video-trim/page.tsx
-│   │   │   ├── video-converter/page.tsx
-│   │   │   ├── image-converter/page.tsx
-│   │   │   ├── image-classification/page.tsx
-│   │   │   ├── polygon-annotation/page.tsx
-│   │   │   ├── bounding-box/page.tsx
-│   │   │   └── video-merge/page.tsx
-│   │   ├── admin/                     # Admin routes
-│   │   ├── globals.css                # Global styles (imports theme)
-│   │   ├── layout.tsx                 # Root layout
-│   │   └── page.tsx                   # Landing page
-│   │
-│   ├── components/                    # All UI components
-│   │   ├── shared/                    # Used by multiple tools
-│   │   │   ├── navbar/Navbar.tsx
-│   │   │   ├── sidebar/Sidebar.tsx
-│   │   │   ├── file-upload/FileUpload.tsx
-│   │   │   ├── loading/LoadingState.tsx
-│   │   │   ├── error/ErrorState.tsx
-│   │   │   └── empty-state/EmptyState.tsx
-│   │   │
-│   │   ├── video-to-images/           # Tool-specific components
-│   │   ├── video-trim/
-│   │   ├── video-converter/
-│   │   ├── image-converter/
-│   │   ├── image-classification/
-│   │   ├── polygon-annotation/
-│   │   ├── bounding-box/
-│   │   └── video-merge/
-│   │
-│   ├── hooks/                         # One hook per tool
-│   │   ├── useVideoToImages.ts
-│   │   ├── useVideoTrim.ts
-│   │   ├── useVideoConverter.ts
-│   │   ├── useImageConverter.ts
-│   │   ├── useImageClassification.ts
-│   │   ├── usePolygonAnnotation.ts
-│   │   ├── useBoundingBox.ts
-│   │   ├── useVideoMerge.ts
-│   │   └── useProcessingMode.ts
-│   │
-│   ├── api/                           # HTTP clients (one per tool)
-│   │   ├── client.ts                  # Axios instance → backend
-│   │   ├── auth.api.ts
-│   │   ├── videoToImages.api.ts
-│   │   ├── videoTrim.api.ts
-│   │   ├── videoConverter.api.ts
-│   │   ├── imageConverter.api.ts
-│   │   ├── imageClassification.api.ts
-│   │   ├── polygonAnnotation.api.ts
-│   │   ├── boundingBox.api.ts
-│   │   └── videoMerge.api.ts
-│   │
-│   ├── lib/                           # Utilities and configuration
-│   │   ├── utils.ts
-│   │   ├── constants.ts
-│   │   ├── routes.ts
-│   │   └── config.ts
-│   │
-│   ├── types/                         # TypeScript types
-│   │   ├── common.ts
-│   │   ├── user.ts
-│   │   ├── tool.ts
-│   │   └── activity.ts
-│   │
-│   ├── public/                        # Static assets
-│   │
-│   ├── package.json
-│   ├── next.config.ts
-│   ├── tsconfig.json
-│   ├── components.json                # shadcn/ui configuration
-│   └── .env.example
-│
-└── backend/                           # Express + TypeScript API
-    │
-    ├── src/
-    │   │
-    │   ├── routes/                    # URL → controller mapping
-    │   │   ├── auth.routes.ts
-    │   │   ├── videoToImages.routes.ts
-    │   │   ├── videoTrim.routes.ts
-    │   │   ├── videoConverter.routes.ts
-    │   │   ├── imageConverter.routes.ts
-    │   │   ├── imageClassification.routes.ts
-    │   │   ├── polygonAnnotation.routes.ts
-    │   │   ├── boundingBox.routes.ts
-    │   │   └── videoMerge.routes.ts
-    │   │
-    │   ├── controllers/               # HTTP request → service
-    │   │   ├── videoToImages.controller.ts
-    │   │   ├── videoTrim.controller.ts
-    │   │   ├── videoConverter.controller.ts
-    │   │   ├── imageConverter.controller.ts
-    │   │   ├── imageClassification.controller.ts
-    │   │   ├── polygonAnnotation.controller.ts
-    │   │   ├── boundingBox.controller.ts
-    │   │   └── videoMerge.controller.ts
-    │   │
-    │   ├── services/                  # Actual media processing
-    │   │   ├── videoToImages.service.ts
-    │   │   ├── videoTrim.service.ts
-    │   │   ├── videoConverter.service.ts
-    │   │   ├── imageConverter.service.ts
-    │   │   ├── imageClassification.service.ts
-    │   │   ├── polygonAnnotation.service.ts
-    │   │   ├── boundingBox.service.ts
-    │   │   └── videoMerge.service.ts
-    │   │
-    │   ├── middleware/
-    │   │   ├── auth.middleware.ts
-    │   │   ├── upload.middleware.ts   # Multer config
-    │   │   └── error.middleware.ts
-    │   │
-    │   ├── utils/
-    │   │   ├── ffmpeg.ts
-    │   │   ├── fileUtils.ts
-    │   │   └── logger.ts
-    │   │
-    │   ├── types/
-    │   │   └── index.ts
-    │   │
-    │   ├── config/
-    │   │   └── index.ts
-    │   │
-    │   ├── app.ts                     # Express app setup
-    │   └── server.ts                  # Entry point
-    │
-    ├── uploads/                       # Temp uploads (gitignored)
-    ├── outputs/                       # Processed files (gitignored)
-    ├── package.json
-    ├── tsconfig.json
-    └── .env.example
+Reuse the existing shared folder selector under `apps/frontend/components/shared/` and follow the established upload and folder-selection workflow.
+
+`AugmentationImportButton.tsx` should follow the pattern in `apps/frontend/components/bounding-box/BoundingBoxImportButton.tsx`. Extend the existing selector's event handling for augmentation without breaking other tools.
+
+### Task 1 — Image-only augmentation
+
+Input: `images/` and `labels/`.
+
+Supported operations:
+
+- Brightness
+- Exposure
+- Blur
+- Noise
+- Saturation
+- Hue
+- Grayscale
+- Motion Blur
+- Camera Gain
+
+Use Roboflow-style toggle cards with a preview, name, description, toggle, and configuration controls where relevant.
+
+Generate uniquely named images without changing object geometry. Preserve corresponding TXT annotations unchanged when producing paired dataset output. Never modify the originals.
+
+### Task 2 — Image and annotation augmentation
+
+Supported operations:
+
+- Horizontal flip and vertical flip
+- Rotation and configurable 360-degree rotation schedules
+- Shear, crop, zoom, cutout, and mosaic
+
+Transform images and YOLO annotations together. Preserve class IDs and update normalized bounding boxes correctly after geometric transformations. Validate annotations, clip boxes to image boundaries, and reject malformed or zero-area boxes.
+
+For `X` rotation steps, generate angles at multiples of `360 / X`. For example, `X = 4` produces `90°`, `180°`, `270°`, and `360°`. The full-turn result duplicates the original orientation; retain it only as explicitly configured by the task requirements.
+
+Output image and TXT filenames must match.
+
+### Task 3 — Class balancing
+
+Calculate class instance counts from valid YOLO TXT annotations.
+
+**Auto Balance:** Prefer images containing only the target class, images with a higher target-class ratio, and images containing fewer competing classes. Recalculate counts as samples are generated. Avoid unnecessarily increasing majority classes.
+
+**Custom Balance:** Allow class selection, selection of specific or all eligible images, and a target instance count. Generate only the required additional samples.
+
+Support annotation-aware object extraction and background placement where needed. Display before/after class counts and report cases where exact balancing is impossible without affecting other classes.
+
+### Task 4 — PNG object and background generation
+
+Input folders:
+
+```text
+backgrounds/
+objects/
 ```
 
-## Packages Structure
+Read PNG transparency, detect visible object boundaries, resize and place objects on backgrounds, and generate correctly normalized YOLO bounding boxes.
 
-```
-packages/
-├── theme/                  # Theme package
-│   ├── theme.css          # Theme variables (colors, shadows, fonts)
-│   ├── custom.css         # Custom overrides
-│   └── package.json
-│
-├── ui/                     # Shared UI components
-│   ├── index.ts
-│   ├── shadcn/            # shadcn/ui components (shared across apps)
-│   │   ├── button.tsx
-│   │   ├── card.tsx
-│   │   ├── input.tsx
-│   │   ├── dialog.tsx
-│   │   ├── dropdown-menu.tsx
-│   │   ├── progress.tsx
-│   │   ├── select.tsx
-│   │   ├── tabs.tsx
-│   │   ├── tooltip.tsx
-│   │   └── sonner.tsx
-│   ├── shared/            # Shared components
-│   ├── lib/
-│   │   └── utils.ts       # Re-exports cn from the cn package
-│   └── package.json
-│
-└── config/
-    ├── eslint-config/
-    └── typescript-config/
-        ├── base.json
-        ├── nextjs.json
-        ├── react-library.json
-        └── package.json
+Support multiple generated samples and optional common augmentations. Keep image geometry and annotations synchronized.
+
+Example output:
+
+```text
+synthetic_001.jpg
+synthetic_001.txt
 ```
 
-## The `cn` Utility
+### Shared implementation
 
-The project uses the official [`cn`](https://www.npmjs.com/package/cn) package for merging Tailwind class names. It replaces the older `clsx` + `tailwind-merge` combo.
+All four tasks must reuse the common augmentation implementation, including `apps/backend/src/augmentation/sher.ts`.
 
-**Import it directly:**
+Do not create separate transformation engines for balancing or synthetic generation. Reuse common image transforms, geometric transforms, annotation parsing, validation, and output generation.
 
-```tsx
-import { cn } from "cn";
+## 6. Fastify API Contracts
 
-<div className={cn("px-4", isActive && "bg-primary")} />
-```
+All augmentation endpoints use the `/api/tools/augmentation` prefix. Register their route plugin in `apps/backend/src/app.ts` using Fastify.
 
-**Or via `@repo/ui`** (for backwards compatibility):
+The contracts below define the expected API behavior for implementation. Keep them consistent across frontend and backend; if the existing shared selector or job system requires a different transport, update the contracts and callers together.
 
-```tsx
-import { cn } from "@repo/ui/lib/utils";
-```
+### Common conventions
 
-`packages/ui/lib/utils.ts` is just a one-line re-export:
+- JSON requests use `Content-Type: application/json`.
+- Dataset references use an opaque `datasetId` issued by the existing dataset selection/import flow.
+- Job references use an opaque `jobId` returned by the backend.
+- Never accept an arbitrary absolute filesystem path from the browser as authorization to read or write files.
+- Class IDs are non-negative integers. YOLO bounding-box values are normalized to `[0, 1]`.
+- Numeric values must be finite. Reject invalid parameters with a `400` response.
+- Use `404` for unavailable datasets/jobs, `413` for payloads exceeding configured limits, `409` for incompatible job or dataset states, and `500` for unexpected server errors.
+- All processing must use bounded concurrency and preserve original inputs.
 
-```ts
-export { cn } from "cn";
-```
+### Endpoint 1 — Inspect a dataset
 
-Any package that imports `cn` directly must list it in its own `package.json`:
+`POST /api/tools/augmentation/datasets/inspect`
+
+Request:
 
 ```json
 {
-  "dependencies": {
-    "cn": "catalog:"
+  "datasetId": "dataset_opaque_id"
+}
+```
+
+Response:
+
+```json
+{
+  "datasetId": "dataset_opaque_id",
+  "folderName": "training-dataset",
+  "totalImages": 120,
+  "totalTxt": 118,
+  "validPairs": 118,
+  "missingLabels": 2,
+  "invalidLabels": 0,
+  "classes": [
+    {
+      "classId": 0,
+      "instanceCount": 420,
+      "imageCount": 95
+    }
+  ],
+  "warnings": []
+}
+```
+
+Requirements:
+
+- Count supported images and TXT files.
+- Match annotations to images by basename.
+- Validate YOLO annotation syntax, class IDs, and bounding-box coordinates.
+- Report missing labels and invalid annotations.
+- Calculate class instance counts and distinct image counts.
+- Do not modify the dataset during inspection.
+
+### Endpoint 2 — Start image augmentation
+
+`POST /api/tools/augmentation/jobs/augment`
+
+Request:
+
+```json
+{
+  "datasetId": "dataset_opaque_id",
+  "mode": "image-only",
+  "operations": [
+    {
+      "type": "brightness",
+      "enabled": true,
+      "params": {
+        "factor": 1.2
+      }
+    },
+    {
+      "type": "blur",
+      "enabled": false,
+      "params": {
+        "sigma": 1
+      }
+    }
+  ],
+  "output": {
+    "name": "augmented-dataset"
   }
 }
 ```
 
-`cn` is version-pinned in `pnpm-workspace.yaml` under the catalog (currently `0.2.6`).
+Supported modes:
 
-## Adding New shadcn/ui Components
+- `image-only`
+- `image-annotation`
 
-All shared shadcn/ui components live in `packages/ui/shadcn/` so they can be reused across apps.
+Only enabled operations are executed. The backend must validate each operation against its schema and ignore no invalid enabled configuration silently.
 
-### Step 1: Run shadcn CLI from `packages/ui`
-
-```bash
-cd packages/ui
-pnpm dlx shadcn@latest add <component-name>
-```
-
-Example — add tooltip:
-
-```bash
-cd packages/ui
-pnpm dlx shadcn@latest add tooltip
-```
-
-> **Important:** Use `pnpm dlx`, not `pnpm exec`. `exec` only runs locally installed binaries; `dlx` fetches and runs the package temporarily (like `npx`).
-
-shadcn reads `packages/ui/components.json` and creates `packages/ui/shadcn/tooltip.tsx`.
-
-### Step 2: Verify the `cn` import
-
-The generated file uses:
-
-```tsx
-import { cn } from "cn";
-```
-
-This resolves because `cn` is a dependency of `@repo/ui`. Leave it as-is.
-
-### Step 3: Export from the package entry
-
-In `packages/ui/index.ts`:
-
-```ts
-export * from "./shadcn/tooltip";
-```
-
-### Step 4: Ensure `packages/ui/package.json` exposes the subpath
+Response:
 
 ```json
 {
-  "name": "@repo/ui",
-  "exports": {
-    ".": "./index.ts",
-    "./shadcn/*": "./shadcn/*.tsx",
-    "./shared/*": "./shared/*.tsx",
-    "./lib/*": "./lib/*.ts"
+  "jobId": "job_opaque_id",
+  "status": "queued",
+  "message": "Augmentation job queued"
+}
+```
+
+Use `202 Accepted` for a queued job.
+
+### Endpoint 3 — Start class balancing
+
+`POST /api/tools/augmentation/jobs/balance`
+
+Request:
+
+```json
+{
+  "datasetId": "dataset_opaque_id",
+  "mode": "auto",
+  "targetCount": 420,
+  "operations": [
+    {
+      "type": "horizontal-flip",
+      "enabled": true,
+      "params": {}
+    },
+    {
+      "type": "brightness",
+      "enabled": true,
+      "params": {
+        "factor": 1.1
+      }
+    }
+  ],
+  "output": {
+    "name": "balanced-dataset"
   }
 }
 ```
 
-### Step 5: Consume from any app
+For custom balancing:
 
-```tsx
-import {
-  Tooltip,
-  TooltipContent,
-  TooltipProvider,
-  TooltipTrigger,
-} from "@repo/ui/shadcn/tooltip";
+```json
+{
+  "datasetId": "dataset_opaque_id",
+  "mode": "custom",
+  "classId": 2,
+  "targetCount": 500,
+  "imageSelection": {
+    "mode": "selected",
+    "imageIds": ["image_opaque_id_1", "image_opaque_id_2"]
+  },
+  "operations": [
+    {
+      "type": "horizontal-flip",
+      "enabled": true,
+      "params": {}
+    }
+  ],
+  "output": {
+    "name": "custom-balanced-dataset"
+  }
+}
 ```
 
-### Step 6: Install
+Rules:
 
-From repo root:
+- `mode` must be `auto` or `custom`.
+- `targetCount` must be a positive integer within configured limits.
+- `classId` is required for custom balancing.
+- `imageSelection.mode` must be `selected` or `all`.
+- Selected image IDs must belong to the referenced dataset.
+- The backend must recalculate counts and stop at the target or report why it cannot be reached.
+- Prevent uncontrolled oversampling and excessive generated outputs.
+
+Return a queued job using the same response structure as the augmentation endpoint.
+
+### Endpoint 4 — Generate synthetic images
+
+`POST /api/tools/augmentation/jobs/synthetic`
+
+Request:
+
+```json
+{
+  "backgroundDatasetId": "background_dataset_id",
+  "objectDatasetId": "object_dataset_id",
+  "count": 100,
+  "placement": {
+    "scaleMin": 0.1,
+    "scaleMax": 0.4,
+    "margin": 0.02
+  },
+  "operations": [
+    {
+      "type": "brightness",
+      "enabled": true,
+      "params": {
+        "factor": 1.1
+      }
+    }
+  ],
+  "output": {
+    "name": "synthetic-dataset"
+  }
+}
+```
+
+Requirements:
+
+- Both datasets must be accessible and contain supported files.
+- Objects must support alpha transparency.
+- Generate valid bounding boxes from the visible pasted object.
+- Keep annotations synchronized with subsequent geometric transformations.
+- Use the shared augmentation engine.
+
+### Endpoint 5 — Retrieve job status
+
+`GET /api/tools/augmentation/jobs/:jobId`
+
+Response:
+
+```json
+{
+  "jobId": "job_opaque_id",
+  "status": "running",
+  "progress": {
+    "completed": 45,
+    "total": 100,
+    "percent": 45
+  },
+  "message": "Processing images",
+  "result": null,
+  "errors": []
+}
+```
+
+Allowed status values:
+
+- `queued`
+- `running`
+- `completed`
+- `failed`
+- `cancelled`
+
+Requirements:
+
+- `percent` must be an integer between `0` and `100`.
+- `completed` and `total` must be non-negative integers.
+- A completed job must have `percent: 100`.
+- Report errors in a structured form.
+- Do not expose arbitrary server filesystem paths or sensitive implementation details.
+
+### Endpoint 6 — Retrieve completed results
+
+`GET /api/tools/augmentation/jobs/:jobId/results`
+
+Response:
+
+```json
+{
+  "jobId": "job_opaque_id",
+  "status": "completed",
+  "output": {
+    "name": "augmented-dataset",
+    "imageCount": 100,
+    "labelCount": 100,
+    "downloadUrl": "/api/tools/augmentation/jobs/job_opaque_id/download"
+  },
+  "classCountsBefore": [],
+  "classCountsAfter": [],
+  "warnings": []
+}
+```
+
+Requirements:
+
+- Results must be available only for completed jobs.
+- Return image and label counts, class distributions when applicable, and warnings.
+- Provide a controlled download endpoint or the existing project's equivalent.
+- Verify job ownership/access before returning results or downloads.
+
+### Parameter ranges and validation
+
+Use the following ranges as the initial API/UI contract. If an existing processing library imposes stricter constraints, enforce the stricter bounds consistently.
+
+| Parameter | Valid range |
+|---|---|
+| Brightness factor | `0.0–2.0` |
+| Exposure adjustment | `-4.0–4.0` EV |
+| Blur sigma | `0.1–20.0` |
+| Noise standard deviation | `0–100` on an 8-bit intensity scale |
+| Saturation factor | `0.0–3.0` |
+| Hue shift | `-180–180` degrees |
+| Camera gain factor | `0.0–4.0` |
+| Motion blur kernel size | Odd integer `3–51` |
+| Rotation angle | `-180–180` degrees |
+| 360-degree rotation steps | Integer `2–36` |
+| Shear | `-45–45` degrees per axis |
+| Crop fraction | `0.1–1.0` per dimension |
+| Zoom factor | `0.5–2.0` |
+| Cutout area fraction | `0.0–0.5` |
+| Mosaic source images | Exactly `4` |
+| Synthetic sample count | Integer `1–5000`, subject to resource limits |
+| Synthetic object scale | `0.05–1.0` of the background's shorter dimension |
+| Placement margin | `0.0–0.2` of the background dimension |
+| Custom balance target | Positive integer up to a configurable limit of `100000` instances per class |
+
+For the synthetic request, `scaleMin` and `scaleMax` must each be within the object-scale range, and `scaleMin` must not exceed `scaleMax`.
+
+Additional validation:
+
+- Reject `NaN`, infinity, negative counts, unknown operation types, and unexpected parameters.
+- Require integers for counts, class IDs, kernel sizes, and rotation steps.
+- Validate normalized YOLO coordinates and ensure boxes have positive width and height.
+- Validate output names and prevent path traversal.
+- Set configurable limits for input files, total dataset size, generated images, concurrent jobs, and processing duration.
+- The limits in this table are API-level constraints, not permission to exceed the server's configured upload or memory limits.
+
+### API implementation rules
+
+- Define shared TypeScript request/response types and Zod schemas.
+- Keep the frontend API client aligned with the contracts above.
+- Register the route plugin in `apps/backend/src/app.ts` with the `/api/tools/augmentation` prefix.
+- Implement processing in the augmentation modules, not directly in route handlers.
+- Reuse the common implementation in `apps/backend/src/augmentation/sher.ts`.
+- Use the existing job-management pattern if one already exists.
+- Do not add a database, queue service, or another infrastructure dependency without a demonstrated requirement.
+
+## 7. Validation and Build Checks
+
+Before committing, run the applicable checks from the repository root:
 
 ```bash
 pnpm install
+pnpm --filter frontend check-types
+pnpm --filter frontend lint
+pnpm --filter backend typecheck
+pnpm --filter backend lint
+pnpm build
 ```
 
-## Theme and Styling
+Verify the actual scripts in each package. If a command is not defined, use the existing equivalent.
 
-All components must use theme variables from the `@repo/theme` package. Hardcoded colors are strictly prohibited.
+Do not claim a check passed unless it was actually executed successfully. Fix errors introduced by your changes and document unrelated pre-existing failures accurately.
 
-### Available Theme Variables
+## 8. Git Ignore and Submission Safety
 
-| Variable | Usage | Example |
-|----------|-------|---------|
-| background | Page background | `bg-background` |
-| foreground | Text color | `text-foreground` |
-| primary | Primary actions/buttons | `bg-primary` |
-| primary-foreground | Text on primary | `text-primary-foreground` |
-| secondary | Secondary elements | `bg-secondary` |
-| secondary-foreground | Text on secondary | `text-secondary-foreground` |
-| muted | Muted backgrounds | `bg-muted` |
-| muted-foreground | Muted text | `text-muted-foreground` |
-| accent | Accent elements | `bg-accent` |
-| accent-foreground | Text on accent | `text-accent-foreground` |
-| border | Borders | `border-border` |
-| card | Card backgrounds | `bg-card` |
-| card-foreground | Text on card | `text-card-foreground` |
-| popover | Popover backgrounds | `bg-popover` |
-| popover-foreground | Text on popover | `text-popover-foreground` |
-| destructive | Destructive actions | `bg-destructive` |
-| destructive-foreground | Text on destructive | `text-destructive-foreground` |
-| ring | Focus rings | `ring-ring` |
-| input | Input fields | `bg-input` |
+The root `.gitignore` must exclude local dependencies, environment secrets, generated build outputs, caches, temporary files, and runtime datasets.
 
-### Correct Theme Usage Example
+At minimum, check for:
 
-```tsx
-<div className="bg-background text-foreground border border-border">
-  <h1 className="text-foreground">Welcome</h1>
-  <button className="bg-primary text-primary-foreground hover:bg-primary/90">
-    Click Me
-  </button>
-  <p className="text-muted-foreground">Helper text</p>
-</div>
+```gitignore
+node_modules/
+.next/
+out/
+build/
+dist/
+.turbo/
+.cache/
+.parcel-cache/
+coverage/
+storybook-static/
+
+.env
+.env.*
+!.env.example
+!.env.*.example
+
+apps/backend/data/
+apps/backend/uploads/
+apps/backend/outputs/
+
+*.tsbuildinfo
+*.log
+*.tmp
+*.temp
 ```
 
-### Incorrect Hardcoded Colors Example
-
-```tsx
-<div className="bg-white text-black border border-gray-300">
-  <h1 className="text-black">Welcome</h1>
-  <button className="bg-blue-500 text-white hover:bg-blue-600">
-    Click Me
-  </button>
-  <p className="text-gray-500">Helper text</p>
-</div>
-```
-
-### Typography
-
-All text must use the Poppins font family, which is enforced through the theme and custom.css overrides.
-
-## Task Allocation
-
-### Tool Routes and Responsibilities
-
-| Task | Tool Name | Route Path |
-|------|-----------|------------|
-| Task 1 | Video to Images | `/tools/video-to-images` |
-| Task 2 | Video Trim | `/tools/video-trim` |
-| Task 3 | Video Format Converter | `/tools/video-converter` |
-| Task 4 | Image Format Converter | `/tools/image-converter` |
-| Task 5 | Image Separation/Classification | `/tools/image-classification` |
-| Task 6 | Polygon ROI Annotation | `/tools/polygon-annotation` |
-| Task 7 | Bounding Box Annotation | `/tools/bounding-box` |
-| Task 8 | Video Merge | `/tools/video-merge` |
-
-### Component and File Ownership
-
-Each tool has exactly **three frontend files** (page, hook, API client) plus its components, and **three backend files** (route, controller, service). No overlaps, no duplication.
-
-#### Task 1: Video to Images
-
-**Frontend:**
-- Route: `apps/frontend/app/tools/video-to-images/page.tsx`
-- Components: `apps/frontend/components/video-to-images/`
-  - `VideoUploader.tsx`
-  - `ExtractionSettings.tsx`
-  - `FramePreview.tsx`
-  - `ProcessingProgress.tsx`
-- Hook: `apps/frontend/hooks/useVideoToImages.ts`
-- API client: `apps/frontend/api/videoToImages.api.ts`
-
-**Backend:**
-- Route: `apps/backend/src/routes/videoToImages.routes.ts`
-- Controller: `apps/backend/src/controllers/videoToImages.controller.ts`
-- Service: `apps/backend/src/services/videoToImages.service.ts`
-
-#### Task 2: Video Trim
-
-**Frontend:**
-- Route: `apps/frontend/app/tools/video-trim/page.tsx`
-- Components: `apps/frontend/components/video-trim/`
-  - `VideoUploader.tsx`
-  - `TrimControls.tsx`
-  - `TimeSelector.tsx`
-  - `TrimProgress.tsx`
-- Hook: `apps/frontend/hooks/useVideoTrim.ts`
-- API client: `apps/frontend/api/videoTrim.api.ts`
-
-**Backend:**
-- Route: `apps/backend/src/routes/videoTrim.routes.ts`
-- Controller: `apps/backend/src/controllers/videoTrim.controller.ts`
-- Service: `apps/backend/src/services/videoTrim.service.ts`
-
-#### Task 3: Video Format Converter
-
-**Frontend:**
-- Route: `apps/frontend/app/tools/video-converter/page.tsx`
-- Components: `apps/frontend/components/video-converter/`
-  - `VideoUploader.tsx`
-  - `ConversionSettings.tsx`
-  - `ConversionProgress.tsx`
-- Hook: `apps/frontend/hooks/useVideoConverter.ts`
-- API client: `apps/frontend/api/videoConverter.api.ts`
-
-**Backend:**
-- Route: `apps/backend/src/routes/videoConverter.routes.ts`
-- Controller: `apps/backend/src/controllers/videoConverter.controller.ts`
-- Service: `apps/backend/src/services/videoConverter.service.ts`
-
-#### Task 4: Image Format Converter
-
-**Frontend:**
-- Route: `apps/frontend/app/tools/image-converter/page.tsx`
-- Components: `apps/frontend/components/image-converter/`
-  - `ImageUploader.tsx`
-  - `ConversionSettings.tsx`
-  - `ConversionSummary.tsx`
-- Hook: `apps/frontend/hooks/useImageConverter.ts`
-- API client: `apps/frontend/api/imageConverter.api.ts`
-
-**Backend:**
-- Route: `apps/backend/src/routes/imageConverter.routes.ts`
-- Controller: `apps/backend/src/controllers/imageConverter.controller.ts`
-- Service: `apps/backend/src/services/imageConverter.service.ts`
-
-#### Task 5: Image Separation/Classification
-
-**Frontend:**
-- Route: `apps/frontend/app/tools/image-classification/page.tsx`
-- Components: `apps/frontend/components/image-classification/`
-  - `ImageViewer.tsx`
-  - `ClassificationControls.tsx`
-  - `FolderManager.tsx`
-  - `ClassificationSummary.tsx`
-- Hook: `apps/frontend/hooks/useImageClassification.ts`
-- API client: `apps/frontend/api/imageClassification.api.ts`
-
-**Backend:**
-- Route: `apps/backend/src/routes/imageClassification.routes.ts`
-- Controller: `apps/backend/src/controllers/imageClassification.controller.ts`
-- Service: `apps/backend/src/services/imageClassification.service.ts`
-
-#### Task 6: Polygon ROI Annotation
-
-**Frontend:**
-- Route: `apps/frontend/app/tools/polygon-annotation/page.tsx`
-- Components: `apps/frontend/components/polygon-annotation/`
-  - `AnnotationCanvas.tsx`
-  - `PolygonToolbar.tsx`
-  - `PolygonList.tsx`
-  - `ClassSelector.tsx`
-- Hook: `apps/frontend/hooks/usePolygonAnnotation.ts`
-- API client: `apps/frontend/api/polygonAnnotation.api.ts`
-
-**Backend:**
-- Route: `apps/backend/src/routes/polygonAnnotation.routes.ts`
-- Controller: `apps/backend/src/controllers/polygonAnnotation.controller.ts`
-- Service: `apps/backend/src/services/polygonAnnotation.service.ts`
-
-#### Task 7: Bounding Box Annotation
-
-**Frontend:**
-- Route: `apps/frontend/app/tools/bounding-box/page.tsx`
-- Components: `apps/frontend/components/bounding-box/`
-  - `AnnotationCanvas.tsx`
-  - `BoundingBoxToolbar.tsx`
-  - `LabelControls.tsx`
-  - `BoundingBoxList.tsx`
-- Hook: `apps/frontend/hooks/useBoundingBox.ts`
-- API client: `apps/frontend/api/boundingBox.api.ts`
-
-**Backend:**
-- Route: `apps/backend/src/routes/boundingBox.routes.ts`
-- Controller: `apps/backend/src/controllers/boundingBox.controller.ts`
-- Service: `apps/backend/src/services/boundingBox.service.ts`
-
-#### Task 8: Video Merge
-
-**Frontend:**
-- Route: `apps/frontend/app/tools/video-merge/page.tsx`
-- Components: `apps/frontend/components/video-merge/`
-  - `VideoUploader.tsx`
-  - `VideoList.tsx`
-  - `VideoMetadata.tsx`
-  - `MergeControls.tsx`
-  - `MergeProgress.tsx`
-- Hook: `apps/frontend/hooks/useVideoMerge.ts`
-- API client: `apps/frontend/api/videoMerge.api.ts`
-
-**Backend:**
-- Route: `apps/backend/src/routes/videoMerge.routes.ts`
-- Controller: `apps/backend/src/controllers/videoMerge.controller.ts`
-- Service: `apps/backend/src/services/videoMerge.service.ts`
-
-## Development Guidelines
-
-### Frontend — UI Components
-
-- Use shadcn/ui components from `@repo/ui` whenever possible
-- Shared components → `apps/frontend/components/shared/`
-- Tool-specific components → `apps/frontend/components/{tool-name}/`
-- When you need a new shadcn component, add it via `packages/ui` (see "Adding New shadcn/ui Components"), not inside the frontend app
-
-### Frontend — Pages
-
-- Pages assemble components only. No logic.
-- One `page.tsx` per route.
-
-```tsx
-// apps/frontend/app/tools/video-merge/page.tsx
-import VideoUploader from "@/components/video-merge/VideoUploader";
-import VideoList from "@/components/video-merge/VideoList";
-import MergeControls from "@/components/video-merge/MergeControls";
-
-export default function VideoMergePage() {
-  return (
-    <div className="container mx-auto py-8 space-y-6">
-      <h1 className="text-3xl font-bold text-foreground">Video Merge Tool</h1>
-      <VideoUploader />
-      <VideoList />
-      <MergeControls />
-    </div>
-  );
-}
-```
-
-### Frontend — Sidebar (with Tooltips)
-
-The sidebar uses `Tooltip` from `@repo/ui` to show tool names on hover.
-
-```tsx
-"use client";
-
-import Link from "next/link";
-import { usePathname } from "next/navigation";
-import { Icon } from "./Icons";
-import {
-  Tooltip,
-  TooltipContent,
-  TooltipProvider,
-  TooltipTrigger,
-} from "@repo/ui/shadcn/tooltip";
-
-const tools = [
-  { href: "/tools/video-to-images", label: "Video to Images" },
-  { href: "/tools/video-trim", label: "Video Trim" },
-  { href: "/tools/video-converter", label: "Video Converter" },
-  { href: "/tools/image-converter", label: "Image Converter" },
-  { href: "/tools/image-classification", label: "Image Classification" },
-  { href: "/tools/polygon-annotation", label: "Polygon Annotation" },
-  { href: "/tools/bounding-box", label: "Bounding Box" },
-  { href: "/tools/video-merge", label: "Video Merge" },
-];
-
-const Sidebar = () => {
-  const pathname = usePathname();
-  const activeIndex = tools.findIndex((t) => pathname === t.href);
-  const isActive = (path: string) => pathname === path;
-
-  return (
-    <aside className="fixed top-6 bottom-6 left-4 z-50 flex w-19 flex-col items-center overflow-visible rounded-full bg-foreground shadow-[0_10px_40px_rgba(0,0,0,0.15)]">
-      <nav className="relative flex w-full flex-col items-center">
-        {activeIndex !== -1 && (
-          <div
-            className="pointer-events-none absolute top-0 left-0 z-0 h-14 w-full rounded-r-[28px] bg-background transition-transform duration-500 ease-[cubic-bezier(0.65,0,0.35,1)]"
-            style={{ transform: `translateY(${activeIndex * 56}px)` }}
-          >
-            <div className="absolute -top-4.5 right-0 h-9 w-9 rounded-br-[36px] bg-foreground" />
-            <div className="absolute -bottom-4.5 right-0 h-9 w-9 rounded-tr-[36px] bg-foreground" />
-          </div>
-        )}
-
-        <TooltipProvider delayDuration={200}>
-          {tools.map((tool) => (
-            <Tooltip key={tool.href}>
-              <TooltipTrigger asChild>
-                <Link
-                  href={tool.href}
-                  className="relative z-10 flex h-14 w-19 items-center justify-center"
-                >
-                  <Icon
-                    name="Icon1"
-                    size={23}
-                    className={
-                      isActive(tool.href)
-                        ? "text-foreground"
-                        : "text-background"
-                    }
-                  />
-                </Link>
-              </TooltipTrigger>
-              <TooltipContent side="right" sideOffset={12}>
-                {tool.label}
-              </TooltipContent>
-            </Tooltip>
-          ))}
-        </TooltipProvider>
-      </nav>
-    </aside>
-  );
-};
-
-export default Sidebar;
-```
-
-### Frontend — Hooks
-
-- One hook per tool. Manages state. Calls the tool's API client. Returns state + actions.
-
-```ts
-// apps/frontend/hooks/useVideoMerge.ts
-import { useState, useCallback } from "react";
-import { videoMergeApi } from "@/api/videoMerge.api";
-
-export function useVideoMerge() {
-  const [videos, setVideos] = useState<File[]>([]);
-  const [isMerging, setIsMerging] = useState(false);
-  const [progress, setProgress] = useState(0);
-
-  const mergeVideos = useCallback(async () => {
-    setIsMerging(true);
-    try {
-      await videoMergeApi.merge(videos, {});
-    } finally {
-      setIsMerging(false);
-    }
-  }, [videos]);
-
-  return { videos, isMerging, progress, mergeVideos, setVideos };
-}
-```
-
-### Frontend — API Clients
-
-- One API client per tool.
-- Only job: send HTTP request to backend, return parsed response.
-- No state, no processing, no business logic.
-
-```ts
-// apps/frontend/api/videoMerge.api.ts
-import { api } from "./client";
-
-export const videoMergeApi = {
-  async merge(videos: File[], settings: Record<string, unknown>) {
-    const formData = new FormData();
-    videos.forEach((v) => formData.append("videos", v));
-    formData.append("settings", JSON.stringify(settings));
-
-    const { data } = await api.post("/tools/video-merge", formData, {
-      headers: { "Content-Type": "multipart/form-data" },
-    });
-    return data;
-  },
-
-  async getStatus(jobId: string) {
-    const { data } = await api.get(`/tools/video-merge/status/${jobId}`);
-    return data;
-  },
-};
-```
-
-### Frontend — Shared API Client
-
-```ts
-// apps/frontend/api/client.ts
-import axios from "axios";
-
-export const api = axios.create({
-  baseURL: process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000/api",
-  headers: { "Content-Type": "application/json" },
-});
-```
-
-### Backend — Routes
-
-- One route file per tool. Maps URL → controller. Nothing else.
-
-```ts
-// apps/backend/src/routes/videoMerge.routes.ts
-import { Router } from "express";
-import { upload } from "../middleware/upload.middleware";
-import * as controller from "../controllers/videoMerge.controller";
-
-const router = Router();
-
-router.post("/", upload.array("videos"), controller.merge);
-router.get("/status/:jobId", controller.getStatus);
-
-export default router;
-```
-
-### Backend — Controllers
-
-- Parse HTTP request → call service → send response.
-- No processing logic here.
-
-```ts
-// apps/backend/src/controllers/videoMerge.controller.ts
-import { Request, Response } from "express";
-import * as service from "../services/videoMerge.service";
-
-export async function merge(req: Request, res: Response) {
-  try {
-    const files = req.files as Express.Multer.File[];
-    const settings = JSON.parse(req.body.settings);
-    const result = await service.merge(files, settings);
-    res.json(result);
-  } catch (err) {
-    res.status(500).json({ error: (err as Error).message });
-  }
-}
-
-export async function getStatus(req: Request, res: Response) {
-  const status = await service.getStatus(req.params.jobId);
-  res.json(status);
-}
-```
-
-### Backend — Services
-
-- Actual media processing lives here: FFmpeg, Sharp, file I/O.
-- No HTTP awareness — takes plain inputs, returns plain outputs.
-
-```ts
-// apps/backend/src/services/videoMerge.service.ts
-import ffmpeg from "fluent-ffmpeg";
-import path from "path";
-import { v4 as uuid } from "uuid";
-
-export async function merge(files: Express.Multer.File[], settings: unknown) {
-  const jobId = uuid();
-  const outputPath = path.join(__dirname, "../../outputs", `${jobId}.mp4`);
-  // FFmpeg concat logic here
-  return { jobId, outputPath, status: "processing" };
-}
-
-export async function getStatus(jobId: string) {
-  return { jobId, status: "completed" };
-}
-```
-
-### Backend — App Setup
-
-```ts
-// apps/backend/src/app.ts
-import express from "express";
-import cors from "cors";
-import videoMergeRoutes from "./routes/videoMerge.routes";
-
-const app = express();
-app.use(cors({ origin: process.env.FRONTEND_URL || "http://localhost:3000" }));
-app.use(express.json());
-
-app.use("/api/tools/video-merge", videoMergeRoutes);
-
-export default app;
-```
-
-### Backend — TypeScript Config Notes
-
-- `apps/backend/tsconfig.json` must set `outDir: "./dist"` and `rootDir: "./src"` so compiled `.js` files land in `dist/`, not next to the `.ts` sources.
-- `packages/config/typescript-config/base.json` sets `declaration: false` and `declarationMap: false`. If a package ever needs `.d.ts` files, override both together in that package's tsconfig — setting only one triggers a TS error.
-- The backend `start` script points to `dist/server.js`.
-- The backend `dev` script uses `tsx watch src/server.ts` (no build step needed in dev).
-
-### Backend — Monorepo Build Notes
-
-- Running `turbo build` compiles each package. The backend emits into `dist/`, the frontend builds `.next/`.
-- Never commit compiled `.js` files inside `src/`. Add these to `.gitignore`:
-  ```
-  dist/
-  uploads/
-  outputs/
-  .env
-  *.js
-  *.js.map
-  !*.config.js
-  ```
-- If a `.js` file accidentally appears next to a `.ts` source (because `outDir` was missing), delete it and rebuild.
-
-## Required Features
-
-### All Tools Must Include
-
-- File upload with drag and drop support
-- Progress bar showing processing status
-- Clear success and error messages with toast notifications
-- Theme-aware styling with no hardcoded colors
-- Responsive design compatible with mobile devices
-- Loading states during processing
-- Error handling with user-friendly messages
-- Backend API integration with proper error responses
-
-### Tool-Specific Features
-
-#### Task 1: Video to Images
-
-- Upload single or multiple videos
-- Extract every Nth frame
-- Extract by total frame count
-- Progress bar with total images count
-- Output folder selection
-- Preview first extracted frame (bonus)
-- Resize images option (bonus)
-
-#### Task 2: Video Trim
-
-- Upload video(s)
-- Start time input (HH:MM:SS)
-- End time input (HH:MM:SS)
-- Display video duration
-- Support multiple format videos
-- Multiple time segments (bonus)
-- Preview cropped clip (bonus)
-- Merge multiple trimmed clips (bonus)
-
-#### Task 3: Video Format Converter
-
-- Upload single or multiple videos
-- Display input format
-- Convert to MP4
-- Conversion progress tracking
-- Error handling for unsupported formats
-- H.264 support
-- Resolution selection (720p/1080p) (bonus)
-- Compression option (bonus)
-
-#### Task 4: Image Format Converter
-
-- Upload images or folder
-- Output folder selection
-- Display total images count
-- Display successfully converted count
-- Quality slider (bonus)
-- Resize option (bonus)
-
-#### Task 5: Image Classification
-
-- Image viewer with scroll support
-- Classification controls
-- Create multiple folders
-- Final count per folder
-- Undo last operation (bonus)
-- CSV/TXT report download (bonus)
-
-#### Task 6: Polygon Annotation
-
-- Draw polygon ROI on images
-- Multiple polygons per image
-- Edit polygon vertices
-- Delete polygon
-- Duplicate polygon
-- Undo/Redo actions
-- Multiple polygon classes
-- Save coordinates (pixel and normalized)
-- Zoom and pan support
-- Keyboard shortcuts (bonus)
-- Copy polygon to next image (bonus)
-
-#### Task 7: Bounding Box Annotation
-
-- Draw bounding boxes on images or videos
-- Resize bounding box
-- Move bounding box
-- Delete bounding box
-- Multiple bounding boxes per image
-- Choose bounding box color
-- Add custom text/label
-- Choose text color
-- Choose line thickness
-
-#### Task 8: Video Merge
-
-- Upload 2 or more videos
-- Support multiple formats (MP4, AVI, MOV, MKV, WMV, FLV, WEBM, MPEG, M4V, TS)
-- Drag and drop reordering
-- Display video information (duration, resolution, FPS, format)
-- Output folder selection
-- H.264 (MP4) output
-- Handle different resolutions and frame rates
-- Merge progress tracking
-
-## Important Rules
-
-### Required Practices
-
-- Use theme variables for all colors
-- Use Poppins font for all text
-- Use shadcn/ui components from `@repo/ui`
-- Use `cn` from the `cn` package for class merging
-- Keep `app/` folder for routes only
-- Place components in `components/` folder
-- Follow the defined file structure
-- Create one hook per tool (`hooks/`)
-- Create one API client per tool (`api/`)
-- Create one route, controller, and service per tool (backend)
-- Use TypeScript for type safety
-- Keep frontend and backend logic separated
-- All media processing must happen in the backend
-- Add new shadcn components via `packages/ui`, never directly in the frontend
-
-### Prohibited Practices
-
-- Hardcoding colors
-- Using fonts other than Poppins
-- Adding component logic in `app/` folder
-- Creating nested routes for tools
-- Duplicating shared components
-- Writing inline styles
-- Ignoring error handling
-- Skipping loading states
-- Performing FFmpeg/Sharp processing in the frontend
-- Calling `fetch` directly from components (use `api/`)
-- Putting processing logic in controllers (use `services/`)
-- Committing compiled `.js` files from `src/`
-- Rebuilding `clsx` + `tailwind-merge` locally (use the `cn` package)
-
-## UI and UX Guidelines
-
-### Color Usage
-
-| Element | Class | Description |
-|---------|-------|-------------|
-| Page Background | `bg-background` | Main page background |
-| Text | `text-foreground` | Primary text color |
-| Subtle Text | `text-muted-foreground` | Secondary or helper text |
-| Primary Buttons | `bg-primary text-primary-foreground` | Main action buttons |
-| Secondary Buttons | `bg-secondary text-secondary-foreground` | Alternative buttons |
-| Cards | `bg-card text-card-foreground border-border` | Content containers |
-| Inputs | `border-input bg-background` | Form inputs |
-| Borders | `border-border` | Divider lines |
-| Destructive | `bg-destructive text-destructive-foreground` | Delete or remove actions |
-| Focus Rings | `ring-ring` | Keyboard focus indicator |
-
-### Component Usage
-
-| Need | Use This |
-|------|----------|
-| Button | `@repo/ui/shadcn/button` |
-| Card | `@repo/ui/shadcn/card` |
-| Input | `@repo/ui/shadcn/input` |
-| Dialog | `@repo/ui/shadcn/dialog` |
-| Dropdown | `@repo/ui/shadcn/dropdown-menu` |
-| Progress | `@repo/ui/shadcn/progress` |
-| Select | `@repo/ui/shadcn/select` |
-| Tabs | `@repo/ui/shadcn/tabs` |
-| Tooltip | `@repo/ui/shadcn/tooltip` |
-| Toast | `@repo/ui/shadcn/sonner` |
-
-## API Integration
-
-### Backend Endpoints
-
-All endpoints served by the backend at `http://localhost:5000/api`:
-
-```
-POST /api/tools/video-to-images
-POST /api/tools/video-trim
-POST /api/tools/video-converter
-POST /api/tools/image-converter
-POST /api/tools/image-classification
-POST /api/tools/polygon-annotation
-POST /api/tools/bounding-box
-POST /api/tools/video-merge
-```
-
-## Submission Requirements
-
-Each submission must include:
-
-- Working UI component
-- Clean and readable code
-- All required features implemented
-- Proper theme usage throughout
-- Error handling with user-friendly messages
-- TypeScript types defined for all props and state
-- Backend route, controller, and service for the assigned tool
-- Frontend hook and API client for the assigned tool
-
-## Support
-
-For questions or clarification:
-
-- Review the README.md in each package
-- Check the `@repo/ui` for available components
-- Check the `@repo/theme` for available styles
-- Request clarification before starting development
-
----
-
-**Media Utility Tool**
-````
+Merge these rules with the existing configuration rather than replacing it blindly.
+
+**Do not ignore `pnpm-lock.yaml`.** It must remain tracked in Git for reproducible installations. Preserve source files, workspace configuration, required assets, and GitHub workflows.
+
+Before creating a source ZIP, remove or exclude `.next`, `.cache`, `.turbo`, `node_modules`, build outputs, temporary files, real environment files, secrets, and local datasets. Inspect the archive before sharing it.
+
+Before pushing, check the staged diff, environment safety, and build results. Never force-push to resolve a synchronization problem without understanding the consequences.
+
+## 9. Final Submission Checklist
+
+- [ ] Work is based on a fork of the original Utoolity repository.
+- [ ] Changes are committed to the fork's `main` branch; no extra branch is created.
+- [ ] Pull request targets `theharshalchaudhari/Utoolity:main`.
+- [ ] Existing workspace and catalog versions are preserved.
+- [ ] Backend changes use Fastify and TypeScript.
+- [ ] Shared folder selection, API clients, and UI components are reused.
+- [ ] All augmentation scripts and UI components are in the required directories.
+- [ ] The four tasks reuse common processing and annotation validation.
+- [ ] Tweakcn theme variables are used without hardcoded colors.
+- [ ] Originals remain unchanged and generated annotations are validated.
+- [ ] Type checks, lint, builds, and relevant tests have been executed.
+- [ ] No secrets, local datasets, caches, or generated artifacts are committed.
+- [ ] The pull request includes a clear summary and actual validation results.
+
+**Utoolity V2:** Extend the existing platform, reuse its architecture, centralize dependencies, and submit tested changes through a fork-based pull request.

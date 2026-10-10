@@ -148,7 +148,7 @@
     background: var(--background);
   }
 
-  [data-wallpaper="wraith"] .desktop-background {
+  [data-wallpaper="midnight"] .desktop-background {
     background:
       radial-gradient(ellipse at 15% 10%, #334155 0%, transparent 38%),
       radial-gradient(ellipse at 88% 18%, #312e81 0%, transparent 42%),
@@ -265,6 +265,52 @@
   .desktop-canvas textarea,
   .desktop-canvas [contenteditable="true"] {
     user-select: text;
+  }
+
+  .desktop-app-icon {
+    text-shadow: 0 2px 10px rgb(0 0 0 / 55%);
+    width: 112px;
+    min-height: 132px;
+  }
+
+  .desktop-app-art {
+    transform-origin: center;
+  }
+
+  .desktop-app-art-forward {
+    animation: desktop-icon-hover 620ms cubic-bezier(0.22, 1, 0.36, 1) forwards;
+  }
+
+  .desktop-app-art-reverse {
+    animation: desktop-icon-hover-reverse 420ms cubic-bezier(0.22, 1, 0.36, 1) forwards;
+  }
+
+  @keyframes desktop-icon-hover {
+    0% {
+      transform: translateY(0) scale(1) rotate(0deg);
+    }
+
+    @keyframes desktop-icon-hover-reverse {
+      0% {
+        transform: translateY(-2px) scale(1.08) rotate(0deg);
+      }
+      100% {
+        transform: translateY(0) scale(1) rotate(0deg);
+      }
+    }
+    45% {
+      transform: translateY(-7px) scale(1.16) rotate(-4deg);
+    }
+    75% {
+      transform: translateY(-4px) scale(1.11) rotate(3deg);
+    }
+    100% {
+      transform: translateY(-2px) scale(1.08) rotate(0deg);
+    }
+  }
+
+  .desktop-app-grid {
+    filter: drop-shadow(0 12px 24px rgb(0 0 0 / 16%));
   }
 
   .lockscreen-orb {

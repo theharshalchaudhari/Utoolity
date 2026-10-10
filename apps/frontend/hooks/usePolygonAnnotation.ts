@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 
 export type Point = { x: number; y: number };
 
@@ -18,11 +18,36 @@ export function usePolygonAnnotation() {
   const [currentLabel, setCurrentLabel] = useState("");
   const [selectedPointIndex, setSelectedPointIndex] = useState<number | null>(null);
   const [tool, setTool] = useState<AnnotationTool>("annotate");
-  const [history, setHistory] = useState<Point[][]>([]);
+  const [history, setHistory] = useState<Array<{
+    points: Point[];
+    polygons: PolygonAnnotation[];
+  }>>([]);
+  const [hydrated, setHydrated] = useState(false);
+
+  useEffect(() => {
+    try {
+      const savedPoints = JSON.parse(localStorage.getItem("utoolity.polygon.points") ?? "[]") as Point[];
+      const savedPolygons = JSON.parse(localStorage.getItem("utoolity.polygon.polygons") ?? "[]") as PolygonAnnotation[];
+      const savedTool = localStorage.getItem("utoolity.polygon.tool");
+      setPoints(savedPoints);
+      setPolygons(savedPolygons);
+      if (savedTool === "edit" || savedTool === "delete" || savedTool === "add") setTool(savedTool);
+    } catch {
+      // Ignore malformed local progress and start with a clean annotation.
+    }
+    setHydrated(true);
+  }, []);
+
+  useEffect(() => {
+    if (!hydrated) return;
+    localStorage.setItem("utoolity.polygon.points", JSON.stringify(points));
+    localStorage.setItem("utoolity.polygon.polygons", JSON.stringify(polygons));
+    localStorage.setItem("utoolity.polygon.tool", tool);
+  }, [hydrated, points, polygons, tool]);
 
   const saveHistory = useCallback(() => {
-    setHistory((prev) => [...prev, points]);
-  }, [points]);
+    setHistory((prev) => [...prev, { points, polygons }]);
+  }, [points, polygons]);
 
   const addPoint = useCallback(
     (point: Point) => {
@@ -39,6 +64,18 @@ export function usePolygonAnnotation() {
       setPoints((prev) => prev.map((p, i) => (i === index ? point : p)));
     },
     [points.length],
+  );
+
+  const updatePolygonPoint = useCallback(
+    (polygonId: string, pointIndex: number, point: Point) => {
+      const polygon = polygons.find(({ id }) => id === polygonId);
+      if (!polygon || pointIndex < 0 || pointIndex >= polygon.points.length) return;
+      setHistory((prev) => [...prev, { points, polygons }]);
+      setPolygons((prev) => prev.map((item) => item.id !== polygonId
+        ? item
+        : { ...item, points: item.points.map((value, index) => index === pointIndex ? point : value) }));
+    },
+    [points, polygons],
   );
 
   const selectPoint = useCallback((index: number | null) => {
@@ -68,6 +105,20 @@ export function usePolygonAnnotation() {
     setSelectedPointIndex(selectedPointIndex + 1);
   }, [points, selectedPointIndex, saveHistory]);
 
+  const addPointToPolygon = useCallback(
+    (polygonId: string, edgeIndex: number, point: Point) => {
+      const polygon = polygons.find(({ id }) => id === polygonId);
+      if (!polygon || polygon.points.length < 2) return;
+      setHistory((prev) => [...prev, { points, polygons }]);
+      const insertAt = Math.min(polygon.points.length, edgeIndex + 1);
+      setPolygons((prev) => prev.map((item) => item.id !== polygonId
+        ? item
+        : { ...item, points: [...item.points.slice(0, insertAt), point, ...item.points.slice(insertAt)] }));
+      setSelectedPointIndex(insertAt);
+    },
+    [points, polygons],
+  );
+
   const deleteSelectedPoint = useCallback(() => {
     if (selectedPointIndex === null || !points.length) return;
 
@@ -76,6 +127,22 @@ export function usePolygonAnnotation() {
     setPoints((prev) => prev.filter((_, index) => index !== selectedPointIndex));
     setSelectedPointIndex(null);
   }, [points.length, selectedPointIndex, saveHistory]);
+
+  const deletePolygonPoint = useCallback(
+    (polygonId: string, pointIndex: number) => {
+      const polygon = polygons.find(({ id }) => id === polygonId);
+      if (!polygon || polygon.points.length <= 3 || pointIndex < 0 || pointIndex >= polygon.points.length) return;
+      setHistory((prev) => [...prev, { points, polygons }]);
+      setPolygons((prev) => prev.map((item) => item.id !== polygonId
+        ? item
+        : { ...item, points: item.points.filter((_, index) => index !== pointIndex) }));
+    },
+    [points, polygons],
+  );
+
+  const updatePolygonLabel = useCallback((polygonId: string, label: string) => {
+    setPolygons((prev) => prev.map((item) => item.id === polygonId ? { ...item, label } : item));
+  }, []);
 
   const completePolygon = useCallback(() => {
     if (points.length < 3) return;
@@ -96,7 +163,8 @@ export function usePolygonAnnotation() {
 
     if (!previous) return;
 
-    setPoints(previous);
+    setPoints(previous.points);
+    setPolygons(previous.polygons);
     setHistory((prev) => prev.slice(0, -1));
     setSelectedPointIndex(null);
   }, [history]);
@@ -116,6 +184,13 @@ export function usePolygonAnnotation() {
     setHistory([]);
   }, []);
 
+  const loadAnnotations = useCallback((next: PolygonAnnotation[]) => {
+    setPoints([]);
+    setPolygons(next);
+    setSelectedPointIndex(null);
+    setHistory([]);
+  }, []);
+
   return {
     points,
     polygons,
@@ -127,11 +202,17 @@ export function usePolygonAnnotation() {
     setTool,
     addPoint,
     updatePoint,
+    updatePolygonPoint,
     addPointAtSelected,
+    addPointToPolygon,
     deleteSelectedPoint,
+    deletePolygonPoint,
+    updatePolygonLabel,
     completePolygon,
     undo,
     clearCurrent,
     resetAll,
+    loadAnnotations,
+    canUndo: history.length > 0,
   };
 }

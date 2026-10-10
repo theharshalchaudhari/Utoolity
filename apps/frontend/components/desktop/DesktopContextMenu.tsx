@@ -1,15 +1,21 @@
 "use client";
 
 import { useEffect, useLayoutEffect, useRef, useState } from "react";
+import {
+  Expand,
+  Folder,
+  LayoutGrid,
+  LockKeyhole,
+  Palette,
+  Settings,
+  Sun,
+} from "lucide-react";
 
 type MenuAction =
-  | "about"
   | "icons"
   | "bigger-icons"
-  | "tidy"
   | "wallpaper"
   | "theme"
-  | "guestbook"
   | "fullscreen"
   | "lock"
   | "settings";
@@ -23,21 +29,19 @@ type Props = {
   onClose: () => void;
 };
 
+type MenuIcon = typeof Folder;
+
 const items: Array<
-  | { label: string; action: MenuAction; disabled?: boolean }
+  | { label: string; action: MenuAction; disabled?: boolean; icon: MenuIcon; iconClassName: string }
   | { divider: true }
 > = [
-  { label: "Open About me", action: "about", disabled: true },
-  { label: "Icons: Auto (change)", action: "icons" },
-  { label: "Bigger icons", action: "bigger-icons" },
-  { label: "Tidy up icons", action: "tidy", disabled: true },
-  { label: "Next wallpaper", action: "wallpaper" },
-  { label: "Switch to light mode", action: "theme" },
-  { label: "Sign the guestbook", action: "guestbook", disabled: true },
-  { label: "Full screen", action: "fullscreen" },
-  { label: "Lock screen", action: "lock" },
+  { label: "Change icon size", action: "icons", icon: LayoutGrid, iconClassName: "bg-accent text-accent-foreground" },
+  { label: "Next wallpaper", action: "wallpaper", icon: Palette, iconClassName: "bg-card text-card-foreground" },
+  { label: "Switch to light mode", action: "theme", icon: Sun, iconClassName: "bg-primary text-primary-foreground" },
+  { label: "Full screen", action: "fullscreen", icon: Expand, iconClassName: "bg-secondary text-secondary-foreground" },
+  { label: "Lock screen", action: "lock", icon: LockKeyhole, iconClassName: "bg-destructive text-destructive-foreground" },
   { divider: true },
-  { label: "Settings", action: "settings" },
+  { label: "Settings", action: "settings", icon: Settings, iconClassName: "bg-card text-card-foreground" },
 ];
 
 export default function DesktopContextMenu({
@@ -107,10 +111,12 @@ export default function DesktopContextMenu({
       style={{ left: position.left, top: position.top }}
       className="desktop-context-menu fixed z-[100] w-[220px] rounded-[20px] p-2 text-sm font-semibold"
     >
-      {menuItems.map((item, index) =>
-        "divider" in item ? (
-          <li key={`divider-${index}`} role="separator" className="my-1.5 h-px bg-white/10" />
-        ) : (
+      {menuItems.map((item, index) => {
+        if ("divider" in item) {
+          return <li key={`divider-${index}`} role="separator" className="my-1.5 h-px bg-border" />;
+        }
+        const Icon = item.icon;
+        return (
           <li key={item.action} role="none">
             <button
               type="button"
@@ -121,13 +127,18 @@ export default function DesktopContextMenu({
                 onAction(item.action);
                 onClose();
               }}
-              className="w-full rounded-xl px-3 py-2 text-left text-[#f2f2f5] transition-colors hover:bg-white/10 focus-visible:bg-white/10 focus-visible:outline-none disabled:cursor-not-allowed disabled:opacity-40"
+              className="w-full rounded-xl px-3 py-2 text-left text-popover-foreground transition-colors hover:bg-accent focus-visible:bg-accent focus-visible:outline-none disabled:cursor-not-allowed disabled:opacity-40"
             >
-              {item.label}
+              <span className="flex items-center gap-2.5">
+                <span className={`flex size-7 shrink-0 items-center justify-center rounded-full ${item.iconClassName}`}>
+                  <Icon size={14} strokeWidth={2.2} />
+                </span>
+                <span>{item.label}</span>
+              </span>
             </button>
           </li>
-        ),
-      )}
+        );
+      })}
     </ul>
   );
 }

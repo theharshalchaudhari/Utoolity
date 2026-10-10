@@ -2,14 +2,26 @@
 {
   "users": [
     {
-      "id": "wraith-os",
+      "id": "utoolity-os",
       "hostname": "wraith-os",
       "displayName": "Harshal Chaudhari",
       "password": "12345678",
       "macId": "5C:87:9C:EF:FC:7C",
       "role": "intern",
       "preferences": {
-        "utoolity.wallpaper": "Wraith"
+        "utoolity.wallpaper": "default.jpg"
+      }
+    },
+    {
+      "id": "guest-intern",
+      "hostname": "guest-intern",
+      "displayName": "Guest Intern",
+      "password": "guest",
+      "macId": "00:00:00:00:00:00",
+      "role": "intern",
+      "preferences": {
+        "utoolity.wallpaper": "default.jpg",
+        "utoolity.icon-size": "large"
       }
     }
   ]

@@ -7,7 +7,6 @@ node_modules
 
 # Local env files
 .env
-.env.local
 .env.development.local
 .env.test.local
 .env.production.local
@@ -32,6 +31,7 @@ apps/frontend/build
 apps/frontend/dist
 apps/backend/dist
 apps/backend/build
+apps/backend/data/
 
 # Debug
 npm-debug.log*

@@ -13,7 +13,7 @@ import {
   ShieldCheck,
   WifiOff,
 } from "lucide-react";
-import { api } from "../../lib/api";
+import { api, ApiError } from "../../lib/api";
 import { useClock } from "../shared/useClock";
 
 type LockProfile = {
@@ -96,6 +96,8 @@ function Lockcard({
   const [checking, setChecking] = useState(false);
   const [error, setError] = useState("");
   const [fullscreen, setFullscreen] = useState(false);
+  const [wallpaperUrl, setWallpaperUrl] = useState<string | null>(null);
+  const [wallpaperVisible, setWallpaperVisible] = useState(false);
   const [authenticated, setAuthenticated] = useState<boolean | null>(
     initialAuthenticated,
   );
@@ -119,11 +121,6 @@ function Lockcard({
     );
   }, [clearInactivityTimer]);
 
-  const lock = useCallback(() => {
-    setLockscreenState("locked");
-    setError("");
-  }, []);
-
   const startInactivityTimer = useCallback(() => {
     clearInactivityTimer();
     inactivityTimerRef.current = setTimeout(relock, INACTIVITY_TIMEOUT_MS);
@@ -139,21 +136,59 @@ function Lockcard({
   }, [leaving, onUnlock]);
 
   useEffect(() => {
-    const savedWallpaper =
-      window.localStorage.getItem("utoolity.wallpaper") ?? "Wraith";
-    document.documentElement.dataset.wallpaper = savedWallpaper.toLowerCase();
+    let availableWallpapers: Array<{ file: string; url: string }> = [];
+    let selectedWallpaper =
+      window.localStorage.getItem("utoolity.wallpaper") ?? "default.jpg";
+
+    const normalizeWallpaper = (value: string) =>
+      value === "Midnight" ? "default.jpg" : value;
+    const applyWallpaper = () => {
+      selectedWallpaper = normalizeWallpaper(selectedWallpaper);
+      document.documentElement.dataset.wallpaper = selectedWallpaper;
+      setWallpaperUrl(
+        availableWallpapers.find(({ file }) => file === selectedWallpaper)?.url ??
+          availableWallpapers.find(({ file }) => file === "default.jpg")?.url ??
+          availableWallpapers[0]?.url ??
+          null,
+      );
+    };
+
+    applyWallpaper();
+    void fetch("/api/wallpapers", { cache: "no-store" })
+      .then((response) =>
+        response.json() as Promise<{
+          wallpapers?: Array<{ file: string; url: string }>;
+        }>,
+      )
+      .then(({ wallpapers = [] }) => {
+        availableWallpapers = wallpapers;
+        applyWallpaper();
+      })
+      .catch(() => undefined);
+
     void api<{ preferences: Record<string, string> }>("/api/auth/preferences")
       .then(({ preferences }) => {
         const wallpaper = preferences["utoolity.wallpaper"];
         if (wallpaper) {
-          window.localStorage.setItem("utoolity.wallpaper", wallpaper);
-          document.documentElement.dataset.wallpaper = wallpaper.toLowerCase();
+          selectedWallpaper = wallpaper;
+          window.localStorage.setItem(
+            "utoolity.wallpaper",
+            normalizeWallpaper(wallpaper),
+          );
+          applyWallpaper();
         }
       })
       .catch(() => {
         // The cached wallpaper remains active while the backend reconnects.
       });
   }, []);
+
+  useEffect(() => {
+    if (!wallpaperUrl) return;
+    setWallpaperVisible(false);
+    const frame = window.requestAnimationFrame(() => setWallpaperVisible(true));
+    return () => window.cancelAnimationFrame(frame);
+  }, [wallpaperUrl]);
 
   useEffect(() => {
     let active = true;
@@ -180,7 +215,9 @@ function Lockcard({
 
       if (!active) return;
       setAuthenticated(hasAuthenticatedSession);
-      setLockscreenState(hasAuthenticatedSession ? "sleep" : "locked");
+      setLockscreenState(
+        hasAuthenticatedSession && initialState === "sleep" ? "sleep" : "locked",
+      );
 
       const injectedHostname = (
         window as Window & { __UTOOLITY_DEVICE_HOSTNAME__?: string }
@@ -237,16 +274,19 @@ function Lockcard({
         if (!active) return;
 
         const user = response.user;
-        if (!user || user.id === "guest") {
+        if (!user) {
           setProfile({
-            id: "guest",
-            hostname: deviceHostname,
-            displayName: "Unregistered workstation",
+            id: "guest-intern",
+            hostname: "guest-intern",
+            displayName: "Guest Intern",
             locked: true,
           });
-          setError("This workstation is not registered on the server.");
+          setHostname("guest-intern");
+          setError("This workstation is not registered. Using Guest Intern.");
         } else {
           setProfile({ ...user, locked: true });
+          setHostname(user.hostname);
+          window.localStorage.setItem(HOSTNAME_STORAGE_KEY, user.hostname);
           setError("");
         }
       } catch (cause) {
@@ -274,21 +314,51 @@ function Lockcard({
   }, [clearInactivityTimer]);
 
   useEffect(() => {
+    const syncShellState = (event: Event) => {
+      const state = (event as CustomEvent<LockscreenState>).detail;
+      if (state !== "sleep" && state !== "locked") return;
+      setLockscreenState(state);
+      setAuthenticated(state === "sleep");
+      setLeaving(false);
+      setPassword("");
+      if (state === "locked") {
+        setProfile((current) =>
+          current ? { ...current, locked: true } : current,
+        );
+      }
+    };
+
+    window.addEventListener("utoolity:shell-state-changed", syncShellState);
+    return () =>
+      window.removeEventListener("utoolity:shell-state-changed", syncShellState);
+  }, []);
+
+  useEffect(() => {
+    setLockscreenState(initialState);
+    setAuthenticated(initialAuthenticated);
+    setLeaving(false);
+    setPassword("");
+    if (initialState === "locked") {
+      setProfile((current) =>
+        current ? { ...current, locked: true } : current,
+      );
+    }
+  }, [initialAuthenticated, initialState]);
+
+  useEffect(() => {
     if (!profile || authenticated !== true || lockscreenState !== "sleep") {
       return;
     }
 
-    const sleepTimer = setTimeout(lock, 10 * 60 * 1000);
     const wakeToDesktop = () => leaveLockscreen();
     window.addEventListener("pointerdown", wakeToDesktop, { passive: true });
     window.addEventListener("keydown", wakeToDesktop);
 
     return () => {
-      clearTimeout(sleepTimer);
       window.removeEventListener("pointerdown", wakeToDesktop);
       window.removeEventListener("keydown", wakeToDesktop);
     };
-  }, [authenticated, leaveLockscreen, lock, lockscreenState, profile]);
+  }, [authenticated, leaveLockscreen, lockscreenState, profile]);
 
   useEffect(() => {
     if (!profile || lockscreenState !== "locked") return;
@@ -332,7 +402,9 @@ function Lockcard({
       window.localStorage.setItem(HOSTNAME_STORAGE_KEY, user.hostname);
       leaveLockscreen();
     } catch (cause) {
-      console.error("Lockscreen authentication failed:", cause);
+      if (!(cause instanceof ApiError && cause.status === 401)) {
+        console.error("Lockscreen authentication failed:", cause);
+      }
       setError(
         cause instanceof Error ? cause.message : "Authentication failed.",
       );
@@ -372,6 +444,15 @@ function Lockcard({
         leaving ? "lockscreen-exit" : "lockscreen-enter"
       }`}
     >
+      {wallpaperUrl && (
+        <div
+          aria-hidden="true"
+          className={`absolute inset-0 -z-0 bg-cover bg-center transition-opacity duration-700 ease-out ${
+            wallpaperVisible ? "opacity-100" : "opacity-0"
+          }`}
+          style={{ backgroundImage: `url("${wallpaperUrl}")` }}
+        />
+      )}
       <div aria-hidden="true" className="lockscreen-orb lockscreen-orb-one" />
       <div aria-hidden="true" className="lockscreen-orb lockscreen-orb-two" />
       <div aria-hidden="true" className="lockscreen-orb lockscreen-orb-three" />
@@ -379,6 +460,8 @@ function Lockcard({
       <button
         type="button"
         onClick={toggleFullscreen}
+        onPointerDown={(event) => event.stopPropagation()}
+        onKeyDown={(event) => event.stopPropagation()}
         aria-label={fullscreen ? "Exit fullscreen" : "Enter fullscreen"}
         className="absolute top-5 right-5 z-20 rounded-full border border-border/60 bg-card/50 p-3 text-foreground/70 backdrop-blur-xl transition hover:bg-card hover:text-foreground"
       >
@@ -386,12 +469,12 @@ function Lockcard({
       </button>
 
       <div className="relative z-10 flex w-full max-w-3xl flex-col items-center px-5 py-12 text-center">
-        <p className="text-xl font-bold tracking-[0.24em] text-muted-foreground">
+        <p className="text-xl font-bold tracking-[0.24em] text-background/80">
           {getGreeting(now)}
         </p>
         <time
           dateTime={now.toISOString()}
-          className="mt-3 font-mono text-[clamp(1rem,16vw,11.5rem)] leading-none font-black tracking-[-0.08em] text-foreground tabular-nums"
+          className="mt-3 bg-gradient-to-b from-primary to-black bg-clip-text font-mono text-[clamp(1rem,16vw,11.5rem)] leading-none font-black tracking-[-0.08em] text-transparent tabular-nums"
         >
           {now.toLocaleTimeString(undefined, {
             hour: "numeric",
@@ -399,7 +482,7 @@ function Lockcard({
             hour12: true,
           })}
         </time>
-        <p className="mt-5 text-base font-semibold text-muted-foreground sm:text-xl">
+        <p className="mt-5 text-base font-semibold text-background/80 sm:text-xl">
           {now.toLocaleDateString(undefined, {
             weekday: "long",
             month: "long",
@@ -409,9 +492,13 @@ function Lockcard({
 
         <div className="mt-12 flex w-full flex-col items-center">
           <div className="mb-4 flex size-20 items-center justify-center rounded-full border border-border/70 bg-card/60 shadow-[0_0_0_8px_color-mix(in_oklab,var(--border)_20%,transparent)]">
-            <LockKeyhole className="size-8 text-foreground/85" />
+            <LockKeyhole
+              className={`size-8 text-background/85 transition-opacity duration-500 ${
+                lockscreenState === "locked" ? "opacity-100" : "opacity-35"
+              }`}
+            />
           </div>
-          <h1 className="max-w-full wrap-break-word text-xl font-bold text-foreground">
+          <h1 className="max-w-full wrap-break-word text-xl font-bold text-background">
             {loadingProfile
               ? "Loading profile..."
               : profile?.displayName ?? "Assigned workstation"}
@@ -422,8 +509,8 @@ function Lockcard({
               onSubmit={handleUnlock}
               className="mt-8 flex w-full max-w-sm flex-col items-center"
             >
-              <p className="mb-4 text-sm font-medium tracking-wide text-muted-foreground">
-                Tap to unlock
+              <p className="mb-4 text-sm font-medium tracking-wide text-background/80">
+                Enter password to unlock
               </p>
               <input
                 aria-label="Password"
@@ -452,7 +539,7 @@ function Lockcard({
               )}
             </form>
           ) : (
-            <p className="mt-8 text-sm font-medium tracking-wide text-muted-foreground">
+            <p className="mt-8 text-sm font-medium tracking-wide text-background/80">
               Tap or press any key to wake
             </p>
           )}

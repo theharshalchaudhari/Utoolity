@@ -13,6 +13,7 @@ import {
   Scan,
   FolderKanban,
   Settings2,
+  Sparkles,
 } from "lucide-react";
 
 export type ToolApp = {
@@ -53,13 +54,6 @@ export const desktopCategories: DesktopCategory[] = [
         path: "/tools/bounding-box",
         icon: Scan,
         description: "Draw and edit object bounding boxes.",
-      },
-      {
-        id: "image-classification",
-        name: "Image Classification",
-        path: "/tools/image-classification",
-        icon: Tags,
-        description: "Classify images into dataset labels.",
       },
     ],
   },
@@ -121,6 +115,29 @@ export const desktopCategories: DesktopCategory[] = [
         icon: Tags,
         description: "Classify images into dataset labels.",
       },
+      {
+        id: "augmentation",
+        name: "Augmentation",
+        path: "/tools/augmentation",
+        icon: Sparkles,
+        description: "Generate augmented image datasets.",
+      },
+    ],
+  },
+  {
+    id: "Roi",
+    name: "Roi",
+    icon: ScanLine,
+    tone: "blue",
+    description: "Configure Roi.",
+    apps: [
+      {
+        id: "roi-tool",
+        name: "Roi Tool",
+        path: "/tools/roi-tool",
+        icon: ScanLine,
+        description: "Configure and manage regions of interest.",
+      }
     ],
   },
   {

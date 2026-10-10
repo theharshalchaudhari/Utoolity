@@ -12,10 +12,11 @@ const sizes = [
 ] as const;
 
 export default function IconSize() {
-  const [size, setSize] = useUserPreference<(typeof sizes)[number]["value"]>("utoolity.icon-size", "medium");
+  const [size, setSize] = useUserPreference<(typeof sizes)[number]["value"]>("utoolity.icon-size", "large");
 
   useEffect(() => {
     document.documentElement.dataset.desktopIconSize = size;
+    window.dispatchEvent(new CustomEvent("utoolity:icon-size-changed"));
   }, [size]);
 
   return (

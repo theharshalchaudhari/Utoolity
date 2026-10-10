@@ -30,8 +30,21 @@ type PublicUser = Pick<
 type AuthSession = {
   userId?: string;
   role?: "intern";
+  lastActivityAt?: number;
   save(callback: (error?: Error) => void): void;
   destroy(callback: (error?: Error) => void): void;
+};
+type WorkspaceState = Record<string, unknown>;
+type SessionRecord = {
+  userId: string;
+  hostname: string;
+  displayName: string;
+  deviceId: string;
+  role: "intern";
+  active: boolean;
+  activeApps: unknown[];
+  lastActivityAt: number;
+  updatedAt: number;
 };
 
 const preferenceKeys = new Set([
@@ -43,15 +56,55 @@ const preferenceKeys = new Set([
   "utoolity.icon-size",
 ]);
 const defaultPreferences: Record<string, string> = {
-  "utoolity.wallpaper": "Wraith",
+  "utoolity.wallpaper": "default.jpg",
+  "utoolity.icon-size": "large",
 };
 
 function getSession(request: FastifyRequest): AuthSession {
   return (request as FastifyRequest & { session: AuthSession }).session;
 }
 
+async function readSessions(): Promise<Record<string, SessionRecord>> {
+  const raw = JSON.parse(await readFile(sessionsFilePath, "utf8")) as {
+    sessions?: Record<string, SessionRecord>;
+  };
+  return raw.sessions ?? {};
+}
+
+async function writeSessions(sessions: Record<string, SessionRecord>): Promise<void> {
+  await writeFile(
+    sessionsFilePath,
+    `${JSON.stringify({ sessions }, null, 2)}\n`,
+    "utf8",
+  );
+}
+
+async function updateSessionRecord(
+  user: InternUser,
+  values: Pick<SessionRecord, "active" | "activeApps" | "lastActivityAt">,
+): Promise<void> {
+  const sessions = await readSessions();
+  const now = Date.now();
+  sessions[user.id] = {
+    userId: user.id,
+    hostname: user.hostname,
+    displayName: user.displayName,
+    deviceId: user.macId,
+    role: user.role,
+    ...values,
+    updatedAt: now,
+  };
+  await writeSessions(sessions);
+}
+
 const usersFilePath = fileURLToPath(
   new URL("../data/users.json", import.meta.url),
+);
+const workspacesFilePath = fileURLToPath(
+  new URL("../data/workspaces.json", import.meta.url),
+);
+const sessionsFilePath = fileURLToPath(
+  new URL("../data/sessions.json", import.meta.url),
 );
 
 async function readUsers(): Promise<InternUser[]> {
@@ -68,6 +121,13 @@ async function readUsers(): Promise<InternUser[]> {
   }
 
   return parsed.users as InternUser[];
+}
+
+async function readWorkspaces(): Promise<Record<string, WorkspaceState>> {
+  const raw = JSON.parse(await readFile(workspacesFilePath, "utf8")) as {
+    workspaces?: Record<string, WorkspaceState>;
+  };
+  return raw.workspaces ?? {};
 }
 
 async function writeUsers(users: InternUser[]): Promise<void> {
@@ -152,11 +212,63 @@ async function establishSession(
   const session = getSession(request);
   session.userId = user.id;
   session.role = user.role;
-
+  session.lastActivityAt = Date.now();
   await saveSession(request);
 }
 
 export default async function authRoutes(app: FastifyInstance) {
+  app.get("/auth/workspace", async (request, reply) => {
+    const userId = getSession(request).userId;
+    if (!userId) return reply.code(401).send({ message: "Not authenticated." });
+    const workspaces = await readWorkspaces();
+    return { workspace: workspaces[userId] ?? {} };
+  });
+
+  app.put<{ Body: WorkspaceState }>("/auth/workspace", async (request, reply) => {
+    const userId = getSession(request).userId;
+    if (!userId) return reply.code(401).send({ message: "Not authenticated." });
+    const users = await readUsers();
+    const user = findById(users, userId);
+    if (!user) return reply.code(401).send({ message: "Session user no longer exists." });
+    const workspaces = await readWorkspaces();
+    workspaces[userId] = request.body ?? {};
+    await writeFile(workspacesFilePath, JSON.stringify({ workspaces }, null, 2));
+    const activeApps = request.body && Array.isArray(request.body.openApps)
+      ? request.body.openApps
+      : [];
+    await updateSessionRecord(user, {
+      active: true,
+      activeApps,
+      lastActivityAt: Date.now(),
+    });
+    return { success: true };
+  });
+
+  app.post("/auth/activity", async (request, reply) => {
+    const session = getSession(request);
+    if (!session.userId) {
+      return reply.code(401).send({ message: "Not authenticated." });
+    }
+    session.lastActivityAt = Date.now();
+    try {
+      const users = await readUsers();
+      const user = findById(users, session.userId);
+      if (user) {
+        const sessions = await readSessions();
+        const existing = sessions[user.id];
+        await updateSessionRecord(user, {
+          active: true,
+          activeApps: existing?.activeApps ?? [],
+          lastActivityAt: session.lastActivityAt,
+        });
+      }
+    } catch (error) {
+      request.log.error(error, "Unable to persist session activity.");
+    }
+    await saveSession(request);
+    return { success: true, lastActivityAt: session.lastActivityAt };
+  });
+
   // POST /api/auth/login
   app.post<{ Body: CredentialsBody }>(
     "/auth/login",
@@ -178,6 +290,11 @@ export default async function authRoutes(app: FastifyInstance) {
         }
 
         await establishSession(request, user);
+        await updateSessionRecord(user, {
+          active: true,
+          activeApps: [],
+          lastActivityAt: Date.now(),
+        });
 
         return {
           user: publicUser(user),
@@ -195,6 +312,18 @@ export default async function authRoutes(app: FastifyInstance) {
   // POST /api/auth/logout
   app.post("/auth/logout", async (request, reply) => {
     try {
+      const session = getSession(request);
+      if (session.userId) {
+        const users = await readUsers();
+        const user = findById(users, session.userId);
+        if (user) {
+          await updateSessionRecord(user, {
+            active: false,
+            activeApps: [],
+            lastActivityAt: Date.now(),
+          });
+        }
+      }
       await destroySession(request);
       reply.header("Set-Cookie", "sessionId=; Path=/; Max-Age=0; HttpOnly; SameSite=Lax");
 
@@ -216,52 +345,6 @@ export default async function authRoutes(app: FastifyInstance) {
       return reply.code(401).send({
         message: "Not authenticated.",
       });
-
-      app.get("/auth/preferences", async (request, reply) => {
-        const userId = getSession(request).userId;
-        if (!userId) return reply.code(401).send({ message: "Not authenticated." });
-
-        try {
-          const users = await readUsers();
-          const user = findById(users, userId);
-          if (!user) return reply.code(401).send({ message: "Session user no longer exists." });
-          return { preferences: { ...defaultPreferences, ...(user.preferences ?? {}) } };
-        } catch (error) {
-          request.log.error(error, "Unable to load user preferences");
-          return reply.code(500).send({ message: "Unable to load preferences." });
-        }
-      });
-
-      app.patch<{ Body: Record<string, unknown> }>("/auth/preferences", async (request, reply) => {
-        const userId = getSession(request).userId;
-        if (!userId) return reply.code(401).send({ message: "Not authenticated." });
-
-        const entries = Object.entries(request.body ?? {});
-        if (
-          entries.length === 0 ||
-          entries.some(
-            ([key, value]) =>
-              !preferenceKeys.has(key) ||
-              typeof value !== "string" ||
-              value.length > 100,
-          )
-        ) {
-          return reply.code(400).send({ message: "Invalid preference payload." });
-        }
-
-        try {
-          const users = await readUsers();
-          const user = findById(users, userId);
-          if (!user) return reply.code(401).send({ message: "Session user no longer exists." });
-          user.preferences = { ...defaultPreferences, ...(user.preferences ?? {}) };
-          for (const [key, value] of entries) user.preferences[key] = value as string;
-          await writeUsers(users);
-          return { preferences: user.preferences };
-        } catch (error) {
-          request.log.error(error, "Unable to save user preferences");
-          return reply.code(500).send({ message: "Unable to save preferences." });
-        }
-      });
     }
 
     try {
@@ -278,6 +361,7 @@ export default async function authRoutes(app: FastifyInstance) {
         return reply.code(401).send({
           message: "Session user no longer exists.",
         });
+
       }
 
       return {
@@ -288,6 +372,40 @@ export default async function authRoutes(app: FastifyInstance) {
 
       return reply.code(500).send({
         message: "Unable to load the current user.",
+      });
+
+      app.get("/auth/preferences", async (request, reply) => {
+        const userId = getSession(request).userId;
+        if (!userId) return reply.code(401).send({ message: "Not authenticated." });
+        try {
+          const user = findById(await readUsers(), userId);
+          if (!user) return reply.code(401).send({ message: "Session user no longer exists." });
+          return { preferences: { ...defaultPreferences, ...(user.preferences ?? {}) } };
+        } catch (error) {
+          request.log.error(error, "Unable to load user preferences");
+          return reply.code(500).send({ message: "Unable to load preferences." });
+        }
+      });
+
+      app.patch<{ Body: Record<string, unknown> }>("/auth/preferences", async (request, reply) => {
+        const userId = getSession(request).userId;
+        if (!userId) return reply.code(401).send({ message: "Not authenticated." });
+        const entries = Object.entries(request.body ?? {});
+        if (entries.length === 0 || entries.some(([key, value]) => !preferenceKeys.has(key) || typeof value !== "string" || value.length > 100)) {
+          return reply.code(400).send({ message: "Invalid preference payload." });
+        }
+        try {
+          const users = await readUsers();
+          const user = findById(users, userId);
+          if (!user) return reply.code(401).send({ message: "Session user no longer exists." });
+          user.preferences = { ...defaultPreferences, ...(user.preferences ?? {}) };
+          for (const [key, value] of entries) user.preferences[key] = value as string;
+          await writeUsers(users);
+          return { preferences: user.preferences };
+        } catch (error) {
+          request.log.error(error, "Unable to save user preferences");
+          return reply.code(500).send({ message: "Unable to save preferences." });
+        }
       });
     }
   });
@@ -309,12 +427,15 @@ export default async function authRoutes(app: FastifyInstance) {
       const user = findByHostname(users, hostname);
 
       if (!user) {
+        const guestUser = findById(users, "guest-intern");
+        if (!guestUser) {
+          return reply.code(500).send({
+            message: "Guest Intern account is not configured.",
+          });
+        }
         return {
           user: {
-            id: "guest",
-            hostname,
-            displayName: "Guest",
-            role: "intern" as const,
+            ...publicUser(guestUser),
             locked: true,
           },
         };

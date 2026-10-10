@@ -14,6 +14,7 @@ import imageClassificationRoutes from "./routes/imageClassification.routes.js";
 import polygonAnnotationRoutes from "./routes/polygonAnnotation.routes.js";
 import boundingBoxRoutes from "./routes/boundingBox.routes.js";
 import videoMergeRoutes from "./routes/videoMerge.routes.js";
+import storageRoutes from "./routes/storage.routes.js";
 
 import { errorMiddleware } from "./middleware/error.middleware.js";
 
@@ -129,6 +130,10 @@ app.get("/health", async () => ({
 }));
 
 await app.register(authRoutes, {
+  prefix: "/api",
+});
+
+await app.register(storageRoutes, {
   prefix: "/api",
 });
 

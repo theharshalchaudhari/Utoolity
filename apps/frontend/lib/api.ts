@@ -5,6 +5,16 @@ const API_URL =
     ? `${window.location.protocol}//${window.location.hostname}:4000`
     : "http://localhost:4000");
 
+export class ApiError extends Error {
+  readonly status: number;
+
+  constructor(message: string, status: number) {
+    super(message);
+    this.name = "ApiError";
+    this.status = status;
+  }
+}
+
 export async function api<T>(
   path: string,
   options: RequestInit = {},
@@ -80,7 +90,10 @@ export async function api<T>(
           ? body
           : `Request failed (${response.status}).`;
 
-    throw new Error(message);
+    if (response.status === 401 && typeof window !== "undefined") {
+      window.dispatchEvent(new Event("utoolity:auth-expired"));
+    }
+    throw new ApiError(message, response.status);
   }
 
   if (!text) {
