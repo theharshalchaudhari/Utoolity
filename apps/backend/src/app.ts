@@ -28,76 +28,39 @@ if (!sessionSecret || Buffer.byteLength(sessionSecret, "utf8") < 32) {
 }
 
 const allowedOrigins = new Set(
-  (process.env.FRONTEND_URL ?? "http://localhost:3000")
+  (
+    process.env.FRONTEND_URL ??
+    "http://localhost:3000,http://127.0.0.1:3000"
+  )
     .split(",")
     .map((origin) => origin.trim())
     .filter(Boolean),
 );
-
-function isAllowedDevelopmentOrigin(origin: string): boolean {
-  try {
-    const url = new URL(origin);
-
-    if (url.protocol !== "http:") {
-      return false;
-    }
-
-    const hostname = url.hostname.toLowerCase();
-
-    if (hostname === "localhost" || hostname === "127.0.0.1") {
-      return true;
-    }
-
-    const octets = hostname.split(".").map(Number);
-
-    if (
-      octets.length !== 4 ||
-      octets.some(
-        (octet) =>
-          !Number.isInteger(octet) || octet < 0 || octet > 255,
-      )
-    ) {
-      return false;
-    }
-
-    const [first, second] = octets;
-
-    return (
-      first === 10 ||
-      (first === 192 && second === 168) ||
-      (first === 172 && second >= 16 && second <= 31)
-    );
-  } catch {
-    return false;
-  }
-}
 
 const app = Fastify({
   logger: true,
   bodyLimit: 50 * 1024 * 1024,
 });
 
-// Configure the error handler before registering routes.
+// Configure error handling before registering routes.
 app.setErrorHandler(errorMiddleware);
 
+// Explicitly allow configured frontend origins.
 await app.register(cors, {
   credentials: true,
 
   origin(origin, callback) {
-    // Requests without an Origin header (for example, server-side health checks).
+    // Allow requests without an Origin header, such as server-side health checks.
     if (!origin) {
       return callback(null, true);
     }
 
-    const isAllowed =
-      allowedOrigins.has(origin) ||
-      (!isProduction && isAllowedDevelopmentOrigin(origin));
-
-    if (isAllowed) {
-      return callback(null, origin);
+    if (allowedOrigins.has(origin)) {
+      return callback(null, true);
     }
 
     app.log.warn({ origin }, "Blocked request by CORS policy");
+
     return callback(new Error("Origin is not allowed by CORS"), false);
   },
 });
@@ -125,10 +88,12 @@ await app.register(multipart, {
   },
 });
 
+// Health check
 app.get("/health", async () => ({
   status: "ok",
 }));
 
+// Authentication and storage
 await app.register(authRoutes, {
   prefix: "/api",
 });
@@ -137,6 +102,7 @@ await app.register(storageRoutes, {
   prefix: "/api",
 });
 
+// Video tools
 await app.register(videoToImagesRoutes, {
   prefix: "/api/tools/video-to-images",
 });
@@ -149,6 +115,11 @@ await app.register(videoConverterRoutes, {
   prefix: "/api/tools/video-converter",
 });
 
+await app.register(videoMergeRoutes, {
+  prefix: "/api/tools/video-merge",
+});
+
+// Image tools
 await app.register(imageConverterRoutes, {
   prefix: "/api/tools/image-converter",
 });
@@ -163,10 +134,6 @@ await app.register(polygonAnnotationRoutes, {
 
 await app.register(boundingBoxRoutes, {
   prefix: "/api/tools/bounding-box",
-});
-
-await app.register(videoMergeRoutes, {
-  prefix: "/api/tools/video-merge",
 });
 
 export default app;

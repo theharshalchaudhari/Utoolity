@@ -2,14 +2,16 @@ import { hostname } from "node:os";
 import { NextResponse } from "next/server";
 
 export const runtime = "nodejs";
-export const dynamic = "force-dynamic";
+export const dynamic = "force-static";
 
-export async function GET() {
+const deviceHostname = hostname();
+
+export function GET() {
   return NextResponse.json(
-    { hostname: hostname() },
+    { hostname: deviceHostname },
     {
       headers: {
-        "Cache-Control": "no-store, max-age=0",
+        "Cache-Control": "public, max-age=86400",
       },
     },
   );

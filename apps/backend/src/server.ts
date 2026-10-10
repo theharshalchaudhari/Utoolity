@@ -1,4 +1,3 @@
-
 import "dotenv/config";
 
 import app from "./app.js";
@@ -17,6 +16,10 @@ try {
 
   app.log.info(`Backend server listening on ${host}:${port}`);
 } catch (error) {
-  app.log.error({ err: error }, "Failed to start the backend server");
+  app.log.error(
+    { err: error },
+    "Failed to start the backend server",
+  );
+
   process.exitCode = 1;
 }

@@ -1,5 +1,4 @@
 "use client";
-
 import {
   useCallback,
   useEffect,
@@ -14,15 +13,14 @@ import {
   WifiOff,
 } from "lucide-react";
 import { api, ApiError } from "../../lib/api";
+import { getDeviceHostname } from "@/lib/device-hostname";
 import { useClock } from "../shared/useClock";
-
 type LockProfile = {
   id: string;
   hostname: string;
   displayName: string;
   locked: boolean;
 };
-
 type LockProfileResponse = {
   user?: {
     id: string;
@@ -31,7 +29,6 @@ type LockProfileResponse = {
     role: "intern";
   };
 };
-
 type UnlockResponse = {
   success: boolean;
   user?: {
@@ -41,22 +38,17 @@ type UnlockResponse = {
     role: "intern";
   };
 };
-
 type LockcardProps = {
   socketDisconnected: boolean;
   initialAuthenticated?: boolean;
   initialState?: LockscreenState;
   onUnlock?: () => void;
 };
-
 type LockscreenState = "sleep" | "locked";
-
 const HOSTNAME_STORAGE_KEY = "utoolity.hostname";
 const INACTIVITY_TIMEOUT_MS = 60_000;
-
 function getGreeting(date: Date): string {
   const hour = date.getHours();
-
   if (hour >= 22 || hour < 5) return "STILL UP?";
   if (hour < 9) return "EARLY BIRD?";
   if (hour < 12) return "GOOD MORNING";
@@ -65,7 +57,6 @@ function getGreeting(date: Date): string {
   if (hour < 20) return "GOOD EVENING";
   return "CALLING IT A DAY?";
 }
-
 function getInitialProfile(hostname = ""): LockProfile {
   return {
     id: "unknown",
@@ -74,7 +65,6 @@ function getInitialProfile(hostname = ""): LockProfile {
     locked: true,
   };
 }
-
 function Lockcard({
   socketDisconnected,
   initialAuthenticated = false,
@@ -104,14 +94,12 @@ function Lockcard({
   const [lockscreenState, setLockscreenState] =
     useState<LockscreenState>(initialState);
   const [leaving, setLeaving] = useState(false);
-
   const clearInactivityTimer = useCallback(() => {
     if (inactivityTimerRef.current) {
       clearTimeout(inactivityTimerRef.current);
       inactivityTimerRef.current = undefined;
     }
   }, []);
-
   const relock = useCallback(() => {
     clearInactivityTimer();
     setPassword("");
@@ -120,26 +108,21 @@ function Lockcard({
       current ? { ...current, locked: true } : current,
     );
   }, [clearInactivityTimer]);
-
   const startInactivityTimer = useCallback(() => {
     clearInactivityTimer();
     inactivityTimerRef.current = setTimeout(relock, INACTIVITY_TIMEOUT_MS);
   }, [clearInactivityTimer, relock]);
-
   const leaveLockscreen = useCallback(() => {
     if (leaving) return;
-
     setLeaving(true);
     transitionTimerRef.current = setTimeout(() => {
       onUnlock?.();
     }, 350);
   }, [leaving, onUnlock]);
-
   useEffect(() => {
     let availableWallpapers: Array<{ file: string; url: string }> = [];
     let selectedWallpaper =
       window.localStorage.getItem("utoolity.wallpaper") ?? "default.jpg";
-
     const normalizeWallpaper = (value: string) =>
       value === "Midnight" ? "default.jpg" : value;
     const applyWallpaper = () => {
@@ -152,7 +135,6 @@ function Lockcard({
           null,
       );
     };
-
     applyWallpaper();
     void fetch("/api/wallpapers", { cache: "no-store" })
       .then((response) =>
@@ -165,7 +147,6 @@ function Lockcard({
         applyWallpaper();
       })
       .catch(() => undefined);
-
     void api<{ preferences: Record<string, string> }>("/api/auth/preferences")
       .then(({ preferences }) => {
         const wallpaper = preferences["utoolity.wallpaper"];
@@ -182,20 +163,16 @@ function Lockcard({
         // The cached wallpaper remains active while the backend reconnects.
       });
   }, []);
-
   useEffect(() => {
     if (!wallpaperUrl) return;
     setWallpaperVisible(false);
     const frame = window.requestAnimationFrame(() => setWallpaperVisible(true));
     return () => window.cancelAnimationFrame(frame);
   }, [wallpaperUrl]);
-
   useEffect(() => {
     let active = true;
-
     async function loadProfile() {
       let hasAuthenticatedSession = initialAuthenticated;
-
       if (!initialAuthenticated) {
         try {
           await api("/api/auth/me");
@@ -206,53 +183,32 @@ function Lockcard({
             message === "Not authenticated." ||
             message === "Session user no longer exists." ||
             message.includes("(401)");
-
           if (!isExpectedUnauthenticated) {
             console.error("Could not verify the current session:", cause);
           }
         }
       }
-
       if (!active) return;
       setAuthenticated(hasAuthenticatedSession);
       setLockscreenState(
         hasAuthenticatedSession && initialState === "sleep" ? "sleep" : "locked",
       );
-
       const injectedHostname = (
         window as Window & { __UTOOLITY_DEVICE_HOSTNAME__?: string }
       ).__UTOOLITY_DEVICE_HOSTNAME__?.trim();
       const savedHostname = window.localStorage
         .getItem(HOSTNAME_STORAGE_KEY)
         ?.trim();
-
       let frontendHostname = "";
       try {
-        const response = await fetch("/internal/device-hostname", {
-          cache: "no-store",
-          credentials: "same-origin",
-        });
-        if (response.ok) {
-          const payload: unknown = await response.json();
-          if (
-            typeof payload === "object" &&
-            payload !== null &&
-            "hostname" in payload &&
-            typeof payload.hostname === "string"
-          ) {
-            frontendHostname = payload.hostname.trim();
-          }
-        }
+        frontendHostname = (await getDeviceHostname()).trim();
       } catch (cause) {
         console.error("Could not resolve frontend hostname:", cause);
       }
-
       const deviceHostname =
         frontendHostname || injectedHostname || savedHostname || "";
-
       if (!active) return;
       setHostname(deviceHostname);
-
       if (!deviceHostname) {
         setProfile({
           id: "unknown",
@@ -264,15 +220,12 @@ function Lockcard({
         setLoadingProfile(false);
         return;
       }
-
       setProfile(getInitialProfile(deviceHostname));
-
       try {
         const response = await api<LockProfileResponse>(
           `/api/lockscreen/me?hostname=${encodeURIComponent(deviceHostname)}`,
         );
         if (!active) return;
-
         const user = response.user;
         if (!user) {
           setProfile({
@@ -302,7 +255,6 @@ function Lockcard({
         if (active) setLoadingProfile(false);
       }
     }
-
     void loadProfile();
     return () => {
       active = false;
@@ -312,7 +264,6 @@ function Lockcard({
       }
     };
   }, [clearInactivityTimer]);
-
   useEffect(() => {
     const syncShellState = (event: Event) => {
       const state = (event as CustomEvent<LockscreenState>).detail;
@@ -327,12 +278,10 @@ function Lockcard({
         );
       }
     };
-
     window.addEventListener("utoolity:shell-state-changed", syncShellState);
     return () =>
       window.removeEventListener("utoolity:shell-state-changed", syncShellState);
   }, []);
-
   useEffect(() => {
     setLockscreenState(initialState);
     setAuthenticated(initialAuthenticated);
@@ -344,32 +293,26 @@ function Lockcard({
       );
     }
   }, [initialAuthenticated, initialState]);
-
   useEffect(() => {
     if (!profile || authenticated !== true || lockscreenState !== "sleep") {
       return;
     }
-
     const wakeToDesktop = () => leaveLockscreen();
     window.addEventListener("pointerdown", wakeToDesktop, { passive: true });
     window.addEventListener("keydown", wakeToDesktop);
-
     return () => {
       window.removeEventListener("pointerdown", wakeToDesktop);
       window.removeEventListener("keydown", wakeToDesktop);
     };
   }, [authenticated, leaveLockscreen, lockscreenState, profile]);
-
   useEffect(() => {
     if (!profile || lockscreenState !== "locked") return;
-
     const activityEvents = ["pointerdown", "keydown", "mousemove", "touchstart"];
     const handleActivity = () => startInactivityTimer();
     activityEvents.forEach((event) =>
       window.addEventListener(event, handleActivity, { passive: true }),
     );
     startInactivityTimer();
-
     return () => {
       activityEvents.forEach((event) =>
         window.removeEventListener(event, handleActivity),
@@ -377,15 +320,12 @@ function Lockcard({
       clearInactivityTimer();
     };
   }, [clearInactivityTimer, lockscreenState, profile, startInactivityTimer]);
-
   const handleUnlock = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     const assignedHostname = hostname.trim();
     if (!assignedHostname || !password || checking || !profile) return;
-
     setChecking(true);
     setError("");
-
     try {
       const response = await api<UnlockResponse>("/api/lockscreen/unlock", {
         method: "POST",
@@ -395,7 +335,6 @@ function Lockcard({
         setError("Unable to unlock this device.");
         return;
       }
-
       const user = response.user ?? profile;
       setProfile({ ...user, locked: false });
       setHostname(user.hostname);
@@ -413,7 +352,6 @@ function Lockcard({
       setPassword("");
     }
   };
-
   const toggleFullscreen = async () => {
     try {
       if (!document.fullscreenElement) {
@@ -425,7 +363,6 @@ function Lockcard({
       setError("Fullscreen is not available.");
     }
   };
-
   useEffect(() => {
     const handleFullscreenChange = () =>
       setFullscreen(Boolean(document.fullscreenElement));
@@ -433,48 +370,44 @@ function Lockcard({
     return () =>
       document.removeEventListener("fullscreenchange", handleFullscreenChange);
   }, []);
-
   const isLocked = profile?.locked !== false;
-
   return (
     <section
       ref={cardRef}
-      aria-label="Lock screen"
+      _aria-label_="Lock screen"
       className={`lockscreen-shell lockscreen-wallpaper relative isolate flex h-full min-h-dvh w-full flex-col items-center justify-center overflow-hidden rounded-xl text-foreground ${
         leaving ? "lockscreen-exit" : "lockscreen-enter"
       }`}
     >
       {wallpaperUrl && (
         <div
-          aria-hidden="true"
-          className={`absolute inset-0 -z-0 bg-cover bg-center transition-opacity duration-700 ease-out ${
+          _aria-hidden_="true"
+          className={`absolute inset-0 z-0 bg-cover bg-center transition-opacity duration-700 ease-out ${
             wallpaperVisible ? "opacity-100" : "opacity-0"
           }`}
           style={{ backgroundImage: `url("${wallpaperUrl}")` }}
         />
       )}
-      <div aria-hidden="true" className="lockscreen-orb lockscreen-orb-one" />
-      <div aria-hidden="true" className="lockscreen-orb lockscreen-orb-two" />
-      <div aria-hidden="true" className="lockscreen-orb lockscreen-orb-three" />
-
+      <div _aria-hidden_="true" className="lockscreen-orb lockscreen-orb-one" />
+      <div _aria-hidden_="true" className="lockscreen-orb lockscreen-orb-two" />
+      <div _aria-hidden_="true" className="lockscreen-orb lockscreen-orb-three" />
       <button
         type="button"
         onClick={toggleFullscreen}
         onPointerDown={(event) => event.stopPropagation()}
         onKeyDown={(event) => event.stopPropagation()}
-        aria-label={fullscreen ? "Exit fullscreen" : "Enter fullscreen"}
+        _aria-label_={fullscreen ? "Exit fullscreen" : "Enter fullscreen"}
         className="absolute top-5 right-5 z-20 rounded-full border border-border/60 bg-card/50 p-3 text-foreground/70 backdrop-blur-xl transition hover:bg-card hover:text-foreground"
       >
         <Maximize className="size-4" />
       </button>
-
       <div className="relative z-10 flex w-full max-w-3xl flex-col items-center px-5 py-12 text-center">
         <p className="text-xl font-bold tracking-[0.24em] text-background/80">
           {getGreeting(now)}
         </p>
         <time
           dateTime={now.toISOString()}
-          className="mt-3 bg-gradient-to-b from-primary to-black bg-clip-text font-mono text-[clamp(1rem,16vw,11.5rem)] leading-none font-black tracking-[-0.08em] text-transparent tabular-nums"
+          className="mt-3 bg-linear-to-b from-primary to-black bg-clip-text font-mono text-[clamp(1rem,16vw,11.5rem)] leading-none font-black tracking-[-0.08em] text-transparent tabular-nums"
         >
           {now.toLocaleTimeString(undefined, {
             hour: "numeric",
@@ -489,9 +422,8 @@ function Lockcard({
             day: "numeric",
           })}
         </p>
-
         <div className="mt-12 flex w-full flex-col items-center">
-          <div className="mb-4 flex size-20 items-center justify-center rounded-full border border-border/70 bg-card/60 shadow-[0_0_0_8px_color-mix(in_oklab,var(--border)_20%,transparent)]">
+          <div className="mb-4 flex size-20 items-center justify-center rounded-full border border-border/70 bg-card/60 shadow-[00_0_8pxcolor-mix(in_oklab,var(--border)_20%,transparent)]">
             <LockKeyhole
               className={`size-8 text-background/85 transition-opacity duration-500 ${
                 lockscreenState === "locked" ? "opacity-100" : "opacity-35"
@@ -503,7 +435,6 @@ function Lockcard({
               ? "Loading profile..."
               : profile?.displayName ?? "Assigned workstation"}
           </h1>
-
           {isLocked && lockscreenState === "locked" ? (
             <form
               onSubmit={handleUnlock}
@@ -513,7 +444,7 @@ function Lockcard({
                 Enter password to unlock
               </p>
               <input
-                aria-label="Password"
+                _aria-label_="Password"
                 type="password"
                 value={password}
                 onChange={(event) => setPassword(event.target.value)}
@@ -525,7 +456,7 @@ function Lockcard({
               />
               <button
                 type="submit"
-                aria-label="Unlock"
+                _aria-label_="Unlock"
                 disabled={loadingProfile || checking || !password || !hostname}
                 className="mt-4 inline-flex items-center gap-2 rounded-full bg-primary px-5 py-2.5 text-sm font-semibold text-primary-foreground transition hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-50"
               >
@@ -545,7 +476,6 @@ function Lockcard({
           )}
         </div>
       </div>
-
       {socketDisconnected && isLocked && (
         <div className="absolute bottom-5 left-1/2 z-10 flex -translate-x-1/2 items-center gap-2 whitespace-nowrap rounded-full border border-border/60 bg-card/50 px-3 py-2 text-xs text-muted-foreground backdrop-blur-xl">
           <WifiOff className="size-3.5" />
@@ -555,5 +485,4 @@ function Lockcard({
     </section>
   );
 }
-
 export default Lockcard;
