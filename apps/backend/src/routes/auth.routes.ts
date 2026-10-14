@@ -1,4 +1,8 @@
-import type { FastifyInstance, FastifyRequest } from "fastify";
+import type {
+  FastifyInstance,
+  FastifyReply,
+  FastifyRequest,
+} from "fastify";
 import { readFile, writeFile } from "node:fs/promises";
 import { fileURLToPath } from "node:url";
 
@@ -77,7 +81,8 @@ async function readJsonFile<T>(path: string, fallback: T): Promise<T> {
     return JSON.parse(await readFile(path, "utf8")) as T;
   } catch (error) {
     if (
-      error instanceof Error &&
+      typeof error === "object" &&
+      error !== null &&
       "code" in error &&
       error.code === "ENOENT"
     ) {
@@ -221,9 +226,10 @@ async function establishSession(
 
 async function requireSessionUser(
   request: FastifyRequest,
-  reply: Parameters<Parameters<FastifyInstance["get"]>[1]>[1],
+  reply: FastifyReply,
 ): Promise<InternUser | undefined> {
   const userId = getSession(request).userId;
+
   if (!userId) {
     reply.code(401).send({ message: "Not authenticated." });
     return undefined;
@@ -248,6 +254,7 @@ export default async function authRoutes(app: FastifyInstance) {
     try {
       const user = await requireSessionUser(request, reply);
       if (!user) return;
+
       const workspaces = await readWorkspaces();
       return { workspace: workspaces[user.id] ?? {} };
     } catch (error) {
@@ -260,6 +267,7 @@ export default async function authRoutes(app: FastifyInstance) {
     try {
       const user = await requireSessionUser(request, reply);
       if (!user) return;
+
       const workspaces = await readWorkspaces();
       workspaces[user.id] = request.body ?? {};
       await writeFile(
@@ -291,7 +299,8 @@ export default async function authRoutes(app: FastifyInstance) {
 
     session.lastActivityAt = Date.now();
     try {
-      const user = findById(await readUsers(), session.userId);
+      const users = await readUsers();
+      const user = findById(users, session.userId);
       if (user) {
         const sessions = await readSessions();
         await updateSessionRecord(user, {
@@ -347,6 +356,7 @@ export default async function authRoutes(app: FastifyInstance) {
           });
         }
       }
+
       await destroySession(request);
       reply.header(
         "Set-Cookie",
@@ -374,6 +384,7 @@ export default async function authRoutes(app: FastifyInstance) {
     try {
       const user = await requireSessionUser(request, reply);
       if (!user) return;
+
       return {
         preferences: {
           ...defaultPreferences,
@@ -432,20 +443,22 @@ export default async function authRoutes(app: FastifyInstance) {
     "/lockscreen/me",
     async (request, reply) => {
       const hostname = request.query.hostname?.trim();
+
       if (!hostname || hostname.length > 255) {
         return reply.code(400).send({ message: "A valid hostname is required." });
       }
 
       try {
-        const users = await readUsers();
-        const user = findByHostname(users, hostname);
+        const user = findByHostname(await readUsers(), hostname);
+
         if (!user) {
-          const guest = findById(users, "guest-intern");
+          const guest = findById(await readUsers(), "guest-intern");
           if (!guest) {
             return reply.code(404).send({ message: "This workstation is not registered." });
           }
           return { user: { ...publicUser(guest), locked: true } };
         }
+
         return { user: { ...publicUser(user), locked: true } };
       } catch (error) {
         request.log.error(error, "Unable to load lockscreen profile");
@@ -473,6 +486,7 @@ export default async function authRoutes(app: FastifyInstance) {
         activeApps: [],
         lastActivityAt: Date.now(),
       });
+
       return { success: true, user: publicUser(user) };
     } catch (error) {
       request.log.error(error, "Lockscreen authentication failed");
