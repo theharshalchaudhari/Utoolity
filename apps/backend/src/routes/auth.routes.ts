@@ -1,4 +1,3 @@
-
 import type { FastifyInstance, FastifyRequest } from "fastify";
 import { readFile, writeFile } from "node:fs/promises";
 import { fileURLToPath } from "node:url";
@@ -11,10 +10,6 @@ type InternUser = {
   macId: string;
   role: "intern";
   preferences?: Record<string, string>;
-};
-
-type UsersFile = {
-  users: InternUser[];
 };
 
 type CredentialsBody = {
@@ -34,7 +29,9 @@ type AuthSession = {
   save(callback: (error?: Error) => void): void;
   destroy(callback: (error?: Error) => void): void;
 };
+
 type WorkspaceState = Record<string, unknown>;
+
 type SessionRecord = {
   userId: string;
   hostname: string;
@@ -55,47 +52,11 @@ const preferenceKeys = new Set([
   "utoolity.theme",
   "utoolity.icon-size",
 ]);
+
 const defaultPreferences: Record<string, string> = {
   "utoolity.wallpaper": "default.jpg",
   "utoolity.icon-size": "large",
 };
-
-function getSession(request: FastifyRequest): AuthSession {
-  return (request as FastifyRequest & { session: AuthSession }).session;
-}
-
-async function readSessions(): Promise<Record<string, SessionRecord>> {
-  const raw = JSON.parse(await readFile(sessionsFilePath, "utf8")) as {
-    sessions?: Record<string, SessionRecord>;
-  };
-  return raw.sessions ?? {};
-}
-
-async function writeSessions(sessions: Record<string, SessionRecord>): Promise<void> {
-  await writeFile(
-    sessionsFilePath,
-    `${JSON.stringify({ sessions }, null, 2)}\n`,
-    "utf8",
-  );
-}
-
-async function updateSessionRecord(
-  user: InternUser,
-  values: Pick<SessionRecord, "active" | "activeApps" | "lastActivityAt">,
-): Promise<void> {
-  const sessions = await readSessions();
-  const now = Date.now();
-  sessions[user.id] = {
-    userId: user.id,
-    hostname: user.hostname,
-    displayName: user.displayName,
-    deviceId: user.macId,
-    role: user.role,
-    ...values,
-    updatedAt: now,
-  };
-  await writeSessions(sessions);
-}
 
 const usersFilePath = fileURLToPath(
   new URL("../data/users.json", import.meta.url),
@@ -106,6 +67,25 @@ const workspacesFilePath = fileURLToPath(
 const sessionsFilePath = fileURLToPath(
   new URL("../data/sessions.json", import.meta.url),
 );
+
+function getSession(request: FastifyRequest): AuthSession {
+  return (request as FastifyRequest & { session: AuthSession }).session;
+}
+
+async function readJsonFile<T>(path: string, fallback: T): Promise<T> {
+  try {
+    return JSON.parse(await readFile(path, "utf8")) as T;
+  } catch (error) {
+    if (
+      error instanceof Error &&
+      "code" in error &&
+      error.code === "ENOENT"
+    ) {
+      return fallback;
+    }
+    throw error;
+  }
+}
 
 async function readUsers(): Promise<InternUser[]> {
   const raw = await readFile(usersFilePath, "utf8");
@@ -123,19 +103,55 @@ async function readUsers(): Promise<InternUser[]> {
   return parsed.users as InternUser[];
 }
 
-async function readWorkspaces(): Promise<Record<string, WorkspaceState>> {
-  const raw = JSON.parse(await readFile(workspacesFilePath, "utf8")) as {
-    workspaces?: Record<string, WorkspaceState>;
-  };
-  return raw.workspaces ?? {};
-}
-
 async function writeUsers(users: InternUser[]): Promise<void> {
   await writeFile(
     usersFilePath,
     `${JSON.stringify({ users }, null, 2)}\n`,
     "utf8",
   );
+}
+
+async function readSessions(): Promise<Record<string, SessionRecord>> {
+  const raw = await readJsonFile<{ sessions?: Record<string, SessionRecord> }>(
+    sessionsFilePath,
+    { sessions: {} },
+  );
+  return raw.sessions ?? {};
+}
+
+async function writeSessions(
+  sessions: Record<string, SessionRecord>,
+): Promise<void> {
+  await writeFile(
+    sessionsFilePath,
+    `${JSON.stringify({ sessions }, null, 2)}\n`,
+    "utf8",
+  );
+}
+
+async function updateSessionRecord(
+  user: InternUser,
+  values: Pick<SessionRecord, "active" | "activeApps" | "lastActivityAt">,
+): Promise<void> {
+  const sessions = await readSessions();
+  sessions[user.id] = {
+    userId: user.id,
+    hostname: user.hostname,
+    displayName: user.displayName,
+    deviceId: user.macId,
+    role: user.role,
+    ...values,
+    updatedAt: Date.now(),
+  };
+  await writeSessions(sessions);
+}
+
+async function readWorkspaces(): Promise<Record<string, WorkspaceState>> {
+  const raw = await readJsonFile<{ workspaces?: Record<string, WorkspaceState> }>(
+    workspacesFilePath,
+    { workspaces: {} },
+  );
+  return raw.workspaces ?? {};
 }
 
 function publicUser(user: InternUser): PublicUser {
@@ -152,17 +168,12 @@ function findByHostname(
   hostname: string,
 ): InternUser | undefined {
   const normalizedHostname = hostname.trim().toLowerCase();
-
   return users.find(
-    (user) =>
-      user.hostname.trim().toLowerCase() === normalizedHostname,
+    (user) => user.hostname.trim().toLowerCase() === normalizedHostname,
   );
 }
 
-function findById(
-  users: InternUser[],
-  id: string,
-): InternUser | undefined {
+function findById(users: InternUser[], id: string): InternUser | undefined {
   return users.find((user) => user.id === id);
 }
 
@@ -182,12 +193,8 @@ function validCredentials(
 function saveSession(request: FastifyRequest): Promise<void> {
   return new Promise((resolve, reject) => {
     getSession(request).save((error) => {
-      if (error) {
-        reject(error);
-        return;
-      }
-
-      resolve();
+      if (error) reject(error);
+      else resolve();
     });
   });
 }
@@ -195,12 +202,8 @@ function saveSession(request: FastifyRequest): Promise<void> {
 function destroySession(request: FastifyRequest): Promise<void> {
   return new Promise((resolve, reject) => {
     getSession(request).destroy((error) => {
-      if (error) {
-        reject(error);
-        return;
-      }
-
-      resolve();
+      if (error) reject(error);
+      else resolve();
     });
   });
 }
@@ -216,32 +219,68 @@ async function establishSession(
   await saveSession(request);
 }
 
+async function requireSessionUser(
+  request: FastifyRequest,
+  reply: Parameters<Parameters<FastifyInstance["get"]>[1]>[1],
+): Promise<InternUser | undefined> {
+  const userId = getSession(request).userId;
+  if (!userId) {
+    reply.code(401).send({ message: "Not authenticated." });
+    return undefined;
+  }
+
+  const user = findById(await readUsers(), userId);
+  if (!user) {
+    await destroySession(request);
+    reply.header(
+      "Set-Cookie",
+      "sessionId=; Path=/; Max-Age=0; HttpOnly; SameSite=Lax",
+    );
+    reply.code(401).send({ message: "Session user no longer exists." });
+    return undefined;
+  }
+
+  return user;
+}
+
 export default async function authRoutes(app: FastifyInstance) {
   app.get("/auth/workspace", async (request, reply) => {
-    const userId = getSession(request).userId;
-    if (!userId) return reply.code(401).send({ message: "Not authenticated." });
-    const workspaces = await readWorkspaces();
-    return { workspace: workspaces[userId] ?? {} };
+    try {
+      const user = await requireSessionUser(request, reply);
+      if (!user) return;
+      const workspaces = await readWorkspaces();
+      return { workspace: workspaces[user.id] ?? {} };
+    } catch (error) {
+      request.log.error(error, "Unable to load workspace");
+      return reply.code(500).send({ message: "Unable to load workspace." });
+    }
   });
 
   app.put<{ Body: WorkspaceState }>("/auth/workspace", async (request, reply) => {
-    const userId = getSession(request).userId;
-    if (!userId) return reply.code(401).send({ message: "Not authenticated." });
-    const users = await readUsers();
-    const user = findById(users, userId);
-    if (!user) return reply.code(401).send({ message: "Session user no longer exists." });
-    const workspaces = await readWorkspaces();
-    workspaces[userId] = request.body ?? {};
-    await writeFile(workspacesFilePath, JSON.stringify({ workspaces }, null, 2));
-    const activeApps = request.body && Array.isArray(request.body.openApps)
-      ? request.body.openApps
-      : [];
-    await updateSessionRecord(user, {
-      active: true,
-      activeApps,
-      lastActivityAt: Date.now(),
-    });
-    return { success: true };
+    try {
+      const user = await requireSessionUser(request, reply);
+      if (!user) return;
+      const workspaces = await readWorkspaces();
+      workspaces[user.id] = request.body ?? {};
+      await writeFile(
+        workspacesFilePath,
+        `${JSON.stringify({ workspaces }, null, 2)}\n`,
+        "utf8",
+      );
+
+      const activeApps = Array.isArray(request.body?.openApps)
+        ? request.body.openApps
+        : [];
+      await updateSessionRecord(user, {
+        active: true,
+        activeApps,
+        lastActivityAt: Date.now(),
+      });
+      return { success: true };
+    } catch (error) {
+      request.log.error(error, "Unable to save workspace");
+      return reply.code(500).send({ message: "Unable to save workspace." });
+    }
   });
 
   app.post("/auth/activity", async (request, reply) => {
@@ -249,73 +288,57 @@ export default async function authRoutes(app: FastifyInstance) {
     if (!session.userId) {
       return reply.code(401).send({ message: "Not authenticated." });
     }
+
     session.lastActivityAt = Date.now();
     try {
-      const users = await readUsers();
-      const user = findById(users, session.userId);
+      const user = findById(await readUsers(), session.userId);
       if (user) {
         const sessions = await readSessions();
-        const existing = sessions[user.id];
         await updateSessionRecord(user, {
           active: true,
-          activeApps: existing?.activeApps ?? [],
+          activeApps: sessions[user.id]?.activeApps ?? [],
           lastActivityAt: session.lastActivityAt,
         });
       }
+      await saveSession(request);
+      return { success: true, lastActivityAt: session.lastActivityAt };
     } catch (error) {
-      request.log.error(error, "Unable to persist session activity.");
+      request.log.error(error, "Unable to persist session activity");
+      return reply.code(500).send({ message: "Unable to update session activity." });
     }
-    await saveSession(request);
-    return { success: true, lastActivityAt: session.lastActivityAt };
   });
 
-  // POST /api/auth/login
-  app.post<{ Body: CredentialsBody }>(
-    "/auth/login",
-    async (request, reply) => {
-      if (!validCredentials(request.body)) {
-        return reply.code(400).send({
-          message: "A valid hostname and password are required.",
-        });
+  app.post<{ Body: CredentialsBody }>("/auth/login", async (request, reply) => {
+    if (!validCredentials(request.body)) {
+      return reply.code(400).send({
+        message: "A valid hostname and password are required.",
+      });
+    }
+
+    try {
+      const user = findByHostname(await readUsers(), request.body.hostname);
+      if (!user || user.password !== request.body.password) {
+        return reply.code(401).send({ message: "Invalid hostname or password." });
       }
 
-      try {
-        const users = await readUsers();
-        const user = findByHostname(users, request.body.hostname);
+      await establishSession(request, user);
+      await updateSessionRecord(user, {
+        active: true,
+        activeApps: [],
+        lastActivityAt: Date.now(),
+      });
+      return { user: publicUser(user) };
+    } catch (error) {
+      request.log.error(error, "Login failed unexpectedly");
+      return reply.code(500).send({ message: "Unable to sign in right now." });
+    }
+  });
 
-        if (!user || user.password !== request.body.password) {
-          return reply.code(401).send({
-            message: "Invalid hostname or password.",
-          });
-        }
-
-        await establishSession(request, user);
-        await updateSessionRecord(user, {
-          active: true,
-          activeApps: [],
-          lastActivityAt: Date.now(),
-        });
-
-        return {
-          user: publicUser(user),
-        };
-      } catch (error) {
-        request.log.error(error, "Login failed unexpectedly");
-
-        return reply.code(500).send({
-          message: "Unable to sign in right now.",
-        });
-      }
-    },
-  );
-
-  // POST /api/auth/logout
   app.post("/auth/logout", async (request, reply) => {
     try {
       const session = getSession(request);
       if (session.userId) {
-        const users = await readUsers();
-        const user = findById(users, session.userId);
+        const user = findById(await readUsers(), session.userId);
         if (user) {
           await updateSessionRecord(user, {
             active: false,
@@ -325,170 +348,135 @@ export default async function authRoutes(app: FastifyInstance) {
         }
       }
       await destroySession(request);
-      reply.header("Set-Cookie", "sessionId=; Path=/; Max-Age=0; HttpOnly; SameSite=Lax");
-
+      reply.header(
+        "Set-Cookie",
+        "sessionId=; Path=/; Max-Age=0; HttpOnly; SameSite=Lax",
+      );
       return { success: true };
     } catch (error) {
       request.log.error(error, "Logout failed");
-
-      return reply.code(500).send({
-        message: "Unable to sign out right now.",
-      });
+      return reply.code(500).send({ message: "Unable to sign out right now." });
     }
   });
 
-  // GET /api/auth/me
   app.get("/auth/me", async (request, reply) => {
-    const userId = getSession(request).userId;
-
-    if (!userId) {
-      return reply.code(401).send({
-        message: "Not authenticated.",
-      });
-    }
-
     try {
-      const users = await readUsers();
-      const user = findById(users, userId);
-
-      if (!user) {
-        await destroySession(request);
-        reply.header(
-          "Set-Cookie",
-          "sessionId=; Path=/; Max-Age=0; HttpOnly; SameSite=Lax",
-        );
-
-        return reply.code(401).send({
-          message: "Session user no longer exists.",
-        });
-
-      }
-
-      return {
-        user: publicUser(user),
-      };
+      const user = await requireSessionUser(request, reply);
+      if (!user) return;
+      return { user: publicUser(user) };
     } catch (error) {
       request.log.error(error, "Unable to load current user");
-
-      return reply.code(500).send({
-        message: "Unable to load the current user.",
-      });
-
-      app.get("/auth/preferences", async (request, reply) => {
-        const userId = getSession(request).userId;
-        if (!userId) return reply.code(401).send({ message: "Not authenticated." });
-        try {
-          const user = findById(await readUsers(), userId);
-          if (!user) return reply.code(401).send({ message: "Session user no longer exists." });
-          return { preferences: { ...defaultPreferences, ...(user.preferences ?? {}) } };
-        } catch (error) {
-          request.log.error(error, "Unable to load user preferences");
-          return reply.code(500).send({ message: "Unable to load preferences." });
-        }
-      });
-
-      app.patch<{ Body: Record<string, unknown> }>("/auth/preferences", async (request, reply) => {
-        const userId = getSession(request).userId;
-        if (!userId) return reply.code(401).send({ message: "Not authenticated." });
-        const entries = Object.entries(request.body ?? {});
-        if (entries.length === 0 || entries.some(([key, value]) => !preferenceKeys.has(key) || typeof value !== "string" || value.length > 100)) {
-          return reply.code(400).send({ message: "Invalid preference payload." });
-        }
-        try {
-          const users = await readUsers();
-          const user = findById(users, userId);
-          if (!user) return reply.code(401).send({ message: "Session user no longer exists." });
-          user.preferences = { ...defaultPreferences, ...(user.preferences ?? {}) };
-          for (const [key, value] of entries) user.preferences[key] = value as string;
-          await writeUsers(users);
-          return { preferences: user.preferences };
-        } catch (error) {
-          request.log.error(error, "Unable to save user preferences");
-          return reply.code(500).send({ message: "Unable to save preferences." });
-        }
-      });
+      return reply.code(500).send({ message: "Unable to load the current user." });
     }
   });
 
-  // GET /api/lockscreen/me?hostname=L-MHP-IXMT2
-  app.get<{
-    Querystring: { hostname?: string };
-  }>("/lockscreen/me", async (request, reply) => {
-    const hostname = request.query.hostname?.trim();
-
-    if (!hostname || hostname.length > 255) {
-      return reply.code(400).send({
-        message: "A valid hostname is required.",
-      });
-    }
-
+  app.get("/auth/preferences", async (request, reply) => {
     try {
-      const users = await readUsers();
-      const user = findByHostname(users, hostname);
-
-      if (!user) {
-        const guestUser = findById(users, "guest-intern");
-        if (!guestUser) {
-          return reply.code(500).send({
-            message: "Guest Intern account is not configured.",
-          });
-        }
-        return {
-          user: {
-            ...publicUser(guestUser),
-            locked: true,
-          },
-        };
-      }
-
+      const user = await requireSessionUser(request, reply);
+      if (!user) return;
       return {
-        user: {
-          ...publicUser(user),
-          locked: true,
+        preferences: {
+          ...defaultPreferences,
+          ...(user.preferences ?? {}),
         },
       };
     } catch (error) {
-      request.log.error(error, "Unable to load lockscreen profile");
-
-      return reply.code(500).send({
-        message: "Unable to load the device profile.",
-      });
+      request.log.error(error, "Unable to load user preferences");
+      return reply.code(500).send({ message: "Unable to load preferences." });
     }
   });
 
-  // POST /api/lockscreen/unlock
-  app.post<{ Body: CredentialsBody }>(
-    "/lockscreen/unlock",
+  app.patch<{ Body: Record<string, unknown> }>(
+    "/auth/preferences",
     async (request, reply) => {
-      if (!validCredentials(request.body)) {
-        return reply.code(400).send({
-          message: "A valid hostname and password are required.",
-        });
+      const user = await requireSessionUser(request, reply);
+      if (!user) return;
+
+      const entries = Object.entries(request.body ?? {});
+      if (
+        entries.length === 0 ||
+        entries.some(
+          ([key, value]) =>
+            !preferenceKeys.has(key) ||
+            typeof value !== "string" ||
+            value.length > 100,
+        )
+      ) {
+        return reply.code(400).send({ message: "Invalid preference payload." });
       }
 
       try {
         const users = await readUsers();
-        const user = findByHostname(users, request.body.hostname);
-
-        if (!user || user.password !== request.body.password) {
-          return reply.code(401).send({
-            message: "Incorrect password.",
-          });
+        const currentUser = findById(users, user.id);
+        if (!currentUser) {
+          return reply.code(401).send({ message: "Session user no longer exists." });
         }
 
-        await establishSession(request, user);
-
-        return {
-          success: true,
-          user: publicUser(user),
+        currentUser.preferences = {
+          ...defaultPreferences,
+          ...(currentUser.preferences ?? {}),
         };
+        for (const [key, value] of entries) {
+          currentUser.preferences[key] = value as string;
+        }
+        await writeUsers(users);
+        return { preferences: currentUser.preferences };
       } catch (error) {
-        request.log.error(error, "Lockscreen authentication failed");
-
-        return reply.code(500).send({
-          message: "Unable to verify the password.",
-        });
+        request.log.error(error, "Unable to save user preferences");
+        return reply.code(500).send({ message: "Unable to save preferences." });
       }
     },
   );
+
+  app.get<{ Querystring: { hostname?: string } }>(
+    "/lockscreen/me",
+    async (request, reply) => {
+      const hostname = request.query.hostname?.trim();
+      if (!hostname || hostname.length > 255) {
+        return reply.code(400).send({ message: "A valid hostname is required." });
+      }
+
+      try {
+        const users = await readUsers();
+        const user = findByHostname(users, hostname);
+        if (!user) {
+          const guest = findById(users, "guest-intern");
+          if (!guest) {
+            return reply.code(404).send({ message: "This workstation is not registered." });
+          }
+          return { user: { ...publicUser(guest), locked: true } };
+        }
+        return { user: { ...publicUser(user), locked: true } };
+      } catch (error) {
+        request.log.error(error, "Unable to load lockscreen profile");
+        return reply.code(500).send({ message: "Unable to load the device profile." });
+      }
+    },
+  );
+
+  app.post<{ Body: CredentialsBody }>("/lockscreen/unlock", async (request, reply) => {
+    if (!validCredentials(request.body)) {
+      return reply.code(400).send({
+        message: "A valid hostname and password are required.",
+      });
+    }
+
+    try {
+      const user = findByHostname(await readUsers(), request.body.hostname);
+      if (!user || user.password !== request.body.password) {
+        return reply.code(401).send({ message: "Incorrect hostname or password." });
+      }
+
+      await establishSession(request, user);
+      await updateSessionRecord(user, {
+        active: true,
+        activeApps: [],
+        lastActivityAt: Date.now(),
+      });
+      return { success: true, user: publicUser(user) };
+    } catch (error) {
+      request.log.error(error, "Lockscreen authentication failed");
+      return reply.code(500).send({ message: "Unable to verify the password." });
+    }
+  });
 }
