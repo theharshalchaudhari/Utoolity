@@ -1,15 +1,13 @@
-import type { NextConfig } from "next";
 
-const allowedDevOrigins = (
-  process.env.NEXT_ALLOWED_DEV_ORIGINS ?? ""
-)
-  .split(",")
-  .map((origin) => origin.trim())
-  .filter(Boolean);
+import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
   reactStrictMode: true,
-  allowedDevOrigins,
+  allowedDevOrigins: [
+    "172.31.*.*",
+    "localhost",
+    "127.0.0.1",
+  ],
 };
 
 export default nextConfig;

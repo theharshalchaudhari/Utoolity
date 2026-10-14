@@ -1,4 +1,3 @@
-
 import Fastify from "fastify";
 import cors from "@fastify/cors";
 import cookie from "@fastify/cookie";
@@ -21,21 +20,14 @@ import { errorMiddleware } from "./middleware/error.middleware.js";
 const sessionSecret = process.env.SESSION_SECRET;
 const isProduction = process.env.NODE_ENV === "production";
 
-if (!sessionSecret || Buffer.byteLength(sessionSecret, "utf8") < 32) {
+if (
+  !sessionSecret ||
+  Buffer.byteLength(sessionSecret, "utf8") < 32
+) {
   throw new Error(
     "SESSION_SECRET must be configured with at least 32 bytes.",
   );
 }
-
-const allowedOrigins = new Set(
-  (
-    process.env.FRONTEND_URL ??
-    "http://localhost:3000,http://127.0.0.1:3000"
-  )
-    .split(",")
-    .map((origin) => origin.trim())
-    .filter(Boolean),
-);
 
 const app = Fastify({
   logger: true,
@@ -45,24 +37,23 @@ const app = Fastify({
 // Configure error handling before registering routes.
 app.setErrorHandler(errorMiddleware);
 
-// Explicitly allow configured frontend origins.
+// Allow requests from any frontend origin and port.
 await app.register(cors, {
+  origin: true,
   credentials: true,
-
-  origin(origin, callback) {
-    // Allow requests without an Origin header, such as server-side health checks.
-    if (!origin) {
-      return callback(null, true);
-    }
-
-    if (allowedOrigins.has(origin)) {
-      return callback(null, true);
-    }
-
-    app.log.warn({ origin }, "Blocked request by CORS policy");
-
-    return callback(new Error("Origin is not allowed by CORS"), false);
-  },
+  methods: [
+    "GET",
+    "HEAD",
+    "POST",
+    "PUT",
+    "PATCH",
+    "DELETE",
+    "OPTIONS",
+  ],
+  allowedHeaders: [
+    "Content-Type",
+    "Authorization",
+  ],
 });
 
 await app.register(cookie);
@@ -91,6 +82,8 @@ await app.register(multipart, {
 // Health check
 app.get("/health", async () => ({
   status: "ok",
+  service: "utoolity-backend",
+  timestamp: new Date().toISOString(),
 }));
 
 // Authentication and storage

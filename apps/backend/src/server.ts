@@ -1,5 +1,4 @@
 import "dotenv/config";
-
 import app from "./app.js";
 
 const port = Number(process.env.BACKEND_PORT ?? 4000);
@@ -12,9 +11,9 @@ try {
     );
   }
 
-  await app.listen({ port, host });
+  const address = await app.listen({ port, host });
 
-  app.log.info(`Backend server listening on ${host}:${port}`);
+  app.log.info(`Backend server listening at ${address}`);
 } catch (error) {
   app.log.error(
     { err: error },
