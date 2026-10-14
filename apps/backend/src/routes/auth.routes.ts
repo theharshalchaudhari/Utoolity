@@ -373,42 +373,77 @@ export default async function authRoutes(app: FastifyInstance) {
       return reply.code(500).send({
         message: "Unable to load the current user.",
       });
-
-      app.get("/auth/preferences", async (request, reply) => {
-        const userId = getSession(request).userId;
-        if (!userId) return reply.code(401).send({ message: "Not authenticated." });
-        try {
-          const user = findById(await readUsers(), userId);
-          if (!user) return reply.code(401).send({ message: "Session user no longer exists." });
-          return { preferences: { ...defaultPreferences, ...(user.preferences ?? {}) } };
-        } catch (error) {
-          request.log.error(error, "Unable to load user preferences");
-          return reply.code(500).send({ message: "Unable to load preferences." });
-        }
-      });
-
-      app.patch<{ Body: Record<string, unknown> }>("/auth/preferences", async (request, reply) => {
-        const userId = getSession(request).userId;
-        if (!userId) return reply.code(401).send({ message: "Not authenticated." });
-        const entries = Object.entries(request.body ?? {});
-        if (entries.length === 0 || entries.some(([key, value]) => !preferenceKeys.has(key) || typeof value !== "string" || value.length > 100)) {
-          return reply.code(400).send({ message: "Invalid preference payload." });
-        }
-        try {
-          const users = await readUsers();
-          const user = findById(users, userId);
-          if (!user) return reply.code(401).send({ message: "Session user no longer exists." });
-          user.preferences = { ...defaultPreferences, ...(user.preferences ?? {}) };
-          for (const [key, value] of entries) user.preferences[key] = value as string;
-          await writeUsers(users);
-          return { preferences: user.preferences };
-        } catch (error) {
-          request.log.error(error, "Unable to save user preferences");
-          return reply.code(500).send({ message: "Unable to save preferences." });
-        }
-      });
     }
   });
+
+  // Keep preference routes at registration time, not inside /auth/me's catch
+  // handler (which made them unreachable and left the routes unregistered).
+  app.get("/auth/preferences", async (request, reply) => {
+    const userId = getSession(request).userId;
+    if (!userId) {
+      return reply.code(401).send({ message: "Not authenticated." });
+    }
+
+    try {
+      const user = findById(await readUsers(), userId);
+      if (!user) {
+        return reply.code(401).send({ message: "Session user no longer exists." });
+      }
+      return {
+        preferences: {
+          ...defaultPreferences,
+          ...(user.preferences ?? {}),
+        },
+      };
+    } catch (error) {
+      request.log.error(error, "Unable to load user preferences");
+      return reply.code(500).send({ message: "Unable to load preferences." });
+    }
+  });
+
+  app.patch<{ Body: Record<string, unknown> }>(
+    "/auth/preferences",
+    async (request, reply) => {
+      const userId = getSession(request).userId;
+      if (!userId) {
+        return reply.code(401).send({ message: "Not authenticated." });
+      }
+
+      const entries = Object.entries(request.body ?? {});
+      if (
+        entries.length === 0 ||
+        entries.some(
+          ([key, value]) =>
+            !preferenceKeys.has(key) ||
+            typeof value !== "string" ||
+            value.length > 100,
+        )
+      ) {
+        return reply.code(400).send({ message: "Invalid preference payload." });
+      }
+
+      try {
+        const users = await readUsers();
+        const user = findById(users, userId);
+        if (!user) {
+          return reply.code(401).send({ message: "Session user no longer exists." });
+        }
+
+        user.preferences = {
+          ...defaultPreferences,
+          ...(user.preferences ?? {}),
+        };
+        for (const [key, value] of entries) {
+          user.preferences[key] = value as string;
+        }
+        await writeUsers(users);
+        return { preferences: user.preferences };
+      } catch (error) {
+        request.log.error(error, "Unable to save user preferences");
+        return reply.code(500).send({ message: "Unable to save preferences." });
+      }
+    },
+  );
 
   // GET /api/lockscreen/me?hostname=L-MHP-IXMT2
   app.get<{
