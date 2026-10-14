@@ -199,48 +199,27 @@ function Lockcard({
         .getItem(HOSTNAME_STORAGE_KEY)
         ?.trim();
 
-      // Do not infer an intern identity from the Next.js server/container hostname.
-      const configuredHostname = injectedHostname || savedHostname || "";
+      // The Next.js process hostname identifies the web server, not the browser workstation.
+      // Use the configured intern hostname when available; otherwise use the account
+      // record currently maintained in users.json (hostname: "new").
+      const configuredHostname = injectedHostname || savedHostname || "new";
       if (!active) return;
 
       try {
-        let profileResponse: LockProfileResponse | null = null;
-
-        if (configuredHostname) {
-          try {
-            profileResponse = await api<LockProfileResponse>(
-              `/api/lockscreen/me?hostname=${encodeURIComponent(configuredHostname)}`,
-            );
-            if (profileResponse.user?.id === "guest-intern") {
-              profileResponse = null;
-            }
-          } catch {
-            // A stale hostname should not prevent the configured account fallback.
-            profileResponse = null;
-          }
-        }
-
-        if (!profileResponse?.user) {
-          // Identity lookup only; the unlock endpoint still validates the password.
-          profileResponse = await api<LockProfileResponse>(
-            "/api/lockscreen/me?hostname=new",
-          );
-        }
-
+        const response = await api<LockProfileResponse>(
+          `/api/lockscreen/me?hostname=${encodeURIComponent(configuredHostname)}`,
+        );
         if (!active) return;
-        if (!profileResponse?.user || profileResponse.user.id === "guest-intern") {
+        if (!response.user || response.user.id === "guest-intern") {
           throw new Error("The configured intern account could not be loaded.");
         }
 
-        setProfile({ ...profileResponse.user, locked: true });
-        setHostname(profileResponse.user.hostname);
-        window.localStorage.setItem(
-          HOSTNAME_STORAGE_KEY,
-          profileResponse.user.hostname,
-        );
+        setProfile({ ...response.user, locked: true });
+        setHostname(response.user.hostname);
+        window.localStorage.setItem(HOSTNAME_STORAGE_KEY, response.user.hostname);
         setError(
-          configuredHostname && profileResponse.user.hostname !== configuredHostname
-            ? "The saved workstation identity was not recognized. Check the assigned hostname."
+          configuredHostname !== response.user.hostname
+            ? "The workstation hostname changed. Sign in using the displayed account or update the assigned hostname."
             : "",
         );
       } catch (cause) {
