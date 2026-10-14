@@ -2,16 +2,15 @@ import { hostname } from "node:os";
 import { NextResponse } from "next/server";
 
 export const runtime = "nodejs";
-export const dynamic = "force-static";
-
-const deviceHostname = hostname();
+export const dynamic = "force-dynamic";
+export const revalidate = 0;
 
 export function GET() {
   return NextResponse.json(
-    { hostname: deviceHostname },
+    { hostname: hostname() },
     {
       headers: {
-        "Cache-Control": "public, max-age=86400",
+        "Cache-Control": "no-store, no-cache, must-revalidate",
       },
     },
   );
