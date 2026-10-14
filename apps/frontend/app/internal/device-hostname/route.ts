@@ -11,7 +11,7 @@ export function GET() {
     { hostname: deviceHostname },
     {
       headers: {
-        "Cache-Control": "public, max-age=86400",
+        "Cache-Control": "no-store",
       },
     },
   );
