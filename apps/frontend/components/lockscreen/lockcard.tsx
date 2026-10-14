@@ -199,12 +199,13 @@ function Lockcard({
         .getItem(HOSTNAME_STORAGE_KEY)
         ?.trim();
 
-      // Never use the Next.js server/container hostname as an intern identity.
+      // Do not infer an intern identity from the Next.js server/container hostname.
       const configuredHostname = injectedHostname || savedHostname || "";
       if (!active) return;
 
       try {
         let profileResponse: LockProfileResponse | null = null;
+
         if (configuredHostname) {
           try {
             profileResponse = await api<LockProfileResponse>(
@@ -214,27 +215,21 @@ function Lockcard({
               profileResponse = null;
             }
           } catch {
-            // A stale saved hostname should not prevent a valid account fallback.
+            // A stale hostname should not prevent the configured account fallback.
             profileResponse = null;
           }
         }
 
         if (!profileResponse?.user) {
-          // This is only an identity fallback. Unlock still checks the supplied
-          // password against the matching record in users.json.
+          // Identity lookup only; the unlock endpoint still validates the password.
           profileResponse = await api<LockProfileResponse>(
-            "/api/lockscreen/me?hostname=guest-intern",
+            "/api/lockscreen/me?hostname=new",
           );
-          if (profileResponse.user) {
-            profileResponse.user.hostname = "new";
-            profileResponse.user.displayName = "Harshal Chaudhari";
-            profileResponse.user.id = "L-MHP-IXMT2";
-          }
         }
 
         if (!active) return;
-        if (!profileResponse.user) {
-          throw new Error("No sign-in profile is configured on the server.");
+        if (!profileResponse?.user || profileResponse.user.id === "guest-intern") {
+          throw new Error("The configured intern account could not be loaded.");
         }
 
         setProfile({ ...profileResponse.user, locked: true });
@@ -245,7 +240,7 @@ function Lockcard({
         );
         setError(
           configuredHostname && profileResponse.user.hostname !== configuredHostname
-            ? "The saved workstation identity was not recognized. Sign in with the displayed account or update the workstation assignment."
+            ? "The saved workstation identity was not recognized. Check the assigned hostname."
             : "",
         );
       } catch (cause) {
