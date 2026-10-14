@@ -1,4 +1,3 @@
-
 import Fastify from "fastify";
 import cors from "@fastify/cors";
 import cookie from "@fastify/cookie";
@@ -27,6 +26,7 @@ if (!sessionSecret || Buffer.byteLength(sessionSecret, "utf8") < 32) {
   );
 }
 
+const allowAllOrigins = process.env.CORS_ALLOW_ALL_ORIGINS === "true";
 const allowedOrigins = new Set(
   (
     process.env.FRONTEND_URL ??
@@ -42,27 +42,21 @@ const app = Fastify({
   bodyLimit: 50 * 1024 * 1024,
 });
 
-// Configure error handling before registering routes.
 app.setErrorHandler(errorMiddleware);
 
-// Explicitly allow configured frontend origins.
+// Credentials require an explicit reflected origin, never Access-Control-Allow-Origin: *.
 await app.register(cors, {
   credentials: true,
-
   origin(origin, callback) {
-    // Allow requests without an Origin header, such as server-side health checks.
-    if (!origin) {
+    if (!origin) return callback(null, true);
+    if (allowAllOrigins || allowedOrigins.has(origin)) {
       return callback(null, true);
     }
-
-    if (allowedOrigins.has(origin)) {
-      return callback(null, true);
-    }
-
     app.log.warn({ origin }, "Blocked request by CORS policy");
-
     return callback(new Error("Origin is not allowed by CORS"), false);
   },
+  methods: ["GET", "HEAD", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
+  allowedHeaders: ["Content-Type", "Authorization"],
 });
 
 await app.register(cookie);
@@ -88,50 +82,33 @@ await app.register(multipart, {
   },
 });
 
-// Health check
-app.get("/health", async () => ({
-  status: "ok",
-}));
+app.get("/health", async () => ({ status: "ok" }));
 
-// Authentication and storage
-await app.register(authRoutes, {
-  prefix: "/api",
-});
+await app.register(authRoutes, { prefix: "/api" });
+await app.register(storageRoutes, { prefix: "/api" });
 
-await app.register(storageRoutes, {
-  prefix: "/api",
-});
-
-// Video tools
 await app.register(videoToImagesRoutes, {
   prefix: "/api/tools/video-to-images",
 });
-
 await app.register(videoTrimRoutes, {
   prefix: "/api/tools/video-trim",
 });
-
 await app.register(videoConverterRoutes, {
   prefix: "/api/tools/video-converter",
 });
-
 await app.register(videoMergeRoutes, {
   prefix: "/api/tools/video-merge",
 });
 
-// Image tools
 await app.register(imageConverterRoutes, {
   prefix: "/api/tools/image-converter",
 });
-
 await app.register(imageClassificationRoutes, {
   prefix: "/api/tools/image-classification",
 });
-
 await app.register(polygonAnnotationRoutes, {
   prefix: "/api/tools/polygon-annotation",
 });
-
 await app.register(boundingBoxRoutes, {
   prefix: "/api/tools/bounding-box",
 });
