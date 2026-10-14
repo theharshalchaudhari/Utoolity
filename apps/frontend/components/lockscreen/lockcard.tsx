@@ -223,7 +223,7 @@ function Lockcard({
           // This is only an identity fallback. Unlock still checks the supplied
           // password against the matching record in users.json.
           profileResponse = await api<LockProfileResponse>(
-            "/api/lockscreen/me?hostname=guest-intern",
+            "/api/lockscreen/me?hostname=new",
           );
         }
 
