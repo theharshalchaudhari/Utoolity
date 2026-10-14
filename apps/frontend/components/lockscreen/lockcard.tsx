@@ -199,62 +199,60 @@ function Lockcard({
         .getItem(HOSTNAME_STORAGE_KEY)
         ?.trim();
 
-      // The browser runs on the intern's workstation. The Next.js server's OS
-      // hostname is the web server/container hostname and must not take priority.
-      const deviceHostname = injectedHostname || savedHostname || "";
+      // Never use the Next.js server/container hostname as an intern identity.
+      const configuredHostname = injectedHostname || savedHostname || "";
       if (!active) return;
 
       try {
-        // First use the assigned identity supplied by deployment/local device
-        // configuration; if absent or stale, fall back to the known account list.
-        if (deviceHostname) {
-          const response = await api<LockProfileResponse>(
-            `/api/lockscreen/me?hostname=${encodeURIComponent(deviceHostname)}`,
-          );
-          if (!active) return;
-          if (response.user && response.user.id !== "guest-intern") {
-            setProfile({ ...response.user, locked: true });
-            setHostname(response.user.hostname);
-            window.localStorage.setItem(HOSTNAME_STORAGE_KEY, response.user.hostname);
-            setError("");
-          } else {
-            throw new Error("The assigned workstation is not registered.");
+        let profileResponse: LockProfileResponse | null = null;
+        if (configuredHostname) {
+          try {
+            profileResponse = await api<LockProfileResponse>(
+              `/api/lockscreen/me?hostname=${encodeURIComponent(configuredHostname)}`,
+            );
+            if (profileResponse.user?.id === "guest-intern") {
+              profileResponse = null;
+            }
+          } catch {
+            // A stale saved hostname should not prevent a valid account fallback.
+            profileResponse = null;
           }
-        } else {
-          throw new Error("No assigned workstation identity is configured.");
         }
-      } catch (cause) {
-        if (!active) return;
-        // Use the first real intern account as a usable sign-in identity when
-        // this browser cannot discover its assigned hostname. The unlock API
-        // still validates hostname and password against users.json.
-        try {
-          const fallback = await api<LockProfileResponse>(
+
+        if (!profileResponse?.user) {
+          // This is only an identity fallback. Unlock still checks the supplied
+          // password against the matching record in users.json.
+          profileResponse = await api<LockProfileResponse>(
             "/api/lockscreen/me?hostname=guest-intern",
           );
-          if (!active) return;
-          if (fallback.user) {
-            setProfile({ ...fallback.user, locked: true });
-            setHostname(fallback.user.hostname);
-            setError(
-              deviceHostname
-                ? "Assigned workstation was not recognized. Use the Guest Intern account or correct the workstation hostname."
-                : "Workstation hostname could not be detected. Use the Guest Intern account or configure the hostname.",
-            );
-          } else {
-            throw new Error("No fallback account is configured.");
-          }
-        } catch (fallbackError) {
-          if (!active) return;
-          console.error("Failed to load lockscreen profile:", fallbackError ?? cause);
-          setProfile(getInitialProfile(deviceHostname));
-          setHostname("");
-          setError(
-            cause instanceof Error
-              ? `Unable to load the device profile: ${cause.message}`
-              : "Unable to contact the backend.",
-          );
         }
+
+        if (!active) return;
+        if (!profileResponse.user) {
+          throw new Error("No sign-in profile is configured on the server.");
+        }
+
+        setProfile({ ...profileResponse.user, locked: true });
+        setHostname(profileResponse.user.hostname);
+        window.localStorage.setItem(
+          HOSTNAME_STORAGE_KEY,
+          profileResponse.user.hostname,
+        );
+        setError(
+          configuredHostname && profileResponse.user.hostname !== configuredHostname
+            ? "The saved workstation identity was not recognized. Sign in with the displayed account or update the workstation assignment."
+            : "",
+        );
+      } catch (cause) {
+        if (!active) return;
+        console.error("Failed to load lockscreen profile:", cause);
+        setProfile(getInitialProfile(configuredHostname));
+        setHostname("");
+        setError(
+          cause instanceof Error
+            ? `Unable to load the device profile: ${cause.message}`
+            : "Unable to contact the backend.",
+        );
       } finally {
         if (active) setLoadingProfile(false);
       }
