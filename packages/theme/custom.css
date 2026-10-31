@@ -375,7 +375,8 @@
 
   .lockscreen-shell {
     isolation: auto;
-    background: transparent;
+    background: transparent !important;
+    background-color: transparent !important;
     box-shadow: none;
   }
 
@@ -388,6 +389,11 @@
     box-shadow: 0 24px 80px rgb(0 0 0 / 18%);
     backdrop-filter: blur(30px) saturate(1.25);
     -webkit-backdrop-filter: blur(30px) saturate(1.25);
+  }
+
+  .desktop-background {
+    background: transparent !important;
+    background-color: transparent !important;
   }
 
 }
