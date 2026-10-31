@@ -374,21 +374,49 @@
   }
 
   .lockscreen-shell {
-    isolation: auto;
-    background: transparent !important;
-    background-color: transparent !important;
+    position: fixed;
+    inset: 0;
+    width: 100vw;
+    height: 100vh;
+    min-height: 100vh;
+    isolation: isolate;
+    overflow: hidden;
+    border: 0;
+    border-radius: 0;
+    background: rgb(10 16 28 / 18%) !important;
     box-shadow: none;
+    backdrop-filter: blur(24px) saturate(1.15);
+    -webkit-backdrop-filter: blur(24px) saturate(1.15);
+  }
+
+  .lockscreen-content {
+    width: 100%;
+    height: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
   }
 
   .lockscreen-frost-panel {
-    max-height: calc(100dvh - 2rem);
+    width: min(100% - 2rem, 52rem);
+    max-height: calc(100vh - 2rem);
     overflow-y: auto;
-    border: 1px solid color-mix(in oklab, white 22%, transparent);
-    border-radius: 2rem;
-    background: color-mix(in oklab, #101827 38%, transparent);
-    box-shadow: 0 24px 80px rgb(0 0 0 / 18%);
-    backdrop-filter: blur(30px) saturate(1.25);
-    -webkit-backdrop-filter: blur(30px) saturate(1.25);
+    border: 1px solid color-mix(in oklab, white 18%, transparent);
+    border-radius: 1.5rem;
+    background: color-mix(in oklab, #101827 20%, transparent);
+    box-shadow: 0 24px 80px rgb(0 0 0 / 12%);
+    backdrop-filter: blur(8px) saturate(1.15);
+    -webkit-backdrop-filter: blur(8px) saturate(1.15);
+  }
+
+  @supports (height: 100dvh) {
+    .lockscreen-shell {
+      height: 100dvh;
+      min-height: 100dvh;
+    }
+    .lockscreen-frost-panel {
+      max-height: calc(100dvh - 2rem);
+    }
   }
 
   .desktop-background {

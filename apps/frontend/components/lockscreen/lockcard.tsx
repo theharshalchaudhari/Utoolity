@@ -436,7 +436,7 @@ function Lockcard({
       aria-label="Lock screen"
       aria-hidden={!isVisible}
       inert={!isVisible || undefined}
-      className={`lockscreen-shell fixed inset-0 z-[110] flex h-dvh min-h-dvh w-full flex-col items-center justify-center overflow-hidden rounded-none bg-transparent text-foreground transition-opacity duration-200 ease-out motion-reduce:transition-none ${
+      className={`lockscreen-shell fixed inset-0 z-[110] flex h-screen min-h-screen w-screen flex-col items-center justify-center overflow-hidden rounded-none border-0 bg-transparent p-0 text-foreground transition-opacity duration-200 ease-out motion-reduce:transition-none ${
         isVisible ? "pointer-events-auto opacity-100" : "pointer-events-none opacity-0"
       }`}
     >
