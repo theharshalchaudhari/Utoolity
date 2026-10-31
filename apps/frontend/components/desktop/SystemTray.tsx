@@ -42,7 +42,7 @@ export default function SystemTray({
   if (!mounted) return null;
 
   return createPortal(
-    <div className="pointer-events-auto fixed right-4 top-4 z-50 flex items-center gap-2">
+    <div className="pointer-events-auto fixed right-4 top-4 z-40 flex items-center gap-2">
       <AllWindows
         windows={windows}
         onFocus={onFocusWindow}

@@ -80,7 +80,7 @@ export default function Profile({ onSleep }: ProfileProps) {
 
   if (profileState === "loading" || profileState === "unauthenticated") {
     return (
-      <div className="fixed left-5 top-4 z-50 rounded-full border border-border bg-background px-3.5 py-2 text-sm font-semibold text-foreground shadow-lg">
+      <div className="fixed left-5 top-4 z-40 rounded-full border border-border bg-background px-3.5 py-2 text-sm font-semibold text-foreground shadow-lg">
         {profile?.displayName ?? "Profile"}
       </div>
     );
@@ -113,7 +113,7 @@ export default function Profile({ onSleep }: ProfileProps) {
       onClick={handleProfileClick}
       aria-label={`Profile: ${displayName}. Click to sleep`}
       title="Sleep workstation"
-      className="fixed left-5 top-4 z-50 flex max-w-[min(320px,calc(100vw-40px))] items-center gap-2.5 rounded-full border border-white/15 bg-background/70 px-3.5 py-2 text-foreground shadow-lg backdrop-blur-xl transition hover:border-primary/40 hover:bg-background/90 active:scale-[0.98]"
+      className="fixed left-5 top-4 z-40 flex max-w-[min(320px,calc(100vw-40px))] items-center gap-2.5 rounded-full border border-white/15 bg-background/70 px-3.5 py-2 text-foreground shadow-lg backdrop-blur-xl transition hover:border-primary/40 hover:bg-background/90 active:scale-[0.98]"
     >
 
       <h1 className="max-w-full wrap-break-word text-base font-bold text-foreground">

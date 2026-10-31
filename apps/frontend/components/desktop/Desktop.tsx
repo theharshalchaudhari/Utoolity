@@ -79,7 +79,8 @@ export default function Desktop({ onSleep, onLock }: DesktopProps) {
   const hasMaximizedWindow = openApps.some(
     (item) => item.window?.maximized === true && item.window?.minimized !== true,
   );
-  const hideDesktopChrome = expandedAppKey !== null || hasMaximizedWindow;
+  // Keep the desktop chrome mounted; app windows render above it by z-index.
+  const hideDesktopChrome = false;
 
   const windowSummaries: WindowSummary[] = openApps.map((item) => {
     const key = `${item.app}:${item.filePath ?? ""}`;

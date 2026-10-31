@@ -324,7 +324,7 @@ export default function DesktopWindow({
           setMinimized(false);
           setMaximizedState(true);
         }}
-        className={`desktop-window-minimized fixed bottom-5 left-1/2 z-50 -translate-x-1/2 rounded-full border border-border bg-popover px-4 py-2 text-sm font-semibold text-popover-foreground shadow-xl ${
+        className={`desktop-window-minimized fixed bottom-5 left-1/2 z-[1000] -translate-x-1/2 rounded-full border border-border bg-popover px-4 py-2 text-sm font-semibold text-popover-foreground shadow-xl ${
           closing ? "desktop-window-closing pointer-events-none" : ""
         }`}
       >
@@ -376,7 +376,7 @@ export default function DesktopWindow({
         setMaximizedState(!maximized);
       }}
       className={`desktop-window fixed ${
-        active ? "z-1000" : "z-1000"
+        active ? "z-[1000]" : "z-[1000]"
       } flex min-h-0 min-w-0 flex-col overflow-hidden border border-border bg-background text-foreground shadow-2xl transition-[width,height,transform,top,left,opacity,border-radius] duration-300 ease-[cubic-bezier(0.22,1,0.36,1)] ${
         interacting ? "transition-none!" : ""
       } ${
