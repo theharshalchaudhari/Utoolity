@@ -17,9 +17,10 @@ type DesktopProps = {
   onSleep?: () => void;
   onLock?: () => void;
   isVisible?: boolean;
+  showChrome?: boolean;
 };
 
-export default function Desktop({ onSleep, onLock, isVisible = true }: DesktopProps) {
+export default function Desktop({ onSleep, onLock, isVisible = true, showChrome = isVisible }: DesktopProps) {
   const [expandedAppKey, setExpandedAppKey] = useState<string | null>(null);
   const [menu, setMenu] = useState<{ x: number; y: number } | null>(null);
   const [isDark, setIsDark] = useState(true);
@@ -81,7 +82,7 @@ export default function Desktop({ onSleep, onLock, isVisible = true }: DesktopPr
     (item) => item.window?.maximized === true && item.window?.minimized !== true,
   );
   // Keep the desktop chrome mounted; app windows render above it by z-index.
-  const hideDesktopChrome = false;
+  const hideDesktopChrome = !showChrome;
 
   const windowSummaries: WindowSummary[] = openApps.map((item) => {
     const key = `${item.app}:${item.filePath ?? ""}`;
@@ -396,6 +397,18 @@ export default function Desktop({ onSleep, onLock, isVisible = true }: DesktopPr
     const persistWallpaper = (event: Event) => {
       const wallpaperId = (event as CustomEvent<string>).detail;
       if (typeof wallpaperId !== "string" || !wallpaperId) return;
+
+      // Lock-screen identity lookups may resolve a device profile before the
+      // user has an authenticated session. Local wallpaper changes must not
+      // trigger protected preference writes until Home verifies the session.
+      if (
+        document.documentElement.dataset.shellState !== "authenticated" ||
+        localStorage.getItem("utoolity.authenticated") !== "true" ||
+        !localStorage.getItem("utoolity.authenticated-user-id")
+      ) {
+        return;
+      }
+
       void api("/api/auth/preferences", {
         method: "PATCH",
         body: JSON.stringify({ "utoolity.wallpaper": wallpaperId }),

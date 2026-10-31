@@ -223,7 +223,9 @@ function Lockcard({
         }
         if (!resolvedUser) throw new Error("The backend returned an empty profile.");
 
-        applyProfilePreferences(resolvedUser.preferences);
+        // Profile preferences belong to the authenticated desktop session.
+        // A lock-screen lookup only resolves the identity and must not swap the
+        // wallpaper or theme underneath the persistent background layer.
         window.localStorage.setItem("utoolity.cached-user", JSON.stringify(resolvedUser));
         window.localStorage.setItem("utoolity.authenticated-user-id", resolvedUser.id);
         window.localStorage.setItem(HOSTNAME_STORAGE_KEY, resolvedUser.hostname);
@@ -325,7 +327,6 @@ function Lockcard({
         setError("");
         return;
       }
-      applyProfilePreferences(response.user.preferences);
       window.localStorage.setItem(HOSTNAME_STORAGE_KEY, response.user.hostname);
       window.localStorage.setItem("utoolity.device-id", response.user.hostname);
       window.localStorage.setItem("utoolity.cached-user", JSON.stringify(response.user));

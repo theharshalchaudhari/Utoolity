@@ -373,6 +373,7 @@ export default function Home() {
             onSleep={enterSleep}
             onLock={enterLocked}
             isVisible={shellState === "authenticated"}
+            showChrome={shellState === "authenticated"}
           />
           <Lockcard
             socketDisconnected={false}
