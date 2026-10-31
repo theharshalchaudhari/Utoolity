@@ -396,6 +396,17 @@
     background-color: transparent !important;
   }
 
+  .desktop-canvas {
+    position: relative;
+    z-index: 1;
+    background: transparent !important;
+  }
+
+  .lockscreen-shell {
+    background: transparent !important;
+    background-color: transparent !important;
+  }
+
 }
 
 :root {

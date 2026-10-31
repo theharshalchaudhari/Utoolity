@@ -495,7 +495,6 @@ export default function Desktop({ onSleep, onLock, isVisible = true, showChrome 
       className={`desktop-canvas relative min-h-dvh w-full select-none transition-opacity duration-200 ${isVisible ? "opacity-100" : "pointer-events-none opacity-0"}`}
       onContextMenu={openMenu}
     >
-      <DesktopBackground />
       {!hideDesktopChrome && <DesktopApps onOpen={openApp} />}
       {!hideDesktopChrome && <Profile onSleep={onSleep} />}
       {!hideDesktopChrome && !isSharedViewer && (

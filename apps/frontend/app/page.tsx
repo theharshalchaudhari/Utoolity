@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 import Desktop from "@/components/desktop/Desktop";
+import DesktopBackground from "@/components/desktop/DesktopBackground";
 import Lockcard from "@/components/lockscreen/LockcardEntry";
 import { api, ApiError } from "@/lib/api";
 import Image from "next/image";
@@ -351,7 +352,7 @@ export default function Home() {
   };
 
   return (
-    <div className="relative isolate h-dvh min-h-dvh overflow-hidden font-sans text-foreground">
+    <div className="relative h-dvh min-h-dvh overflow-hidden font-sans text-foreground">
       <IssueReporter />
       {shellState === "checking" ? (
         <div
@@ -369,6 +370,7 @@ export default function Home() {
         </div>
       ) : (
         <>
+          <DesktopBackground />
           <Desktop
             onSleep={enterSleep}
             onLock={enterLocked}
