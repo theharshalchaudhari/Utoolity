@@ -1,4 +1,3 @@
-
 import type { FastifyInstance, FastifyRequest } from "fastify";
 import { readFile, writeFile } from "node:fs/promises";
 import { fileURLToPath } from "node:url";
@@ -73,7 +72,9 @@ async function readSessions(): Promise<Record<string, SessionRecord>> {
   try {
     const text = (await readFile(sessionsFilePath, "utf8")).trim();
     if (!text) return {};
-    const raw = JSON.parse(text) as { sessions?: Record<string, SessionRecord> };
+    const raw = JSON.parse(text) as {
+      sessions?: Record<string, SessionRecord>;
+    };
     return raw.sessions ?? {};
   } catch (error) {
     if ((error as NodeJS.ErrnoException).code === "ENOENT") return {};
@@ -82,7 +83,9 @@ async function readSessions(): Promise<Record<string, SessionRecord>> {
   }
 }
 
-async function writeSessions(sessions: Record<string, SessionRecord>): Promise<void> {
+async function writeSessions(
+  sessions: Record<string, SessionRecord>,
+): Promise<void> {
   await writeFile(
     sessionsFilePath,
     `${JSON.stringify({ sessions }, null, 2)}\n`,
@@ -111,14 +114,26 @@ const liveWorkspaces = new Map<string, WorkspaceState>();
 function sendToUser(userId: string, payload: unknown): void {
   const message = JSON.stringify(payload);
   for (const client of collaborationClients.values()) {
-    if (client.userId === userId && client.socket.readyState === 1) client.socket.send(message);
+    if (client.userId === userId && client.socket.readyState === 1)
+      client.socket.send(message);
   }
 }
-function sendToSharedSession(ownerUserId: string, payload: unknown, exceptUserId?: string): void {
-  const allowed = new Set([ownerUserId, ...((sharedSessions.get(ownerUserId) ?? new Map()).keys())]);
+function sendToSharedSession(
+  ownerUserId: string,
+  payload: unknown,
+  exceptUserId?: string,
+): void {
+  const allowed = new Set([
+    ownerUserId,
+    ...(sharedSessions.get(ownerUserId) ?? new Map()).keys(),
+  ]);
   const message = JSON.stringify(payload);
   for (const client of collaborationClients.values()) {
-    if (allowed.has(client.userId) && client.userId !== exceptUserId && client.socket.readyState === 1) {
+    if (
+      allowed.has(client.userId) &&
+      client.userId !== exceptUserId &&
+      client.socket.readyState === 1
+    ) {
       client.socket.send(message);
     }
   }
@@ -128,9 +143,13 @@ function sharedOwnerFor(client: CollaborationClient): string | undefined {
   return client.joinedOwnerUserId;
 }
 function broadcastPresence(): void {
-  const users = [...collaborationClients.values()].map(({ userId, displayName, role }) => ({
-    userId, displayName, role,
-  }));
+  const users = [...collaborationClients.values()].map(
+    ({ userId, displayName, role }) => ({
+      userId,
+      displayName,
+      role,
+    }),
+  );
   const payload = JSON.stringify({ type: "presence", users });
   for (const client of collaborationClients.values()) {
     if (client.socket.readyState === 1) client.socket.send(payload);
@@ -138,13 +157,17 @@ function broadcastPresence(): void {
 }
 function broadcastCollaboration(payload: string, exceptKey?: string): void {
   for (const [key, client] of collaborationClients) {
-    if (key !== exceptKey && client.socket.readyState === 1) client.socket.send(payload);
+    if (key !== exceptKey && client.socket.readyState === 1)
+      client.socket.send(payload);
   }
 }
 
 function getDeviceId(request: FastifyRequest, fallback: string): string {
   const candidate = request.headers["x-utoolity-device-id"];
-  if (typeof candidate === "string" && /^[a-zA-Z0-9._:-]{8,128}$/.test(candidate)) {
+  if (
+    typeof candidate === "string" &&
+    /^[a-zA-Z0-9._:-]{8,128}$/.test(candidate)
+  ) {
     return candidate;
   }
   return fallback;
@@ -198,8 +221,14 @@ const sessionsFilePath = fileURLToPath(
 );
 
 const validWallpaperIds = new Set([
-  "Default", "Desert", "Lakeside", "Rancho", "Sands",
-  "Live/Blossom.mp4", "Live/Cyber.mp4", "Live/Islands.mp4",
+  "Default",
+  "Desert",
+  "Lakeside",
+  "Rancho",
+  "Sands",
+  "Live/Blossom.mp4",
+  "Live/Cyber.mp4",
+  "Live/Islands.mp4",
 ]);
 
 function normalizeUserRecord(value: unknown): InternUser {
@@ -209,17 +238,23 @@ function normalizeUserRecord(value: unknown): InternUser {
   const user = value as InternUser & { macId?: string };
   const profile = { ...user };
   delete profile.macId;
-  const hostname = typeof user.hostname === "string" ? user.hostname.trim() : "";
+  const hostname =
+    typeof user.hostname === "string" ? user.hostname.trim() : "";
   if (!hostname || typeof user.displayName !== "string") {
     throw new Error("Each user must have a hostname and displayName.");
   }
   const oldPreferences = user.preferences ?? {};
   const oldWallpaper = oldPreferences["utoolity.wallpaper"];
   const wallpaperAliases: Record<string, string> = {
-    "default.jpg": "Default", "dark.jpg": "Default", "light.jpg": "Default",
-    "new.jpg": "Default", "Midnight": "Default",
+    "default.jpg": "Default",
+    "dark.jpg": "Default",
+    "light.jpg": "Default",
+    "new.jpg": "Default",
+    Midnight: "Default",
   };
-  const requestedWallpaper = oldWallpaper ? (wallpaperAliases[oldWallpaper] ?? oldWallpaper) : "Default";
+  const requestedWallpaper = oldWallpaper
+    ? (wallpaperAliases[oldWallpaper] ?? oldWallpaper)
+    : "Default";
   const theme = oldPreferences["utoolity.theme"];
   return {
     ...profile,
@@ -230,10 +265,13 @@ function normalizeUserRecord(value: unknown): InternUser {
     password: typeof user.password === "string" ? user.password : "",
     preferences: {
       ...oldPreferences,
-      "utoolity.wallpaper": validWallpaperIds.has(requestedWallpaper) ? requestedWallpaper : "Default",
+      "utoolity.wallpaper": validWallpaperIds.has(requestedWallpaper)
+        ? requestedWallpaper
+        : "Default",
       "utoolity.icon-size": oldPreferences["utoolity.icon-size"] ?? "large",
       "utoolity.grain": oldPreferences["utoolity.grain"] ?? "none",
-      "utoolity.theme": theme === "dark" || theme === "light" ? theme : "device",
+      "utoolity.theme":
+        theme === "dark" || theme === "light" ? theme : "device",
     },
   };
 }
@@ -257,7 +295,11 @@ async function readUsers(): Promise<InternUser[]> {
   // any supported per-profile settings. Future database migration can consume
   // this normalized shape without another manual cleanup.
   if (JSON.stringify(original) !== JSON.stringify(users)) {
-    await writeFile(usersFilePath, `${JSON.stringify({ users }, null, 2)}\n`, "utf8");
+    await writeFile(
+      usersFilePath,
+      `${JSON.stringify({ users }, null, 2)}\n`,
+      "utf8",
+    );
   }
   return users;
 }
@@ -266,7 +308,9 @@ async function readWorkspaces(): Promise<Record<string, WorkspaceState>> {
   try {
     const text = (await readFile(workspacesFilePath, "utf8")).trim();
     if (!text) return {};
-    const raw = JSON.parse(text) as { workspaces?: Record<string, WorkspaceState> };
+    const raw = JSON.parse(text) as {
+      workspaces?: Record<string, WorkspaceState>;
+    };
     return raw.workspaces ?? {};
   } catch {
     return {};
@@ -298,15 +342,11 @@ function findByHostname(
   const normalizedHostname = hostname.trim().toLowerCase();
 
   return users.find(
-    (user) =>
-      user.hostname.trim().toLowerCase() === normalizedHostname,
+    (user) => user.hostname.trim().toLowerCase() === normalizedHostname,
   );
 }
 
-function findById(
-  users: InternUser[],
-  id: string,
-): InternUser | undefined {
+function findById(users: InternUser[], id: string): InternUser | undefined {
   return users.find((user) => user.id === id);
 }
 
@@ -364,29 +404,56 @@ async function establishSession(
 
 export default async function authRoutes(app: FastifyInstance) {
   app.post<{
-    Body: { appName?: string; errorName?: string; details?: string; description?: string };
+    Body: {
+      appName?: string;
+      errorName?: string;
+      details?: string;
+      description?: string;
+    };
   }>("/auth/report-issue", async (request, reply) => {
     const userId = getSession(request).userId;
     if (!userId) return reply.code(401).send({ message: "Not authenticated." });
 
     const body = request.body ?? {};
-    const appName = typeof body.appName === "string" ? body.appName.trim().slice(0, 120) : "Desktop";
-    const errorName = typeof body.errorName === "string" ? body.errorName.trim().slice(0, 160) : "Application error";
-    const details = typeof body.details === "string" ? body.details.trim().slice(0, 12000) : "";
-    const description = typeof body.description === "string" ? body.description.trim().slice(0, 4000) : "";
+    const appName =
+      typeof body.appName === "string"
+        ? body.appName.trim().slice(0, 120)
+        : "Desktop";
+    const errorName =
+      typeof body.errorName === "string"
+        ? body.errorName.trim().slice(0, 160)
+        : "Application error";
+    const details =
+      typeof body.details === "string"
+        ? body.details.trim().slice(0, 12000)
+        : "";
+    const description =
+      typeof body.description === "string"
+        ? body.description.trim().slice(0, 4000)
+        : "";
     if (!appName || !errorName || (!details && !description)) {
-      return reply.code(400).send({ message: "App name, error name, and error details or description are required." });
+      return reply.code(400).send({
+        message:
+          "App name, error name, and error details or description are required.",
+      });
     }
 
     try {
       const users = await readUsers();
       const user = findById(users, userId);
-      if (!user) return reply.code(401).send({ message: "Session user no longer exists." });
-      const reportsFilePath = fileURLToPath(new URL("../data/issue-reports.json", import.meta.url));
+      if (!user)
+        return reply
+          .code(401)
+          .send({ message: "Session user no longer exists." });
+      const reportsFilePath = fileURLToPath(
+        new URL("../data/issue-reports.json", import.meta.url),
+      );
       let reports: Array<Record<string, unknown>> = [];
       try {
         const raw = await readFile(reportsFilePath, "utf8");
-        const parsed = JSON.parse(raw) as { reports?: Array<Record<string, unknown>> };
+        const parsed = JSON.parse(raw) as {
+          reports?: Array<Record<string, unknown>>;
+        };
         reports = Array.isArray(parsed.reports) ? parsed.reports : [];
       } catch (error) {
         if ((error as NodeJS.ErrnoException).code !== "ENOENT") throw error;
@@ -397,16 +464,27 @@ export default async function authRoutes(app: FastifyInstance) {
         errorName,
         details,
         description,
-        reportedBy: { id: user.id, hostname: user.hostname, displayName: user.displayName, role: user.role },
+        reportedBy: {
+          id: user.id,
+          hostname: user.hostname,
+          displayName: user.displayName,
+          role: user.role,
+        },
         reportedAt: new Date().toISOString(),
         status: "open",
       };
       reports.push(report);
-      await writeFile(reportsFilePath, `${JSON.stringify({ reports }, null, 2)}\n`, "utf8");
+      await writeFile(
+        reportsFilePath,
+        `${JSON.stringify({ reports }, null, 2)}\n`,
+        "utf8",
+      );
       return reply.code(201).send({ success: true, reportId: report.id });
     } catch (error) {
       request.log.error(error, "Unable to save issue report");
-      return reply.code(500).send({ message: "Unable to save the issue report. Please try again." });
+      return reply.code(500).send({
+        message: "Unable to save the issue report. Please try again.",
+      });
     }
   });
 
@@ -417,28 +495,46 @@ export default async function authRoutes(app: FastifyInstance) {
     return { workspace: workspaces[userId] ?? {} };
   });
 
-  app.put<{ Body: WorkspaceState }>("/auth/workspace", async (request, reply) => {
-    const userId = getSession(request).userId;
-    if (!userId) return reply.code(401).send({ message: "Not authenticated." });
-    const users = await readUsers();
-    const user = findById(users, userId);
-    if (!user) return reply.code(401).send({ message: "Session user no longer exists." });
-    const workspaces = await readWorkspaces();
-    workspaces[userId] = request.body ?? {};
-    await writeFile(workspacesFilePath, JSON.stringify({ workspaces }, null, 2));
-    const activeApps = request.body && Array.isArray(request.body.openApps)
-      ? request.body.openApps
-      : [];
-    const deviceId = user.deviceId ?? user.hostname;
-    const currentSessions = await readSessions();
-    const existing = currentSessions[`${user.id}:${deviceId}`] ?? currentSessions[user.id];
-    await updateSessionRecord(user, {
-      active: true,
-      activeApps: activeApps.length ? activeApps : existing?.activeApps ?? [],
-      lastActivityAt: Date.now(),
-    }, deviceId);
-    return { success: true };
-  });
+  app.put<{ Body: WorkspaceState }>(
+    "/auth/workspace",
+    async (request, reply) => {
+      const userId = getSession(request).userId;
+      if (!userId)
+        return reply.code(401).send({ message: "Not authenticated." });
+      const users = await readUsers();
+      const user = findById(users, userId);
+      if (!user)
+        return reply
+          .code(401)
+          .send({ message: "Session user no longer exists." });
+      const workspaces = await readWorkspaces();
+      workspaces[userId] = request.body ?? {};
+      await writeFile(
+        workspacesFilePath,
+        JSON.stringify({ workspaces }, null, 2),
+      );
+      const activeApps =
+        request.body && Array.isArray(request.body.openApps)
+          ? request.body.openApps
+          : [];
+      const deviceId = user.deviceId ?? user.hostname;
+      const currentSessions = await readSessions();
+      const existing =
+        currentSessions[`${user.id}:${deviceId}`] ?? currentSessions[user.id];
+      await updateSessionRecord(
+        user,
+        {
+          active: true,
+          activeApps: activeApps.length
+            ? activeApps
+            : (existing?.activeApps ?? []),
+          lastActivityAt: Date.now(),
+        },
+        deviceId,
+      );
+      return { success: true };
+    },
+  );
 
   app.post("/auth/activity", async (request, reply) => {
     const session = getSession(request);
@@ -452,12 +548,17 @@ export default async function authRoutes(app: FastifyInstance) {
       if (user) {
         const sessions = await readSessions();
         const deviceId = user.deviceId ?? user.hostname;
-        const existing = sessions[`${user.id}:${deviceId}`] ?? sessions[user.id];
-        await updateSessionRecord(user, {
-          active: true,
-          activeApps: existing?.activeApps ?? [],
-          lastActivityAt: session.lastActivityAt,
-        }, deviceId);
+        const existing =
+          sessions[`${user.id}:${deviceId}`] ?? sessions[user.id];
+        await updateSessionRecord(
+          user,
+          {
+            active: true,
+            activeApps: existing?.activeApps ?? [],
+            lastActivityAt: session.lastActivityAt,
+          },
+          deviceId,
+        );
       }
     } catch (error) {
       request.log.error(error, "Unable to persist session activity.");
@@ -467,54 +568,60 @@ export default async function authRoutes(app: FastifyInstance) {
   });
 
   // POST /api/auth/login
-  app.post<{ Body: CredentialsBody }>(
-    "/auth/login",
-    async (request, reply) => {
+  app.post<{ Body: CredentialsBody }>("/auth/login", async (request, reply) => {
+    if (
+      typeof request.body?.hostname !== "string" ||
+      !request.body.hostname.trim() ||
+      request.body.hostname.length > 255 ||
+      typeof request.body.password !== "string" ||
+      request.body.password.length > 1024
+    ) {
+      return reply.code(400).send({
+        message: "A valid hostname and password are required.",
+      });
+    }
+
+    try {
+      const users = await readUsers();
+      const deviceId = getDeviceId(request, "");
+      const assignedUser = deviceId
+        ? users.find((candidate) => candidate.deviceId === deviceId)
+        : undefined;
+      const user = assignedUser ?? findByHostname(users, request.body.hostname);
+
       if (
-        typeof request.body?.hostname !== "string" ||
-        !request.body.hostname.trim() ||
-        request.body.hostname.length > 255 ||
-        typeof request.body.password !== "string" ||
-        request.body.password.length > 1024
+        !user ||
+        user.hostname.toLowerCase() !==
+          request.body.hostname.trim().toLowerCase() ||
+        user.password !== request.body.password
       ) {
-        return reply.code(400).send({
-          message: "A valid hostname and password are required.",
+        return reply.code(401).send({
+          message: "Invalid hostname or password.",
         });
       }
 
-      try {
-        const users = await readUsers();
-        const deviceId = getDeviceId(request, "");
-        const assignedUser = deviceId
-          ? users.find((candidate) => candidate.deviceId === deviceId)
-          : undefined;
-        const user = assignedUser ?? findByHostname(users, request.body.hostname);
-
-        if (!user || user.hostname.toLowerCase() !== request.body.hostname.trim().toLowerCase() || user.password !== request.body.password) {
-          return reply.code(401).send({
-            message: "Invalid hostname or password.",
-          });
-        }
-
-        await establishSession(request, user);
-        await updateSessionRecord(user, {
+      await establishSession(request, user);
+      await updateSessionRecord(
+        user,
+        {
           active: true,
           activeApps: [],
           lastActivityAt: Date.now(),
-        }, user.deviceId ?? user.hostname);
+        },
+        user.deviceId ?? user.hostname,
+      );
 
-        return {
-          user: publicUser(user),
-        };
-      } catch (error) {
-        request.log.error(error, "Login failed unexpectedly");
+      return {
+        user: publicUser(user),
+      };
+    } catch (error) {
+      request.log.error(error, "Login failed unexpectedly");
 
-        return reply.code(500).send({
-          message: "Unable to sign in right now.",
-        });
-      }
-    },
-  );
+      return reply.code(500).send({
+        message: "Unable to sign in right now.",
+      });
+    }
+  });
 
   // POST /api/auth/logout
   app.post("/auth/logout", async (request, reply) => {
@@ -524,15 +631,22 @@ export default async function authRoutes(app: FastifyInstance) {
         const users = await readUsers();
         const user = findById(users, session.userId);
         if (user) {
-          await updateSessionRecord(user, {
-            active: false,
-            activeApps: [],
-            lastActivityAt: Date.now(),
-          }, user.deviceId ?? user.hostname);
+          await updateSessionRecord(
+            user,
+            {
+              active: false,
+              activeApps: [],
+              lastActivityAt: Date.now(),
+            },
+            user.deviceId ?? user.hostname,
+          );
         }
       }
       await destroySession(request);
-      reply.header("Set-Cookie", "sessionId=; Path=/; Max-Age=0; HttpOnly; SameSite=Lax");
+      reply.header(
+        "Set-Cookie",
+        "sessionId=; Path=/; Max-Age=0; HttpOnly; SameSite=Lax",
+      );
 
       return { success: true };
     } catch (error) {
@@ -568,7 +682,6 @@ export default async function authRoutes(app: FastifyInstance) {
         return reply.code(401).send({
           message: "Session user no longer exists.",
         });
-
       }
 
       return {
@@ -594,7 +707,9 @@ export default async function authRoutes(app: FastifyInstance) {
     try {
       const user = findById(await readUsers(), userId);
       if (!user) {
-        return reply.code(401).send({ message: "Session user no longer exists." });
+        return reply
+          .code(401)
+          .send({ message: "Session user no longer exists." });
       }
       return {
         preferences: {
@@ -650,33 +765,55 @@ export default async function authRoutes(app: FastifyInstance) {
           await writeUsers(users);
           return { preferences: user.preferences };
         });
-        preferenceWriteQueue = operation.then(() => undefined, () => undefined);
+        preferenceWriteQueue = operation.then(
+          () => undefined,
+          () => undefined,
+        );
         return await operation;
       } catch (error) {
-        request.log.error({ err: error, userId, keys: entries.map(([key]) => key) }, "Unable to save user preferences");
-        return reply.code(error instanceof Error && error.message === "Session user no longer exists." ? 401 : 500).send({
-          message: error instanceof Error && error.message === "Session user no longer exists."
-            ? error.message
-            : "Unable to save preferences.",
-        });
+        request.log.error(
+          { err: error, userId, keys: entries.map(([key]) => key) },
+          "Unable to save user preferences",
+        );
+        return reply
+          .code(
+            error instanceof Error &&
+              error.message === "Session user no longer exists."
+              ? 401
+              : 500,
+          )
+          .send({
+            message:
+              error instanceof Error &&
+              error.message === "Session user no longer exists."
+                ? error.message
+                : "Unable to save preferences.",
+          });
       }
     },
   );
 
   app.get("/auth/collaboration/users", async (request, reply) => {
     const currentUserId = getSession(request).userId;
-    if (!currentUserId) return reply.code(401).send({ message: "Not authenticated." });
+    if (!currentUserId)
+      return reply.code(401).send({ message: "Not authenticated." });
     const users = await readUsers();
-    const onlineIds = new Set([...collaborationClients.values()].map((client) => client.userId));
+    const onlineIds = new Set(
+      [...collaborationClients.values()].map((client) => client.userId),
+    );
     return {
-      users: users.filter((user) => user.id !== "guest-intern" && user.id !== currentUserId).map((user) => ({
-        userId: user.id,
-        id: user.id,
-        hostname: user.hostname,
-        displayName: user.displayName,
-        role: user.role,
-        online: onlineIds.has(user.id),
-      })),
+      users: users
+        .filter(
+          (user) => user.id !== "guest-intern" && user.id !== currentUserId,
+        )
+        .map((user) => ({
+          userId: user.id,
+          id: user.id,
+          hostname: user.hostname,
+          displayName: user.displayName,
+          role: user.role,
+          online: onlineIds.has(user.id),
+        })),
     };
   });
 
@@ -691,8 +828,12 @@ export default async function authRoutes(app: FastifyInstance) {
     const session = getSession(request);
     let deviceId = session.deviceId ?? "pending-device";
     const savedOwnerUserId = session.collaborationOwnerUserId;
-    const restoredPermission = savedOwnerUserId ? sharedSessions.get(savedOwnerUserId)?.get(userId) : undefined;
-    const restoredOwnerUserId = restoredPermission ? savedOwnerUserId : undefined;
+    const restoredPermission = savedOwnerUserId
+      ? sharedSessions.get(savedOwnerUserId)?.get(userId)
+      : undefined;
+    const restoredOwnerUserId = restoredPermission
+      ? savedOwnerUserId
+      : undefined;
     if (savedOwnerUserId && !restoredOwnerUserId) {
       delete session.collaborationOwnerUserId;
       delete session.collaborationPermission;
@@ -709,38 +850,59 @@ export default async function authRoutes(app: FastifyInstance) {
       permission: restoredOwnerUserId ? restoredPermission : undefined,
     };
     collaborationClients.set(clientKey, client);
-    void readUsers().then(async (users) => {
-      const user = findById(users, userId);
-      if (user) {
-        client.displayName = user.displayName;
-        client.role = user.role;
-      }
-      broadcastPresence();
-      if (client.joinedOwnerUserId && client.permission && socket.readyState === 1) {
-        const owner = findById(users, client.joinedOwnerUserId);
-        const workspaces = await readWorkspaces();
-        const workspace = liveWorkspaces.get(client.joinedOwnerUserId) ?? workspaces[client.joinedOwnerUserId] ?? { openApps: [] };
-        socket.send(JSON.stringify({
-          type: "join-approved",
-          ownerUserId: client.joinedOwnerUserId,
-          ownerDisplayName: owner?.displayName ?? client.joinedOwnerUserId,
-          permission: client.permission,
-          workspace,
-        }));
-      }
-      const ownerMembers = sharedSessions.get(userId);
-      if (ownerMembers?.size) {
-        socket.send(JSON.stringify({
-          type: "shared-members",
-          ownerUserId: userId,
-          members: [...ownerMembers.entries()].map(([memberUserId, permission]) => ({
-            userId: memberUserId,
-            permission,
-            displayName: [...collaborationClients.values()].find((entry) => entry.userId === memberUserId)?.displayName ?? memberUserId,
-          })),
-        }));
-      }
-    }).catch((error) => request.log.warn({ err: error }, "Unable to resolve collaboration profile"));
+    void readUsers()
+      .then(async (users) => {
+        const user = findById(users, userId);
+        if (user) {
+          client.displayName = user.displayName;
+          client.role = user.role;
+        }
+        broadcastPresence();
+        if (
+          client.joinedOwnerUserId &&
+          client.permission &&
+          socket.readyState === 1
+        ) {
+          const owner = findById(users, client.joinedOwnerUserId);
+          const workspaces = await readWorkspaces();
+          const workspace = liveWorkspaces.get(client.joinedOwnerUserId) ??
+            workspaces[client.joinedOwnerUserId] ?? { openApps: [] };
+          socket.send(
+            JSON.stringify({
+              type: "join-approved",
+              ownerUserId: client.joinedOwnerUserId,
+              ownerDisplayName: owner?.displayName ?? client.joinedOwnerUserId,
+              permission: client.permission,
+              workspace,
+            }),
+          );
+        }
+        const ownerMembers = sharedSessions.get(userId);
+        if (ownerMembers?.size) {
+          socket.send(
+            JSON.stringify({
+              type: "shared-members",
+              ownerUserId: userId,
+              members: [...ownerMembers.entries()].map(
+                ([memberUserId, permission]) => ({
+                  userId: memberUserId,
+                  permission,
+                  displayName:
+                    [...collaborationClients.values()].find(
+                      (entry) => entry.userId === memberUserId,
+                    )?.displayName ?? memberUserId,
+                }),
+              ),
+            }),
+          );
+        }
+      })
+      .catch((error) =>
+        request.log.warn(
+          { err: error },
+          "Unable to resolve collaboration profile",
+        ),
+      );
     broadcastPresence();
 
     const persistActivity = async (active: boolean) => {
@@ -758,12 +920,19 @@ export default async function authRoutes(app: FastifyInstance) {
           socket.close(1008, "A different user is assigned to this device");
           return;
         }
-        const existing = sessions[`${user.id}:${deviceId}`] ?? sessions[user.id];
-        await updateSessionRecord(user, {
-          active,
-          activeApps: existing?.activeApps ?? [],
-          lastActivityAt: active ? Date.now() : existing?.lastActivityAt ?? Date.now(),
-        }, deviceId === "pending-device" ? user.hostname : deviceId);
+        const existing =
+          sessions[`${user.id}:${deviceId}`] ?? sessions[user.id];
+        await updateSessionRecord(
+          user,
+          {
+            active,
+            activeApps: existing?.activeApps ?? [],
+            lastActivityAt: active
+              ? Date.now()
+              : (existing?.lastActivityAt ?? Date.now()),
+          },
+          deviceId === "pending-device" ? user.hostname : deviceId,
+        );
       } catch (error) {
         request.log.error(error, "Unable to persist WebSocket activity");
       }
@@ -775,22 +944,31 @@ export default async function authRoutes(app: FastifyInstance) {
       const timerKey = `${userId}:${deviceId}`;
       const existingTimer = deviceInactivityTimers.get(timerKey);
       if (existingTimer) clearTimeout(existingTimer);
-      const timer = setTimeout(async () => {
-        deviceInactivityTimers.delete(timerKey);
-        try {
-          const sessions = await readSessions();
-          const assignedDeviceSession = Object.values(sessions).find(
-            (record) => record.deviceId === deviceId,
-          );
-          if (assignedDeviceSession && assignedDeviceSession.userId !== userId) {
+      const timer = setTimeout(
+        async () => {
+          deviceInactivityTimers.delete(timerKey);
+          try {
+            const sessions = await readSessions();
+            const assignedDeviceSession = Object.values(sessions).find(
+              (record) => record.deviceId === deviceId,
+            );
+            if (
+              assignedDeviceSession &&
+              assignedDeviceSession.userId !== userId
+            ) {
+              return;
+            }
+          } catch (error) {
+            request.log.error(
+              error,
+              "Unable to verify device assignment before inactivity update",
+            );
             return;
           }
-        } catch (error) {
-          request.log.error(error, "Unable to verify device assignment before inactivity update");
-          return;
-        }
-        void persistActivity(false);
-      }, 5 * 60 * 1000);
+          void persistActivity(false);
+        },
+        5 * 60 * 1000,
+      );
       deviceInactivityTimers.set(timerKey, timer);
     };
 
@@ -822,7 +1000,10 @@ export default async function authRoutes(app: FastifyInstance) {
         return;
       }
 
-      if (typeof message.deviceId === "string" && /^[a-zA-Z0-9._:-]{8,128}$/.test(message.deviceId)) {
+      if (
+        typeof message.deviceId === "string" &&
+        /^[a-zA-Z0-9._:-]{8,128}$/.test(message.deviceId)
+      ) {
         if (session.deviceId && session.deviceId !== message.deviceId) {
           socket.close(1008, "Device identity mismatch");
           return;
@@ -836,25 +1017,68 @@ export default async function authRoutes(app: FastifyInstance) {
       if (deviceId === "pending-device") return;
 
       if (message.type === "join-request") {
-        if (typeof message.targetUserId !== "string" || message.targetUserId === userId) return;
+        if (
+          typeof message.targetUserId !== "string" ||
+          message.targetUserId === userId
+        )
+          return;
         const configuredUsers = await readUsers().catch(() => []);
-        const configuredTarget = configuredUsers.some((candidate) => candidate.id === message.targetUserId && candidate.id !== "guest-intern");
+        const configuredTarget = configuredUsers.some(
+          (candidate) =>
+            candidate.id === message.targetUserId &&
+            candidate.id !== "guest-intern",
+        );
         if (!configuredTarget) {
-          socket.send(JSON.stringify({ type: "join-request-result", targetUserId: message.targetUserId, status: "not-found" }));
+          socket.send(
+            JSON.stringify({
+              type: "join-request-result",
+              targetUserId: message.targetUserId,
+              status: "not-found",
+            }),
+          );
           return;
         }
         if (client.joinedOwnerUserId || sharedSessions.has(userId)) {
-          socket.send(JSON.stringify({ type: "join-request-result", targetUserId: message.targetUserId, status: "already-in-session" }));
+          socket.send(
+            JSON.stringify({
+              type: "join-request-result",
+              targetUserId: message.targetUserId,
+              status: "already-in-session",
+            }),
+          );
           return;
         }
-        const ownerOnline = [...collaborationClients.values()].some((target) => target.userId === message.targetUserId && target.socket.readyState === 1);
+        const ownerOnline = [...collaborationClients.values()].some(
+          (target) =>
+            target.userId === message.targetUserId &&
+            target.socket.readyState === 1,
+        );
         if (!ownerOnline) {
-          socket.send(JSON.stringify({ type: "join-request-result", targetUserId: message.targetUserId, status: "offline" }));
+          socket.send(
+            JSON.stringify({
+              type: "join-request-result",
+              targetUserId: message.targetUserId,
+              status: "offline",
+            }),
+          );
           return;
         }
-        const existingOwner = [...collaborationClients.values()].find((target) => target.userId === message.targetUserId && target.socket.readyState === 1);
-        if (existingOwner?.joinedOwnerUserId || sharedSessions.has(message.targetUserId)) {
-          socket.send(JSON.stringify({ type: "join-request-result", targetUserId: message.targetUserId, status: "target-in-session" }));
+        const existingOwner = [...collaborationClients.values()].find(
+          (target) =>
+            target.userId === message.targetUserId &&
+            target.socket.readyState === 1,
+        );
+        if (
+          existingOwner?.joinedOwnerUserId ||
+          sharedSessions.has(message.targetUserId)
+        ) {
+          socket.send(
+            JSON.stringify({
+              type: "join-request-result",
+              targetUserId: message.targetUserId,
+              status: "target-in-session",
+            }),
+          );
           return;
         }
         pendingJoinRequests.set(`${message.targetUserId}:${userId}`, clientKey);
@@ -864,19 +1088,33 @@ export default async function authRoutes(app: FastifyInstance) {
           fromDisplayName: client.displayName,
           requestedAt: Date.now(),
         });
-        socket.send(JSON.stringify({ type: "join-request-result", targetUserId: message.targetUserId, status: "pending" }));
+        socket.send(
+          JSON.stringify({
+            type: "join-request-result",
+            targetUserId: message.targetUserId,
+            status: "pending",
+          }),
+        );
         return;
       }
 
       if (message.type === "join-response") {
-        if (typeof message.targetUserId !== "string" || typeof message.approved !== "boolean") return;
+        if (
+          typeof message.targetUserId !== "string" ||
+          typeof message.approved !== "boolean"
+        )
+          return;
         const requestKey = `${userId}:${message.targetUserId}`;
         const requesterKey = pendingJoinRequests.get(requestKey);
         if (!requesterKey) return;
         const permission = message.permission === "editor" ? "editor" : "view";
         if (!message.approved) {
           pendingJoinRequests.delete(requestKey);
-          sendToUser(message.targetUserId, { type: "join-declined", ownerUserId: userId, ownerDisplayName: client.displayName });
+          sendToUser(message.targetUserId, {
+            type: "join-declined",
+            ownerUserId: userId,
+            ownerDisplayName: client.displayName,
+          });
           return;
         }
         const requester = collaborationClients.get(requesterKey);
@@ -884,12 +1122,16 @@ export default async function authRoutes(app: FastifyInstance) {
           pendingJoinRequests.delete(requestKey);
           return;
         }
-        if (client.joinedOwnerUserId || sharedSessions.has(message.targetUserId)) {
+        if (
+          client.joinedOwnerUserId ||
+          sharedSessions.has(message.targetUserId)
+        ) {
           pendingJoinRequests.delete(requestKey);
           return;
         }
         pendingJoinRequests.delete(requestKey);
-        const members = sharedSessions.get(userId) ?? new Map<string, "view" | "editor">();
+        const members =
+          sharedSessions.get(userId) ?? new Map<string, "view" | "editor">();
         members.set(message.targetUserId, permission);
         sharedSessions.set(userId, members);
         requester.joinedOwnerUserId = userId;
@@ -899,37 +1141,52 @@ export default async function authRoutes(app: FastifyInstance) {
         requesterSession.collaborationPermission = permission;
         void saveSession(requester.request);
         for (const ownerClient of collaborationClients.values()) {
-          if (ownerClient.userId === userId && ownerClient.socket.readyState === 1) {
-            ownerClient.socket.send(JSON.stringify({
-              type: "shared-session-active",
-              ownerUserId: userId,
-              memberUserId: message.targetUserId,
-              memberDisplayName: requester.displayName,
-              permission,
-            }));
+          if (
+            ownerClient.userId === userId &&
+            ownerClient.socket.readyState === 1
+          ) {
+            ownerClient.socket.send(
+              JSON.stringify({
+                type: "shared-session-active",
+                ownerUserId: userId,
+                memberUserId: message.targetUserId,
+                memberDisplayName: requester.displayName,
+                permission,
+              }),
+            );
           }
         }
         const users = await readUsers();
         const workspaces = await readWorkspaces();
-        const workspace = liveWorkspaces.get(userId) ?? workspaces[userId] ?? { openApps: [] };
-        requester.socket.send(JSON.stringify({
-          type: "join-approved",
-          ownerUserId: userId,
-          ownerDisplayName: client.displayName,
-          permission,
-          workspace,
-        }));
+        const workspace = liveWorkspaces.get(userId) ??
+          workspaces[userId] ?? { openApps: [] };
+        requester.socket.send(
+          JSON.stringify({
+            type: "join-approved",
+            ownerUserId: userId,
+            ownerDisplayName: client.displayName,
+            permission,
+            workspace,
+          }),
+        );
         const memberPayload = {
           type: "shared-members",
           ownerUserId: userId,
-          members: [...members.entries()].map(([memberUserId, memberPermission]) => ({
-            userId: memberUserId,
-            permission: memberPermission,
-            displayName: findById(users, memberUserId)?.displayName ?? memberUserId,
-          })),
+          members: [...members.entries()].map(
+            ([memberUserId, memberPermission]) => ({
+              userId: memberUserId,
+              permission: memberPermission,
+              displayName:
+                findById(users, memberUserId)?.displayName ?? memberUserId,
+            }),
+          ),
         };
         sendToUser(userId, memberPayload);
-        sendToUser(message.targetUserId, { type: "shared-session-owner", ownerUserId: userId, ownerDisplayName: client.displayName });
+        sendToUser(message.targetUserId, {
+          type: "shared-session-owner",
+          ownerUserId: userId,
+          ownerDisplayName: client.displayName,
+        });
         return;
       }
 
@@ -947,32 +1204,59 @@ export default async function authRoutes(app: FastifyInstance) {
             void saveSession(target.request);
           }
         }
-        sendToUser(ownerUserId, { type: "shared-member-left", userId, displayName: client.displayName });
+        sendToUser(ownerUserId, {
+          type: "shared-member-left",
+          userId,
+          displayName: client.displayName,
+        });
         socket.send(JSON.stringify({ type: "join-left" }));
         return;
       }
 
       if (message.type === "shared-permission" && sharedSessions.has(userId)) {
-        if (typeof message.targetUserId !== "string" || (message.permission !== "view" && message.permission !== "editor")) return;
+        if (
+          typeof message.targetUserId !== "string" ||
+          (message.permission !== "view" && message.permission !== "editor")
+        )
+          return;
         const members = sharedSessions.get(userId);
         if (!members?.has(message.targetUserId)) return;
         members.set(message.targetUserId, message.permission);
         for (const target of collaborationClients.values()) {
-          if (target.userId === message.targetUserId && target.joinedOwnerUserId === userId) {
+          if (
+            target.userId === message.targetUserId &&
+            target.joinedOwnerUserId === userId
+          ) {
             target.permission = message.permission;
             const targetSession = getSession(target.request);
             targetSession.collaborationPermission = message.permission;
             void saveSession(target.request);
           }
         }
-        sendToUser(message.targetUserId, { type: "shared-permission", ownerUserId: userId, permission: message.permission });
+        sendToUser(message.targetUserId, {
+          type: "shared-permission",
+          ownerUserId: userId,
+          permission: message.permission,
+        });
         return;
       }
 
       if (message.type === "shared-workspace-command") {
         const ownerUserId = client.joinedOwnerUserId;
-        const allowedCommands = new Set(["open-app", "close-app", "focus-app", "window-state", "workspace"]);
-        if (!ownerUserId || client.permission !== "editor" || typeof message.command !== "string" || !allowedCommands.has(message.command)) return;
+        const allowedCommands = new Set([
+          "open-app",
+          "close-app",
+          "focus-app",
+          "window-state",
+          "workspace",
+        ]);
+        if (
+          !ownerUserId ||
+          client.permission !== "editor" ||
+          typeof message.command !== "string" ||
+          !allowedCommands.has(message.command)
+        )
+          return;
         sendToUser(ownerUserId, {
           type: "shared-workspace-command",
           fromUserId: userId,
@@ -988,7 +1272,12 @@ export default async function authRoutes(app: FastifyInstance) {
         const ownerUserId = client.joinedOwnerUserId;
         if (!ownerUserId || client.permission !== "editor") return;
         const workspace = message.workspace;
-        if (!workspace || typeof workspace !== "object" || Array.isArray(workspace)) return;
+        if (
+          !workspace ||
+          typeof workspace !== "object" ||
+          Array.isArray(workspace)
+        )
+          return;
         sendToUser(ownerUserId, {
           type: "shared-workspace-command",
           fromUserId: userId,
@@ -1003,30 +1292,40 @@ export default async function authRoutes(app: FastifyInstance) {
       if (message.type === "chat") {
         if (typeof message.text !== "string" || !message.text.trim()) return;
         const text = message.text.trim().slice(0, 2000);
-        broadcastCollaboration(JSON.stringify({
-          type: "chat",
-          id: `${Date.now()}-${Math.random().toString(36).slice(2)}`,
-          userId,
-          displayName: client.displayName,
-          text,
-          timestamp: Date.now(),
-          roomId: typeof message.roomId === "string" ? message.roomId.slice(0, 128) : "global",
-        }));
+        broadcastCollaboration(
+          JSON.stringify({
+            type: "chat",
+            id: `${Date.now()}-${Math.random().toString(36).slice(2)}`,
+            userId,
+            displayName: client.displayName,
+            text,
+            timestamp: Date.now(),
+            roomId:
+              typeof message.roomId === "string"
+                ? message.roomId.slice(0, 128)
+                : "global",
+          }),
+        );
         return;
       }
 
       if (message.type === "cursor") {
-        if (typeof message.x !== "number" || typeof message.y !== "number") return;
+        if (typeof message.x !== "number" || typeof message.y !== "number")
+          return;
         const ownerUserId = sharedOwnerFor(client);
         if (!ownerUserId) return;
-        sendToSharedSession(ownerUserId, {
-          type: "cursor",
+        sendToSharedSession(
+          ownerUserId,
+          {
+            type: "cursor",
+            userId,
+            displayName: client.displayName,
+            x: Math.max(0, Math.min(1, message.x)),
+            y: Math.max(0, Math.min(1, message.y)),
+            timestamp: Date.now(),
+          },
           userId,
-          displayName: client.displayName,
-          x: Math.max(0, Math.min(1, message.x)),
-          y: Math.max(0, Math.min(1, message.y)),
-          timestamp: Date.now(),
-        }, userId);
+        );
         return;
       }
 
@@ -1054,7 +1353,10 @@ export default async function authRoutes(app: FastifyInstance) {
           timestamp: Date.now(),
         });
         for (const target of collaborationClients.values()) {
-          if (target.userId === message.targetUserId && target.socket.readyState === 1) {
+          if (
+            target.userId === message.targetUserId &&
+            target.socket.readyState === 1
+          ) {
             target.socket.send(forwarded);
           }
         }
@@ -1070,7 +1372,10 @@ export default async function authRoutes(app: FastifyInstance) {
           payload: message.payload,
         });
         for (const target of collaborationClients.values()) {
-          if (target.userId === message.targetUserId && target.socket.readyState === 1) {
+          if (
+            target.userId === message.targetUserId &&
+            target.socket.readyState === 1
+          ) {
             target.socket.send(forwarded);
           }
         }
@@ -1116,15 +1421,22 @@ export default async function authRoutes(app: FastifyInstance) {
             );
             const members = sharedSessions.get(userId);
             if (members?.size) {
-              sendToSharedSession(userId, {
-                type: "shared-workspace",
-                ownerUserId: userId,
-                ownerDisplayName: client.displayName,
-                workspace: message.workspace,
-              }, userId);
+              sendToSharedSession(
+                userId,
+                {
+                  type: "shared-workspace",
+                  ownerUserId: userId,
+                  ownerDisplayName: client.displayName,
+                  workspace: message.workspace,
+                },
+                userId,
+              );
             }
           } catch (error) {
-            request.log.error(error, "Unable to persist workspace state over WebSocket");
+            request.log.error(
+              error,
+              "Unable to persist workspace state over WebSocket",
+            );
           }
         });
         workspaceUpdateQueue = persistWorkspace;
@@ -1139,11 +1451,17 @@ export default async function authRoutes(app: FastifyInstance) {
 
     socket.on("close", () => {
       collaborationClients.delete(clientKey);
-      const otherUserClients = [...collaborationClients.values()].filter((entry) => entry.userId === userId);
+      const otherUserClients = [...collaborationClients.values()].filter(
+        (entry) => entry.userId === userId,
+      );
       if (otherUserClients.length === 0) {
         if (client.joinedOwnerUserId) {
           sharedSessions.get(client.joinedOwnerUserId)?.delete(userId);
-          sendToUser(client.joinedOwnerUserId, { type: "shared-member-left", userId, displayName: client.displayName });
+          sendToUser(client.joinedOwnerUserId, {
+            type: "shared-member-left",
+            userId,
+            displayName: client.displayName,
+          });
           delete session.collaborationOwnerUserId;
           delete session.collaborationPermission;
           void saveSession(request);
@@ -1151,7 +1469,10 @@ export default async function authRoutes(app: FastifyInstance) {
         const ownerMembers = sharedSessions.get(userId);
         if (ownerMembers) {
           for (const memberId of ownerMembers.keys()) {
-            sendToUser(memberId, { type: "shared-session-ended", ownerUserId: userId });
+            sendToUser(memberId, {
+              type: "shared-session-ended",
+              ownerUserId: userId,
+            });
             for (const target of collaborationClients.values()) {
               if (target.userId === memberId) {
                 target.joinedOwnerUserId = undefined;
@@ -1166,7 +1487,8 @@ export default async function authRoutes(app: FastifyInstance) {
           sharedSessions.delete(userId);
         }
         for (const key of pendingJoinRequests.keys()) {
-          if (key.startsWith(`${userId}:`) || key.endsWith(`:${userId}`)) pendingJoinRequests.delete(key);
+          if (key.startsWith(`${userId}:`) || key.endsWith(`:${userId}`))
+            pendingJoinRequests.delete(key);
         }
       }
       broadcastPresence();
@@ -1184,24 +1506,62 @@ export default async function authRoutes(app: FastifyInstance) {
   app.post<{
     Body: { hostname?: string; displayName?: string; password?: string };
   }>("/lockscreen/register", async (request, reply) => {
-    const hostname = typeof request.body?.hostname === "string" ? request.body.hostname.trim() : "";
-    const displayName = typeof request.body?.displayName === "string" ? request.body.displayName.trim() : "";
-    if (!/^[a-zA-Z0-9][a-zA-Z0-9._-]{1,127}$/.test(hostname)) return reply.code(400).send({ message: "Enter a valid device host ID." });
-    if (displayName.length < 2 || displayName.length > 80) return reply.code(400).send({ message: "Enter your name (2–80 characters)." });
-    const password = typeof request.body?.password === "string" ? request.body.password : "";
-    if (password.length < 8 || password.length > 1024) return reply.code(400).send({ message: "Create a password with at least 8 characters." });
+    const hostname =
+      typeof request.body?.hostname === "string"
+        ? request.body.hostname.trim()
+        : "";
+    const displayName =
+      typeof request.body?.displayName === "string"
+        ? request.body.displayName.trim()
+        : "";
+    if (!/^[a-zA-Z0-9][a-zA-Z0-9._-]{1,127}$/.test(hostname))
+      return reply.code(400).send({ message: "Enter a valid device host ID." });
+    if (displayName.length < 2 || displayName.length > 80)
+      return reply
+        .code(400)
+        .send({ message: "Enter your name (2–80 characters)." });
+    const password =
+      typeof request.body?.password === "string" ? request.body.password : "";
+    if (password.length < 8 || password.length > 1024)
+      return reply
+        .code(400)
+        .send({ message: "Create a password with at least 8 characters." });
     try {
       const users = await readUsers();
       const existing = findByHostname(users, hostname);
-      if (existing) return reply.code(409).send({ message: "This device host ID is already registered. Enter the ID assigned to this profile." });
-      const user: InternUser = { id: hostname, hostname, displayName, password, deviceId: hostname, role: "intern", preferences: { ...defaultPreferences } };
+      if (existing)
+        return reply.code(409).send({
+          message:
+            "This device host ID is already registered. Enter the ID assigned to this profile.",
+        });
+      const user: InternUser = {
+        id: hostname,
+        hostname,
+        displayName,
+        password,
+        deviceId: hostname,
+        role: "intern",
+        preferences: { ...defaultPreferences },
+      };
       await writeUsers([...users, user]);
       await establishSession(request, user);
-      await updateSessionRecord(user, { active: true, activeApps: [], lastActivityAt: Date.now() }, hostname);
-      return reply.code(201).send({ success: true, user: { ...publicUser(user), preferences: { ...defaultPreferences, ...(user.preferences ?? {}) } } });
+      await updateSessionRecord(
+        user,
+        { active: true, activeApps: [], lastActivityAt: Date.now() },
+        hostname,
+      );
+      return reply.code(201).send({
+        success: true,
+        user: {
+          ...publicUser(user),
+          preferences: { ...defaultPreferences, ...(user.preferences ?? {}) },
+        },
+      });
     } catch (error) {
       request.log.error(error, "Unable to register this device profile");
-      return reply.code(500).send({ message: "Unable to save this device profile." });
+      return reply
+        .code(500)
+        .send({ message: "Unable to save this device profile." });
     }
   });
 
@@ -1229,8 +1589,12 @@ export default async function authRoutes(app: FastifyInstance) {
 
       if (!user && deviceId) {
         const sessions = await readSessions();
-        const matches = Object.values(sessions).filter((session) => session.deviceId === deviceId);
-        const assignedIds = [...new Set(matches.map((session) => session.userId))];
+        const matches = Object.values(sessions).filter(
+          (session) => session.deviceId === deviceId,
+        );
+        const assignedIds = [
+          ...new Set(matches.map((session) => session.userId)),
+        ];
         if (assignedIds.length === 1) user = findById(users, assignedIds[0]);
       }
 
@@ -1238,10 +1602,18 @@ export default async function authRoutes(app: FastifyInstance) {
         return { requiresDeviceId: true };
       }
 
-      return { user: { ...publicUser(user), preferences: { ...defaultPreferences, ...(user.preferences ?? {}) }, locked: true } };
+      return {
+        user: {
+          ...publicUser(user),
+          preferences: { ...defaultPreferences, ...(user.preferences ?? {}) },
+          locked: true,
+        },
+      };
     } catch (error) {
       request.log.error(error, "Unable to load lockscreen profile");
-      return reply.code(500).send({ message: "Unable to load the device profile." });
+      return reply
+        .code(500)
+        .send({ message: "Unable to load the device profile." });
     }
   });
 
@@ -1261,11 +1633,13 @@ export default async function authRoutes(app: FastifyInstance) {
         const assignedUser = deviceId
           ? users.find((candidate) => candidate.deviceId === deviceId)
           : undefined;
-        const user = assignedUser ?? findByHostname(users, request.body.hostname);
+        const user =
+          assignedUser ?? findByHostname(users, request.body.hostname);
 
         if (
           !user ||
-          user.hostname.toLowerCase() !== request.body.hostname.trim().toLowerCase() ||
+          user.hostname.toLowerCase() !==
+            request.body.hostname.trim().toLowerCase() ||
           user.password !== request.body.password
         ) {
           return reply.code(401).send({
@@ -1274,11 +1648,15 @@ export default async function authRoutes(app: FastifyInstance) {
         }
 
         await establishSession(request, user);
-        await updateSessionRecord(user, {
-          active: true,
-          activeApps: [],
-          lastActivityAt: Date.now(),
-        }, user.deviceId ?? user.hostname);
+        await updateSessionRecord(
+          user,
+          {
+            active: true,
+            activeApps: [],
+            lastActivityAt: Date.now(),
+          },
+          user.deviceId ?? user.hostname,
+        );
 
         return {
           success: true,

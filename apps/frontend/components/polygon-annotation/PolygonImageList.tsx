@@ -8,7 +8,11 @@ type Props = {
   onSelect: (index: number) => void;
 };
 
-export default function PolygonImageList({ images, selectedIndex, onSelect }: Props) {
+export default function PolygonImageList({
+  images,
+  selectedIndex,
+  onSelect,
+}: Props) {
   return (
     <div className="space-y-1">
       {images.map((image, index) => (

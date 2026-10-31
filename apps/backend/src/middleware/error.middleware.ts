@@ -1,9 +1,4 @@
-
-import type {
-  FastifyError,
-  FastifyReply,
-  FastifyRequest,
-} from "fastify";
+import type { FastifyError, FastifyReply, FastifyRequest } from "fastify";
 
 export function errorMiddleware(
   error: FastifyError,
@@ -24,9 +19,6 @@ export function errorMiddleware(
       : 500;
 
   reply.code(statusCode).send({
-    message:
-      statusCode >= 500
-        ? "Internal server error."
-        : error.message,
+    message: statusCode >= 500 ? "Internal server error." : error.message,
   });
 }

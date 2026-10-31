@@ -137,7 +137,7 @@ export const desktopCategories: DesktopCategory[] = [
         path: "/tools/roi-tool",
         icon: ScanLine,
         description: "Configure and manage regions of interest.",
-      }
+      },
     ],
   },
   {

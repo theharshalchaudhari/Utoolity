@@ -1,4 +1,3 @@
-
 "use client";
 
 import { useState } from "react";
@@ -16,8 +15,8 @@ export default function DesktopIcons() {
         <h3 className="text-sm font-semibold">Desktop icons</h3>
 
         <p className="max-w-lg rounded-2xl bg-muted px-3.5 py-3 text-xs leading-5 text-muted-foreground">
-          Drag icons to move them. Auto keeps a tidy grid, Snap to grid
-          lets an icon sit in any cell, and Free lets it sit anywhere.
+          Drag icons to move them. Auto keeps a tidy grid, Snap to grid lets an
+          icon sit in any cell, and Free lets it sit anywhere.
         </p>
 
         <div className="inline-flex flex-wrap rounded-full border border-border p-0.5">
@@ -49,8 +48,8 @@ export default function DesktopIcons() {
 
           {tidied && (
             <p className="mt-2 text-xs text-muted-foreground">
-              Tidy request selected. Connect this action to the desktop
-              icon layout manager to rearrange icons.
+              Tidy request selected. Connect this action to the desktop icon
+              layout manager to rearrange icons.
             </p>
           )}
         </div>

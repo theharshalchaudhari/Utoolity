@@ -82,7 +82,9 @@ export default function ConversionProgress({
                 </div>
 
                 <div className="min-w-0 flex-1">
-                  <p className="truncate text-sm font-medium">{item.file.name}</p>
+                  <p className="truncate text-sm font-medium">
+                    {item.file.name}
+                  </p>
                   <p className="mt-1 text-xs text-muted-foreground">
                     {item.inputFormat} <span className="px-1">→</span>{" "}
                     {item.outputFormat} <span className="px-1">·</span>{" "}
@@ -166,6 +168,7 @@ export default function ConversionProgress({
 }
 
 function formatFileSize(bytes: number) {
-  if (bytes < 1024 * 1024) return `${Math.max(bytes / 1024, 0.1).toFixed(1)} KB`;
+  if (bytes < 1024 * 1024)
+    return `${Math.max(bytes / 1024, 0.1).toFixed(1)} KB`;
   return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
 }

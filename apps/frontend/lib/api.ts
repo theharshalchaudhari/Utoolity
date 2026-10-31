@@ -51,8 +51,12 @@ async function performApi<T>(
     identityPath === "/api/auth/login" ||
     identityPath === "/api/lockscreen/unlock" ||
     identityPath === "/api/lockscreen/me";
-  const explicitlyProvidedDeviceId = headers.get("X-Utoolity-Device-Id")?.trim();
-  const deviceId = explicitlyProvidedDeviceId || (needsDeviceIdentity ? getDeviceId() : undefined);
+  const explicitlyProvidedDeviceId = headers
+    .get("X-Utoolity-Device-Id")
+    ?.trim();
+  const deviceId =
+    explicitlyProvidedDeviceId ||
+    (needsDeviceIdentity ? getDeviceId() : undefined);
 
   if (deviceId) {
     headers.set("X-Utoolity-Device-Id", deviceId);
@@ -113,9 +117,7 @@ async function performApi<T>(
         );
       }
 
-      await new Promise((resolve) =>
-        setTimeout(resolve, 300 * (attempt + 1)),
-      );
+      await new Promise((resolve) => setTimeout(resolve, 300 * (attempt + 1)));
     }
   }
 
@@ -152,15 +154,15 @@ async function performApi<T>(
     // desktop. Background requests (such as preference writes) can race with
     // session establishment or fail independently; they must not force logout.
     if (response.status === 401 && path.split("?")[0] === "/api/auth/me") {
-      window.dispatchEvent(new CustomEvent("utoolity:session-invalid", {
-        detail: { path, status: response.status },
-      }));
+      window.dispatchEvent(
+        new CustomEvent("utoolity:session-invalid", {
+          detail: { path, status: response.status },
+        }),
+      );
     }
 
     const message =
-      typeof body === "object" &&
-      body !== null &&
-      "message" in body
+      typeof body === "object" && body !== null && "message" in body
         ? String(body.message)
         : typeof body === "string" && body.trim()
           ? body
@@ -180,13 +182,17 @@ async function performApi<T>(
       path === "/api/auth/me";
     if (!expectedAuthFailure && response.status >= 400) {
       const isStorageRequest = path.startsWith("/api/storage/");
-      window.dispatchEvent(new CustomEvent("utoolity:issue-detected", {
-        detail: {
-          appName: isStorageRequest ? "File Manager" : document.title || "Utoolity Desktop",
-          errorName: `HTTP ${response.status}`,
-          details: `${options.method ?? "GET"} ${path}\\n${message}`,
-        },
-      }));
+      window.dispatchEvent(
+        new CustomEvent("utoolity:issue-detected", {
+          detail: {
+            appName: isStorageRequest
+              ? "File Manager"
+              : document.title || "Utoolity Desktop",
+            errorName: `HTTP ${response.status}`,
+            details: `${options.method ?? "GET"} ${path}\\n${message}`,
+          },
+        }),
+      );
     }
 
     throw new ApiError(message, response.status);
@@ -200,7 +206,10 @@ async function performApi<T>(
 }
 
 const pendingGetRequests = new Map<string, Promise<unknown>>();
-const cachedGetResponses = new Map<string, { expiresAt: number; value: unknown }>();
+const cachedGetResponses = new Map<
+  string,
+  { expiresAt: number; value: unknown }
+>();
 const PREFERENCE_CACHE_MS = 3_000;
 
 export function api<T>(path: string, options: RequestInit = {}): Promise<T> {
@@ -209,7 +218,13 @@ export function api<T>(path: string, options: RequestInit = {}): Promise<T> {
     if (path === "/api/auth/preferences" && method === "PATCH") {
       cachedGetResponses.delete("/api/auth/preferences");
     }
-    if (["/api/auth/login", "/api/auth/logout", "/api/lockscreen/unlock"].includes(path)) {
+    if (
+      [
+        "/api/auth/login",
+        "/api/auth/logout",
+        "/api/lockscreen/unlock",
+      ].includes(path)
+    ) {
       cachedGetResponses.clear();
     }
     return performApi<T>(path, options);
@@ -219,7 +234,8 @@ export function api<T>(path: string, options: RequestInit = {}): Promise<T> {
   // small cache, avoiding a burst of identical requests during initial mount.
   if (path === "/api/auth/preferences") {
     const cached = cachedGetResponses.get(path);
-    if (cached && cached.expiresAt > Date.now()) return Promise.resolve(cached.value as T);
+    if (cached && cached.expiresAt > Date.now())
+      return Promise.resolve(cached.value as T);
     cachedGetResponses.delete(path);
   }
 
@@ -229,12 +245,16 @@ export function api<T>(path: string, options: RequestInit = {}): Promise<T> {
   const request = performApi<T>(path, options)
     .then((value) => {
       if (path === "/api/auth/preferences") {
-        cachedGetResponses.set(path, { expiresAt: Date.now() + PREFERENCE_CACHE_MS, value });
+        cachedGetResponses.set(path, {
+          expiresAt: Date.now() + PREFERENCE_CACHE_MS,
+          value,
+        });
       }
       return value;
     })
     .finally(() => {
-      if (pendingGetRequests.get(path) === request) pendingGetRequests.delete(path);
+      if (pendingGetRequests.get(path) === request)
+        pendingGetRequests.delete(path);
     });
   pendingGetRequests.set(path, request);
   return request;

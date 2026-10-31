@@ -47,18 +47,22 @@ This software is provided "as is" without warranty of any kind. The copyright ho
 
 #### Allowed File Types
 
-| Tool | Allowed Extensions | MIME Types |
-|------|-------------------|------------|
-| Video Upload | `.mp4`, `.avi`, `.mov`, `.mkv`, `.wmv`, `.flv`, `.webm`, `.mpeg`, `.m4v`, `.ts` | `video/*` |
-| Image Upload | `.jpg`, `.jpeg`, `.png`, `.gif`, `.bmp`, `.webp`, `.svg`, `.tiff` | `image/*` |
+| Tool         | Allowed Extensions                                                              | MIME Types |
+| ------------ | ------------------------------------------------------------------------------- | ---------- |
+| Video Upload | `.mp4`, `.avi`, `.mov`, `.mkv`, `.wmv`, `.flv`, `.webm`, `.mpeg`, `.m4v`, `.ts` | `video/*`  |
+| Image Upload | `.jpg`, `.jpeg`, `.png`, `.gif`, `.bmp`, `.webp`, `.svg`, `.tiff`               | `image/*`  |
 
 #### Validation Requirements
 
 ```typescript
 // Example file validation
 const ALLOWED_VIDEO_TYPES = [
-  'video/mp4', 'video/avi', 'video/quicktime',
-  'video/x-matroska', 'video/webm', 'video/mpeg'
+  "video/mp4",
+  "video/avi",
+  "video/quicktime",
+  "video/x-matroska",
+  "video/webm",
+  "video/mpeg",
 ];
 
 const MAX_FILE_SIZE = 1024 * 1024 * 1024; // 1GB
@@ -66,18 +70,21 @@ const MAX_FILE_SIZE = 1024 * 1024 * 1024; // 1GB
 function validateFile(file: File): ValidationResult {
   // Check file type
   if (!ALLOWED_VIDEO_TYPES.includes(file.type)) {
-    return { valid: false, error: 'Unsupported file format' };
+    return { valid: false, error: "Unsupported file format" };
   }
 
   // Check file size
   if (file.size > MAX_FILE_SIZE) {
-    return { valid: false, error: 'File exceeds maximum size limit' };
+    return { valid: false, error: "File exceeds maximum size limit" };
   }
 
   // Validate file extension matches MIME type
-  const extension = file.name.split('.').pop()?.toLowerCase();
+  const extension = file.name.split(".").pop()?.toLowerCase();
   if (!isValidExtension(extension, file.type)) {
-    return { valid: false, error: 'File extension does not match content type' };
+    return {
+      valid: false,
+      error: "File extension does not match content type",
+    };
   }
 
   return { valid: true };
@@ -115,33 +122,34 @@ All responses must include the following security headers:
 // next.config.ts
 const securityHeaders = [
   {
-    key: 'X-DNS-Prefetch-Control',
-    value: 'on'
+    key: "X-DNS-Prefetch-Control",
+    value: "on",
   },
   {
-    key: 'Strict-Transport-Security',
-    value: 'max-age=63072000; includeSubDomains; preload'
+    key: "Strict-Transport-Security",
+    value: "max-age=63072000; includeSubDomains; preload",
   },
   {
-    key: 'X-XSS-Protection',
-    value: '1; mode=block'
+    key: "X-XSS-Protection",
+    value: "1; mode=block",
   },
   {
-    key: 'X-Frame-Options',
-    value: 'SAMEORIGIN'
+    key: "X-Frame-Options",
+    value: "SAMEORIGIN",
   },
   {
-    key: 'X-Content-Type-Options',
-    value: 'nosniff'
+    key: "X-Content-Type-Options",
+    value: "nosniff",
   },
   {
-    key: 'Referrer-Policy',
-    value: 'origin-when-cross-origin'
+    key: "Referrer-Policy",
+    value: "origin-when-cross-origin",
   },
   {
-    key: 'Content-Security-Policy',
-    value: "default-src 'self'; script-src 'self' 'unsafe-eval' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; font-src 'self' data:;"
-  }
+    key: "Content-Security-Policy",
+    value:
+      "default-src 'self'; script-src 'self' 'unsafe-eval' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; font-src 'self' data:;",
+  },
 ];
 ```
 
@@ -158,7 +166,7 @@ const securityHeaders = [
 
 ```typescript
 // Example route protection
-import { withAuth } from 'next-auth/middleware';
+import { withAuth } from "next-auth/middleware";
 
 export const middleware = withAuth({
   callbacks: {
@@ -169,11 +177,7 @@ export const middleware = withAuth({
 });
 
 export const config = {
-  matcher: [
-    '/tools/:path*',
-    '/dashboard/:path*',
-    '/admin/:path*',
-  ],
+  matcher: ["/tools/:path*", "/dashboard/:path*", "/admin/:path*"],
 };
 ```
 
@@ -195,7 +199,7 @@ export const config = {
 
 ```typescript
 // Example input sanitization
-import DOMPurify from 'dompurify';
+import DOMPurify from "dompurify";
 
 function sanitizeInput(input: string): string {
   return DOMPurify.sanitize(input.trim(), {
@@ -207,8 +211,9 @@ function sanitizeInput(input: string): string {
 
 function sanitizeFileName(fileName: string): string {
   // Remove path traversal attempts
-  return path.basename(fileName)
-    .replace(/[^a-zA-Z0-9.-]/g, '_')
+  return path
+    .basename(fileName)
+    .replace(/[^a-zA-Z0-9.-]/g, "_")
     .substring(0, 255);
 }
 ```
@@ -232,24 +237,21 @@ function sanitizeFileName(fileName: string): string {
 
 ```typescript
 // Example rate limiting
-import { NextResponse } from 'next/server';
+import { NextResponse } from "next/server";
 
 const rateLimit = new Map();
 
 export async function middleware(request: Request) {
-  const ip = request.headers.get('x-forwarded-for') || 'unknown';
+  const ip = request.headers.get("x-forwarded-for") || "unknown";
   const now = Date.now();
   const windowMs = 60000; // 1 minute
   const maxRequests = 100;
 
   const requestCount = rateLimit.get(ip) || [];
-  const recentRequests = requestCount.filter(time => time > now - windowMs);
+  const recentRequests = requestCount.filter((time) => time > now - windowMs);
 
   if (recentRequests.length >= maxRequests) {
-    return NextResponse.json(
-      { error: 'Too many requests' },
-      { status: 429 }
-    );
+    return NextResponse.json({ error: "Too many requests" }, { status: 429 });
   }
 
   recentRequests.push(now);
@@ -270,14 +272,14 @@ export async function middleware(request: Request) {
 ### Temporary File Handling
 
 ```typescript
-import { v4 as uuidv4 } from 'uuid';
-import fs from 'fs/promises';
+import { v4 as uuidv4 } from "uuid";
+import fs from "fs/promises";
 
 class TemporaryFileManager {
   private tempDir: string;
 
   constructor() {
-    this.tempDir = path.join(process.cwd(), 'temp');
+    this.tempDir = path.join(process.cwd(), "temp");
   }
 
   async createTempFile(file: File): Promise<string> {
@@ -296,7 +298,7 @@ class TemporaryFileManager {
     try {
       await fs.unlink(filePath);
     } catch (error) {
-      console.error('Failed to clean up temp file:', error);
+      console.error("Failed to clean up temp file:", error);
     }
   }
 
@@ -331,12 +333,12 @@ class TemporaryFileManager {
 // Secure error handling
 function handleError(error: unknown): ErrorResponse {
   // Log full error internally
-  console.error('Internal error:', error);
+  console.error("Internal error:", error);
 
   // Return generic error to user
   return {
-    error: 'An unexpected error occurred. Please try again.',
-    code: 'INTERNAL_ERROR',
+    error: "An unexpected error occurred. Please try again.",
+    code: "INTERNAL_ERROR",
   };
 }
 ```
@@ -387,11 +389,11 @@ const nextConfig = {
   async headers() {
     return [
       {
-        source: '/(.*)',
+        source: "/(.*)",
         headers: [
           {
-            key: 'Strict-Transport-Security',
-            value: 'max-age=63072000; includeSubDomains; preload',
+            key: "Strict-Transport-Security",
+            value: "max-age=63072000; includeSubDomains; preload",
           },
         ],
       },
@@ -407,10 +409,10 @@ const nextConfig = {
 export async function OPTIONS() {
   return new Response(null, {
     headers: {
-      'Access-Control-Allow-Origin': process.env.ALLOWED_ORIGINS || '*',
-      'Access-Control-Allow-Methods': 'GET, POST, PUT, DELETE, OPTIONS',
-      'Access-Control-Allow-Headers': 'Content-Type, Authorization',
-      'Access-Control-Max-Age': '86400',
+      "Access-Control-Allow-Origin": process.env.ALLOWED_ORIGINS || "*",
+      "Access-Control-Allow-Methods": "GET, POST, PUT, DELETE, OPTIONS",
+      "Access-Control-Allow-Headers": "Content-Type, Authorization",
+      "Access-Control-Max-Age": "86400",
     },
   });
 }
@@ -432,10 +434,10 @@ export async function OPTIONS() {
 // Cookie configuration
 const cookieOptions = {
   httpOnly: true,
-  secure: process.env.NODE_ENV === 'production',
-  sameSite: 'lax' as const,
+  secure: process.env.NODE_ENV === "production",
+  sameSite: "lax" as const,
   maxAge: 86400, // 24 hours
-  path: '/',
+  path: "/",
 };
 ```
 

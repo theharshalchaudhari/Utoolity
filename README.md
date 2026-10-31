@@ -6,14 +6,14 @@ This README replaces the previous README and serves as the primary technical ref
 
 ## 1. Project Architecture
 
-| Location | Responsibility |
-|---|---|
-| `apps/frontend/` | Next.js pages, components, hooks, and API clients |
-| `apps/backend/` | Fastify routes, validation, file handling, and processing |
-| `packages/ui/` | Shared shadcn components |
-| `packages/theme/` | Tweakcn theme variables |
-| `packages/config/` | Shared project configuration |
-| `pnpm-workspace.yaml` | Workspace packages and dependency catalog |
+| Location              | Responsibility                                            |
+| --------------------- | --------------------------------------------------------- |
+| `apps/frontend/`      | Next.js pages, components, hooks, and API clients         |
+| `apps/backend/`       | Fastify routes, validation, file handling, and processing |
+| `packages/ui/`        | Shared shadcn components                                  |
+| `packages/theme/`     | Tweakcn theme variables                                   |
+| `packages/config/`    | Shared project configuration                              |
+| `pnpm-workspace.yaml` | Workspace packages and dependency catalog                 |
 
 ### Mandatory rules
 
@@ -104,12 +104,12 @@ Open your fork on GitHub and select **Contribute → Open pull request**, or use
 
 Configure the pull request as follows:
 
-| Setting | Value |
-|---|---|
+| Setting         | Value                          |
+| --------------- | ------------------------------ |
 | Base repository | `theharshalchaudhari/Utoolity` |
-| Base branch | `main` |
-| Head repository | `YOUR_USERNAME/Utoolity` |
-| Compare branch | `main` |
+| Base branch     | `main`                         |
+| Head repository | `YOUR_USERNAME/Utoolity`       |
+| Compare branch  | `main`                         |
 
 The direction must be:
 
@@ -134,22 +134,22 @@ The root catalog is the source of truth for dependency versions.
 
 Important catalog entries include:
 
-| Dependency | Version |
-|---|---|
-| React / React DOM | `19.2.6` |
-| Next.js | `16.2.11` |
-| Tailwind CSS | `4.3.0` |
-| TypeScript | `6.0.3` |
-| Turborepo | `2.9.16` |
-| Fastify | `5.6.2` |
-| `@fastify/cookie` | `11.0.2` |
-| `@fastify/cors` | `11.1.0` |
-| `@fastify/session` | `11.1.0` |
-| `@fastify/multipart` | `^9.0.3` |
-| Sharp | `0.33.4` |
-| Zod | `3.23.8` |
-| Axios | `1.20.0` |
-| Lucide React | `1.17.0` |
+| Dependency           | Version   |
+| -------------------- | --------- |
+| React / React DOM    | `19.2.6`  |
+| Next.js              | `16.2.11` |
+| Tailwind CSS         | `4.3.0`   |
+| TypeScript           | `6.0.3`   |
+| Turborepo            | `2.9.16`  |
+| Fastify              | `5.6.2`   |
+| `@fastify/cookie`    | `11.0.2`  |
+| `@fastify/cors`      | `11.1.0`  |
+| `@fastify/session`   | `11.1.0`  |
+| `@fastify/multipart` | `^9.0.3`  |
+| Sharp                | `0.33.4`  |
+| Zod                  | `3.23.8`  |
+| Axios                | `1.20.0`  |
+| Lucide React         | `1.17.0`  |
 
 The full catalog in `pnpm-workspace.yaml` is authoritative.
 
@@ -596,27 +596,27 @@ Requirements:
 
 Use the following ranges as the initial API/UI contract. If an existing processing library imposes stricter constraints, enforce the stricter bounds consistently.
 
-| Parameter | Valid range |
-|---|---|
-| Brightness factor | `0.0–2.0` |
-| Exposure adjustment | `-4.0–4.0` EV |
-| Blur sigma | `0.1–20.0` |
-| Noise standard deviation | `0–100` on an 8-bit intensity scale |
-| Saturation factor | `0.0–3.0` |
-| Hue shift | `-180–180` degrees |
-| Camera gain factor | `0.0–4.0` |
-| Motion blur kernel size | Odd integer `3–51` |
-| Rotation angle | `-180–180` degrees |
-| 360-degree rotation steps | Integer `2–36` |
-| Shear | `-45–45` degrees per axis |
-| Crop fraction | `0.1–1.0` per dimension |
-| Zoom factor | `0.5–2.0` |
-| Cutout area fraction | `0.0–0.5` |
-| Mosaic source images | Exactly `4` |
-| Synthetic sample count | Integer `1–5000`, subject to resource limits |
-| Synthetic object scale | `0.05–1.0` of the background's shorter dimension |
-| Placement margin | `0.0–0.2` of the background dimension |
-| Custom balance target | Positive integer up to a configurable limit of `100000` instances per class |
+| Parameter                 | Valid range                                                                 |
+| ------------------------- | --------------------------------------------------------------------------- |
+| Brightness factor         | `0.0–2.0`                                                                   |
+| Exposure adjustment       | `-4.0–4.0` EV                                                               |
+| Blur sigma                | `0.1–20.0`                                                                  |
+| Noise standard deviation  | `0–100` on an 8-bit intensity scale                                         |
+| Saturation factor         | `0.0–3.0`                                                                   |
+| Hue shift                 | `-180–180` degrees                                                          |
+| Camera gain factor        | `0.0–4.0`                                                                   |
+| Motion blur kernel size   | Odd integer `3–51`                                                          |
+| Rotation angle            | `-180–180` degrees                                                          |
+| 360-degree rotation steps | Integer `2–36`                                                              |
+| Shear                     | `-45–45` degrees per axis                                                   |
+| Crop fraction             | `0.1–1.0` per dimension                                                     |
+| Zoom factor               | `0.5–2.0`                                                                   |
+| Cutout area fraction      | `0.0–0.5`                                                                   |
+| Mosaic source images      | Exactly `4`                                                                 |
+| Synthetic sample count    | Integer `1–5000`, subject to resource limits                                |
+| Synthetic object scale    | `0.05–1.0` of the background's shorter dimension                            |
+| Placement margin          | `0.0–0.2` of the background dimension                                       |
+| Custom balance target     | Positive integer up to a configurable limit of `100000` instances per class |
 
 For the synthetic request, `scaleMin` and `scaleMax` must each be within the object-scale range, and `scaleMin` must not exceed `scaleMax`.
 

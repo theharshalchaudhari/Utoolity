@@ -1,9 +1,9 @@
-'use client'
+"use client";
 
-import { useRef, useEffect } from 'react'
-import gsap from 'gsap'
+import { useRef, useEffect } from "react";
+import gsap from "gsap";
 import { cn } from "cn";
-import { cva, type VariantProps } from "class-variance-authority"
+import { cva, type VariantProps } from "class-variance-authority";
 
 const gsapButtonVariants = cva(
   "relative inline-flex items-center justify-center overflow-hidden rounded-full border text-base font-medium transition-colors",
@@ -23,11 +23,11 @@ const gsapButtonVariants = cva(
       variant: "outline",
       size: "default",
     },
-  }
-)
+  },
+);
 
-type Props = React.ComponentProps<'button'> &
-  VariantProps<typeof gsapButtonVariants>
+type Props = React.ComponentProps<"button"> &
+  VariantProps<typeof gsapButtonVariants>;
 
 export function GsapButton({
   className,
@@ -36,82 +36,82 @@ export function GsapButton({
   children,
   ...props
 }: Props) {
-  const buttonRef = useRef<HTMLButtonElement>(null)
-  const flairRef = useRef<HTMLSpanElement>(null)
+  const buttonRef = useRef<HTMLButtonElement>(null);
+  const flairRef = useRef<HTMLSpanElement>(null);
 
   useEffect(() => {
-    const button = buttonRef.current
-    const flair = flairRef.current
-    if (!button || !flair) return
+    const button = buttonRef.current;
+    const flair = flairRef.current;
+    if (!button || !flair) return;
 
-    const xSet = gsap.quickSetter(flair, 'xPercent')
-    const ySet = gsap.quickSetter(flair, 'yPercent')
+    const xSet = gsap.quickSetter(flair, "xPercent");
+    const ySet = gsap.quickSetter(flair, "yPercent");
 
     const getXY = (e: MouseEvent) => {
-      const rect = button.getBoundingClientRect()
+      const rect = button.getBoundingClientRect();
 
       const x = gsap.utils.clamp(
         0,
         100,
-        gsap.utils.mapRange(0, rect.width, 0, 100, e.clientX - rect.left)
-      )
+        gsap.utils.mapRange(0, rect.width, 0, 100, e.clientX - rect.left),
+      );
 
       const y = gsap.utils.clamp(
         0,
         100,
-        gsap.utils.mapRange(0, rect.height, 0, 100, e.clientY - rect.top)
-      )
+        gsap.utils.mapRange(0, rect.height, 0, 100, e.clientY - rect.top),
+      );
 
-      return { x, y }
-    }
+      return { x, y };
+    };
 
     const onEnter = (e: MouseEvent) => {
-      const { x, y } = getXY(e)
-      xSet(x)
-      ySet(y)
+      const { x, y } = getXY(e);
+      xSet(x);
+      ySet(y);
 
       gsap.to(flair, {
         scale: 1,
         duration: 0.4,
-        ease: 'power2.out',
-      })
-    }
+        ease: "power2.out",
+      });
+    };
 
     const onLeave = (e: MouseEvent) => {
-      const { x, y } = getXY(e)
+      const { x, y } = getXY(e);
 
-      gsap.killTweensOf(flair)
+      gsap.killTweensOf(flair);
 
       gsap.to(flair, {
         xPercent: x > 90 ? x + 20 : x < 10 ? x - 20 : x,
         yPercent: y > 90 ? y + 20 : y < 10 ? y - 20 : y,
         scale: 0,
         duration: 0.3,
-        ease: 'power2.out',
-      })
-    }
+        ease: "power2.out",
+      });
+    };
 
     const onMove = (e: MouseEvent) => {
-      const { x, y } = getXY(e)
+      const { x, y } = getXY(e);
 
       gsap.to(flair, {
         xPercent: x,
         yPercent: y,
         duration: 0.4,
-        ease: 'power2',
-      })
-    }
+        ease: "power2",
+      });
+    };
 
-    button.addEventListener('mouseenter', onEnter)
-    button.addEventListener('mouseleave', onLeave)
-    button.addEventListener('mousemove', onMove)
+    button.addEventListener("mouseenter", onEnter);
+    button.addEventListener("mouseleave", onLeave);
+    button.addEventListener("mousemove", onMove);
 
     return () => {
-      button.removeEventListener('mouseenter', onEnter)
-      button.removeEventListener('mouseleave', onLeave)
-      button.removeEventListener('mousemove', onMove)
-    }
-  }, [])
+      button.removeEventListener("mouseenter", onEnter);
+      button.removeEventListener("mouseleave", onLeave);
+      button.removeEventListener("mousemove", onMove);
+    };
+  }, []);
 
   return (
     <button
@@ -128,9 +128,7 @@ export function GsapButton({
       </span>
 
       {}
-      <span className="relative z-10 mix-blend-difference">
-  {children}
-</span>
+      <span className="relative z-10 mix-blend-difference">{children}</span>
     </button>
-  )
+  );
 }

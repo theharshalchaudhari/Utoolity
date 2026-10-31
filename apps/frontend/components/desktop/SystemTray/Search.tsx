@@ -1,11 +1,6 @@
 "use client";
 
-import {
-  useCallback,
-  useEffect,
-  useRef,
-  useState,
-} from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import {
   AppWindow,
   ArrowDown,
@@ -34,23 +29,14 @@ type Props = {
   onClose: () => void;
 };
 
-export default function Search({
-  items,
-  open,
-  onToggle,
-  onClose,
-}: Props) {
+export default function Search({ items, open, onToggle, onClose }: Props) {
   const [query, setQuery] = useState("");
   const [activeIndex, setActiveIndex] = useState(0);
   const inputRef = useRef<HTMLInputElement>(null);
   const resultRefs = useRef<(HTMLButtonElement | null)[]>([]);
 
   const results = items.filter((item) =>
-    [
-      item.name,
-      item.category,
-      ...(item.keywords ?? []),
-    ]
+    [item.name, item.category, ...(item.keywords ?? [])]
       .join(" ")
       .toLowerCase()
       .includes(query.trim().toLowerCase()),
@@ -68,10 +54,7 @@ export default function Search({
 
   useEffect(() => {
     function handleShortcut(event: KeyboardEvent) {
-      if (
-        (event.ctrlKey || event.metaKey) &&
-        event.key.toLowerCase() === "k"
-      ) {
+      if ((event.ctrlKey || event.metaKey) && event.key.toLowerCase() === "k") {
         event.preventDefault();
         openSearch();
       }
@@ -176,10 +159,7 @@ export default function Search({
         className="fixed left-1/2 top-[12vh] z-91 flex max-h-[min(510px,76dvh)] w-[min(550px,calc(100vw-28px))] -translate-x-1/2 flex-col overflow-hidden rounded-3xl border border-border/80 bg-popover text-popover-foreground shadow-2xl shadow-black/25 desktop-panel animate-in fade-in-0 zoom-in-95 duration-150"
       >
         <div className="flex h-12 shrink-0 items-center gap-3 border-b border-border px-4">
-          <SearchIcon
-            size={18}
-            className="shrink-0 text-muted-foreground"
-          />
+          <SearchIcon size={18} className="shrink-0 text-muted-foreground" />
 
           <input
             ref={inputRef}
@@ -255,10 +235,7 @@ export default function Search({
             </>
           ) : (
             <div className="flex min-h-36 flex-col items-center justify-center gap-2 px-4 text-center">
-              <SearchIcon
-                size={22}
-                className="text-muted-foreground/60"
-              />
+              <SearchIcon size={22} className="text-muted-foreground/60" />
               <p className="text-sm font-semibold">No results found</p>
               <p className="text-xs text-muted-foreground">
                 Try a different app or keyword.

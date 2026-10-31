@@ -1,4 +1,3 @@
-
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
@@ -87,8 +86,8 @@ export default function VideoConverter() {
               <div>
                 <h2 className="text-sm font-medium">Selected videos</h2>
                 <p className="mt-1 text-xs text-muted-foreground">
-                  {files.length} {files.length === 1 ? "video" : "videos"}
-                  {" "}in queue
+                  {files.length} {files.length === 1 ? "video" : "videos"} in
+                  queue
                 </p>
               </div>
 

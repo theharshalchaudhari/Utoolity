@@ -1,4 +1,3 @@
-
 "use client";
 
 import { useEffect } from "react";
@@ -12,7 +11,10 @@ const sizes = [
 ] as const;
 
 export default function IconSize() {
-  const [size, setSize] = useUserPreference<(typeof sizes)[number]["value"]>("utoolity.icon-size", "large");
+  const [size, setSize] = useUserPreference<(typeof sizes)[number]["value"]>(
+    "utoolity.icon-size",
+    "large",
+  );
 
   useEffect(() => {
     document.documentElement.dataset.desktopIconSize = size;

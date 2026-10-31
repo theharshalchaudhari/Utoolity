@@ -21,13 +21,8 @@ import { errorMiddleware } from "./middleware/error.middleware.js";
 const sessionSecret = process.env.SESSION_SECRET;
 const isProduction = process.env.NODE_ENV === "production";
 
-if (
-  !sessionSecret ||
-  Buffer.byteLength(sessionSecret, "utf8") < 32
-) {
-  throw new Error(
-    "SESSION_SECRET must be configured with at least 32 bytes.",
-  );
+if (!sessionSecret || Buffer.byteLength(sessionSecret, "utf8") < 32) {
+  throw new Error("SESSION_SECRET must be configured with at least 32 bytes.");
 }
 
 const app = Fastify({
@@ -45,25 +40,14 @@ app.setErrorHandler(errorMiddleware);
 await app.register(cors, {
   origin: true,
   credentials: true,
-  methods: [
-    "GET",
-    "HEAD",
-    "POST",
-    "PUT",
-    "PATCH",
-    "DELETE",
-    "OPTIONS",
-  ],
+  methods: ["GET", "HEAD", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
   allowedHeaders: [
     "Content-Type",
     "Authorization",
     "X-Requested-With",
     "X-Utoolity-Device-Id",
   ],
-  exposedHeaders: [
-    "Content-Disposition",
-    "Content-Length",
-  ],
+  exposedHeaders: ["Content-Disposition", "Content-Length"],
   maxAge: 86400,
 });
 
@@ -116,7 +100,8 @@ app.addHook("preHandler", async (request, reply) => {
       !/^[a-zA-Z0-9._:-]{8,128}$/.test(deviceId)
     ) {
       return reply.code(400).send({
-        message: "A valid X-Utoolity-Device-Id header is required for the lock screen.",
+        message:
+          "A valid X-Utoolity-Device-Id header is required for the lock screen.",
       });
     }
     return;

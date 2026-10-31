@@ -1,14 +1,8 @@
 import { api } from "./client";
 
-export type Resolution =
-  | "original"
-  | "720p"
-  | "1080p";
+export type Resolution = "original" | "720p" | "1080p";
 
-export type Compression =
-  | "low"
-  | "medium"
-  | "high";
+export type Compression = "low" | "medium" | "high";
 
 export interface ConversionSettings {
   resolution: Resolution;
@@ -28,10 +22,7 @@ export interface ConversionResponse {
 
 export interface ConversionStatus {
   jobId: string;
-  status:
-    | "processing"
-    | "completed"
-    | "error";
+  status: "processing" | "completed" | "error";
   progress: number;
   inputFormat: string;
   outputFormat: "MP4";
@@ -50,30 +41,17 @@ export const videoConverterApi = {
       formData.append("videos", file);
     });
 
-    formData.append(
-      "resolution",
-      settings.resolution,
-    );
+    formData.append("resolution", settings.resolution);
 
-    formData.append(
-      "compression",
-      settings.compression,
-    );
+    formData.append("compression", settings.compression);
 
-    const { data } = await api.post(
-      "/tools/video-converter",
-      formData,
-    );
+    const { data } = await api.post("/tools/video-converter", formData);
 
     return data;
   },
 
-  async getStatus(
-    jobId: string,
-  ): Promise<ConversionStatus> {
-    const { data } = await api.get(
-      `/tools/video-converter/status/${jobId}`,
-    );
+  async getStatus(jobId: string): Promise<ConversionStatus> {
+    const { data } = await api.get(`/tools/video-converter/status/${jobId}`);
 
     return data;
   },

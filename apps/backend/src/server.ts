@@ -13,10 +13,7 @@ try {
 
   await app.listen({ port, host });
 } catch (error) {
-  app.log.error(
-    { err: error },
-    "Failed to start the backend server",
-  );
+  app.log.error({ err: error }, "Failed to start the backend server");
 
   process.exitCode = 1;
 }

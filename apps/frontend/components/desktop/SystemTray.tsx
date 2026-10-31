@@ -51,7 +51,9 @@ export default function SystemTray({
 
       <button
         type="button"
-        onClick={() => window.dispatchEvent(new CustomEvent("utoolity:open-collaboration"))}
+        onClick={() =>
+          window.dispatchEvent(new CustomEvent("utoolity:open-collaboration"))
+        }
         aria-label="Join collaboration session"
         title="Join collaboration session"
         className="relative flex size-10 shrink-0 items-center justify-center rounded-full border border-border/70 bg-background/75 text-foreground shadow-sm backdrop-blur-xl transition-colors hover:bg-accent hover:text-accent-foreground active:scale-95"

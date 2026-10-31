@@ -1,4 +1,3 @@
-
 "use client";
 
 import {
@@ -31,15 +30,7 @@ export type WindowState = {
   minimized: boolean;
 };
 
-type ResizeDirection =
-  | "n"
-  | "s"
-  | "e"
-  | "w"
-  | "ne"
-  | "nw"
-  | "se"
-  | "sw";
+type ResizeDirection = "n" | "s" | "e" | "w" | "ne" | "nw" | "se" | "sw";
 
 const MIN_WIDTH = 520;
 const MIN_HEIGHT = 420;
@@ -69,12 +60,8 @@ export default function DesktopWindow({
   initialState,
   onStateChange,
 }: Props) {
-  const [maximized, setMaximized] = useState(
-    initialState?.maximized ?? false,
-  );
-  const [minimized, setMinimized] = useState(
-    initialState?.minimized ?? false,
-  );
+  const [maximized, setMaximized] = useState(initialState?.maximized ?? false);
+  const [minimized, setMinimized] = useState(initialState?.minimized ?? false);
   const [position, setPosition] = useState(
     initialState?.position ?? { x: 0, y: 0 },
   );
@@ -180,8 +167,7 @@ export default function DesktopWindow({
   const startDrag = (event: PointerEvent<HTMLElement>) => {
     if (
       closing ||
-      (event.target instanceof Element &&
-        event.target.closest("button"))
+      (event.target instanceof Element && event.target.closest("button"))
     ) {
       return;
     }
@@ -211,8 +197,14 @@ export default function DesktopWindow({
 
     if (state.wasMaximized) {
       if (event.clientY - state.startY >= PULL_TO_RESTORE_PX) {
-        setSize({ width: Math.min(1000, Math.max(MIN_WIDTH, window.innerWidth - 48)), height: Math.min(780, Math.max(MIN_HEIGHT, window.innerHeight - 96)) });
-        setPosition({ x: event.clientX - window.innerWidth / 2, y: event.clientY - window.innerHeight / 2 + 390 });
+        setSize({
+          width: Math.min(1000, Math.max(MIN_WIDTH, window.innerWidth - 48)),
+          height: Math.min(780, Math.max(MIN_HEIGHT, window.innerHeight - 96)),
+        });
+        setPosition({
+          x: event.clientX - window.innerWidth / 2,
+          y: event.clientY - window.innerHeight / 2 + 390,
+        });
         setMaximizedState(false);
         dragRef.current.started = false;
         setInteracting(false);
@@ -265,10 +257,7 @@ export default function DesktopWindow({
     };
 
   const resize = (event: PointerEvent<HTMLButtonElement>) => {
-    if (
-      !event.currentTarget.hasPointerCapture(event.pointerId) ||
-      maximized
-    ) {
+    if (!event.currentTarget.hasPointerCapture(event.pointerId) || maximized) {
       return;
     }
 
@@ -297,8 +286,12 @@ export default function DesktopWindow({
     // Windows are centered using translate(-50%, -50%).
     // Moving the center by half the size delta keeps the opposite edge fixed.
     setPosition({
-      x: state.positionX + (west ? -widthChange / 2 : east ? widthChange / 2 : 0),
-      y: state.positionY + (north ? -heightChange / 2 : south ? heightChange / 2 : 0),
+      x:
+        state.positionX +
+        (west ? -widthChange / 2 : east ? widthChange / 2 : 0),
+      y:
+        state.positionY +
+        (north ? -heightChange / 2 : south ? heightChange / 2 : 0),
     });
 
     setSize({
@@ -333,10 +326,7 @@ export default function DesktopWindow({
     );
   }
 
-  const handle = (
-    direction: ResizeDirection,
-    className: string,
-  ) => (
+  const handle = (direction: ResizeDirection, className: string) => (
     <button
       type="button"
       aria-label={`Resize ${direction}`}
@@ -352,12 +342,8 @@ export default function DesktopWindow({
     <section
       aria-label={title}
       style={{
-        width: maximized
-          ? "100vw"
-          : `min(${size.width}px, 100vw)`,
-        height: maximized
-          ? "100dvh"
-          : `min(${size.height}px, 100dvh)`,
+        width: maximized ? "100vw" : `min(${size.width}px, 100vw)`,
+        height: maximized ? "100dvh" : `min(${size.height}px, 100dvh)`,
         transform: maximized
           ? "none"
           : `translate(calc(-50% + ${position.x + offset.x}px), calc(-50% + ${position.y + offset.y}px))`,
@@ -384,9 +370,7 @@ export default function DesktopWindow({
           ? "desktop-window-closing pointer-events-none"
           : "desktop-window-opening"
       } ${
-        maximized
-          ? "left-0 top-0 rounded-none"
-          : "left-1/2 top-1/2 rounded-3xl"
+        maximized ? "left-0 top-0 rounded-none" : "left-1/2 top-1/2 rounded-3xl"
       }`}
     >
       <header
@@ -441,9 +425,7 @@ export default function DesktopWindow({
         </h2>
       </header>
 
-      <div className="min-h-0 min-w-0 flex-1 overflow-auto">
-        {children}
-      </div>
+      <div className="min-h-0 min-w-0 flex-1 overflow-auto">{children}</div>
 
       {!maximized && (
         <>

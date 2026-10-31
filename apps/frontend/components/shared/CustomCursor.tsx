@@ -48,7 +48,8 @@ export default function CustomCursor() {
 
       const target = event.target;
       const interactive =
-        target instanceof Element && Boolean(target.closest(INTERACTIVE_SELECTOR));
+        target instanceof Element &&
+        Boolean(target.closest(INTERACTIVE_SELECTOR));
 
       setPosition({
         x: event.clientX,

@@ -15,17 +15,19 @@ type ProfileResponse = {
   user: ProfileData;
 };
 
-type ProfileLoadState = "loading" | "authenticated" | "unauthenticated" | "error";
+type ProfileLoadState =
+  | "loading"
+  | "authenticated"
+  | "unauthenticated"
+  | "error";
 
 type ProfileProps = {
   onSleep?: () => void;
 };
 
 export default function Profile({ onSleep }: ProfileProps) {
-
   const [profile, setProfile] = useState<ProfileData | null>(null);
-  const [profileState, setProfileState] =
-    useState<ProfileLoadState>("loading");
+  const [profileState, setProfileState] = useState<ProfileLoadState>("loading");
   const [profileError, setProfileError] = useState("");
 
   const loadProfile = useCallback(async () => {
@@ -48,10 +50,14 @@ export default function Profile({ onSleep }: ProfileProps) {
       }
 
       // Keep the cached authenticated profile on transient network/server errors.
-      setProfileState((current) => current === "authenticated" ? "authenticated" : "error");
+      setProfileState((current) =>
+        current === "authenticated" ? "authenticated" : "error",
+      );
 
       console.error("Failed to load authenticated profile:", error);
-      setProfileError("Your session could not be verified. Please sign in again.");
+      setProfileError(
+        "Your session could not be verified. Please sign in again.",
+      );
     }
   }, []);
 
@@ -115,7 +121,6 @@ export default function Profile({ onSleep }: ProfileProps) {
       title="Sleep workstation"
       className="fixed left-5 top-4 z-40 flex max-w-[min(320px,calc(100vw-40px))] items-center gap-2.5 rounded-full border border-white/15 bg-background/70 px-3.5 py-2 text-foreground shadow-lg backdrop-blur-xl transition hover:border-primary/40 hover:bg-background/90 active:scale-[0.98]"
     >
-
       <h1 className="max-w-full wrap-break-word text-base font-bold text-foreground">
         {displayName}
       </h1>

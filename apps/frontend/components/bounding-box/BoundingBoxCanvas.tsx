@@ -1,11 +1,6 @@
 "use client";
 
-import React, {
-  useCallback,
-  useEffect,
-  useRef,
-  useState,
-} from "react";
+import React, { useCallback, useEffect, useRef, useState } from "react";
 import type {
   AnnotationTool,
   Point,
@@ -24,7 +19,11 @@ type BoundingBoxCanvasProps = {
   onMovePoint: (index: number, point: Point) => void;
   onMovePolygonPoint: (polygonId: string, index: number, point: Point) => void;
   onSelectPolygon: (polygonId: string | null) => void;
-  onAddPointToPolygon: (polygonId: string, edgeIndex: number, point: Point) => void;
+  onAddPointToPolygon: (
+    polygonId: string,
+    edgeIndex: number,
+    point: Point,
+  ) => void;
   onDeletePolygonPoint: (polygonId: string, index: number) => void;
   selectedPolygonId: string | null;
   removeMode?: boolean;
@@ -70,8 +69,13 @@ export function BoundingBoxCanvas({
 
   const [zoom, setZoom] = useState(1);
   const [imageLoaded, setImageLoaded] = useState(false);
-  const [hoveredPoint, setHoveredPoint] = useState<{ polygonId: string | null; index: number } | null>(null);
-  const [crosshair, setCrosshair] = useState<{ x: number; y: number } | null>(null);
+  const [hoveredPoint, setHoveredPoint] = useState<{
+    polygonId: string | null;
+    index: number;
+  } | null>(null);
+  const [crosshair, setCrosshair] = useState<{ x: number; y: number } | null>(
+    null,
+  );
 
   const zoomRef = useRef(1);
   const fitScaleRef = useRef(1);
@@ -139,9 +143,10 @@ export function BoundingBoxCanvas({
   const resetZoom = useCallback(() => {
     const image = imageRef.current;
     const { width, height } = getCanvasSize();
-    const fit = image && width && height
-      ? Math.min(1, width / image.naturalWidth, height / image.naturalHeight)
-      : 1;
+    const fit =
+      image && width && height
+        ? Math.min(1, width / image.naturalWidth, height / image.naturalHeight)
+        : 1;
     offsetRef.current = {
       x: 0,
       y: 0,
@@ -187,26 +192,19 @@ export function BoundingBoxCanvas({
       const transform = getImageTransform();
 
       return {
-        x:
-          transform.x +
-          point.x * fitScaleRef.current * zoomRef.current,
-        y:
-          transform.y +
-          point.y * fitScaleRef.current * zoomRef.current,
+        x: transform.x + point.x * fitScaleRef.current * zoomRef.current,
+        y: transform.y + point.y * fitScaleRef.current * zoomRef.current,
       };
     },
     [getImageTransform],
   );
 
-  const isPointNear = useCallback(
-    (a: Point, b: Point, distance: number) => {
-      const dx = a.x - b.x;
-      const dy = a.y - b.y;
+  const isPointNear = useCallback((a: Point, b: Point, distance: number) => {
+    const dx = a.x - b.x;
+    const dy = a.y - b.y;
 
-      return Math.sqrt(dx * dx + dy * dy) <= distance;
-    },
-    [],
-  );
+    return Math.sqrt(dx * dx + dy * dy) <= distance;
+  }, []);
 
   const findPointAtScreenPosition = useCallback(
     (screenX: number, screenY: number) => {
@@ -214,14 +212,10 @@ export function BoundingBoxCanvas({
         const point = imageToScreen(points[i]);
 
         const distance = Math.sqrt(
-          (point.x - screenX) ** 2 +
-            (point.y - screenY) ** 2,
+          (point.x - screenX) ** 2 + (point.y - screenY) ** 2,
         );
 
-        if (
-          distance <=
-          Math.max(12, POINT_RADIUS * 2)
-        ) {
+        if (distance <= Math.max(12, POINT_RADIUS * 2)) {
           return i;
         }
       }
@@ -233,11 +227,22 @@ export function BoundingBoxCanvas({
 
   const findPolygonPointAtScreenPosition = useCallback(
     (screenX: number, screenY: number) => {
-      for (let polygonIndex = polygons.length - 1; polygonIndex >= 0; polygonIndex -= 1) {
+      for (
+        let polygonIndex = polygons.length - 1;
+        polygonIndex >= 0;
+        polygonIndex -= 1
+      ) {
         const polygon = polygons[polygonIndex];
-        for (let pointIndex = polygon.points.length - 1; pointIndex >= 0; pointIndex -= 1) {
+        for (
+          let pointIndex = polygon.points.length - 1;
+          pointIndex >= 0;
+          pointIndex -= 1
+        ) {
           const point = imageToScreen(polygon.points[pointIndex]);
-          if (Math.hypot(point.x - screenX, point.y - screenY) <= Math.max(12, POINT_RADIUS * 2)) {
+          if (
+            Math.hypot(point.x - screenX, point.y - screenY) <=
+            Math.max(12, POINT_RADIUS * 2)
+          ) {
             return { polygonId: polygon.id, index: pointIndex };
           }
         }
@@ -247,36 +252,63 @@ export function BoundingBoxCanvas({
     [imageToScreen, polygons],
   );
 
-  const findNearestPolygonEdge = useCallback((point: Point) => {
-    let nearest: { polygonId: string; edgeIndex: number; distance: number } | undefined;
-    for (const polygon of polygons) {
-      for (const [index, start] of polygon.points.entries()) {
-        const end = polygon.points[(index + 1) % polygon.points.length];
-        const dx = end.x - start.x;
-        const dy = end.y - start.y;
-        const lengthSquared = dx * dx + dy * dy || 1;
-        const t = Math.max(0, Math.min(1, ((point.x - start.x) * dx + (point.y - start.y) * dy) / lengthSquared));
-        const distance = Math.hypot(point.x - (start.x + t * dx), point.y - (start.y + t * dy));
-        if (!nearest || distance < nearest.distance) nearest = { polygonId: polygon.id, edgeIndex: index, distance };
+  const findNearestPolygonEdge = useCallback(
+    (point: Point) => {
+      let nearest:
+        | { polygonId: string; edgeIndex: number; distance: number }
+        | undefined;
+      for (const polygon of polygons) {
+        for (const [index, start] of polygon.points.entries()) {
+          const end = polygon.points[(index + 1) % polygon.points.length];
+          const dx = end.x - start.x;
+          const dy = end.y - start.y;
+          const lengthSquared = dx * dx + dy * dy || 1;
+          const t = Math.max(
+            0,
+            Math.min(
+              1,
+              ((point.x - start.x) * dx + (point.y - start.y) * dy) /
+                lengthSquared,
+            ),
+          );
+          const distance = Math.hypot(
+            point.x - (start.x + t * dx),
+            point.y - (start.y + t * dy),
+          );
+          if (!nearest || distance < nearest.distance)
+            nearest = { polygonId: polygon.id, edgeIndex: index, distance };
+        }
       }
-    }
-    return nearest ?? null;
-  }, [polygons]);
+      return nearest ?? null;
+    },
+    [polygons],
+  );
 
-  const findPolygonAtImagePoint = useCallback((point: Point) => {
-    for (const polygon of polygons) {
-      let inside = false;
-      for (let index = 0, previous = polygon.points.length - 1; index < polygon.points.length; previous = index++) {
-        const current = polygon.points[index];
-        const prior = polygon.points[previous];
-        const intersects = ((current.y > point.y) !== (prior.y > point.y)) &&
-          point.x < ((prior.x - current.x) * (point.y - current.y)) / (prior.y - current.y) + current.x;
-        if (intersects) inside = !inside;
+  const findPolygonAtImagePoint = useCallback(
+    (point: Point) => {
+      for (const polygon of polygons) {
+        let inside = false;
+        for (
+          let index = 0, previous = polygon.points.length - 1;
+          index < polygon.points.length;
+          previous = index++
+        ) {
+          const current = polygon.points[index];
+          const prior = polygon.points[previous];
+          const intersects =
+            current.y > point.y !== prior.y > point.y &&
+            point.x <
+              ((prior.x - current.x) * (point.y - current.y)) /
+                (prior.y - current.y) +
+                current.x;
+          if (intersects) inside = !inside;
+        }
+        if (inside) return polygon.id;
       }
-      if (inside) return polygon.id;
-    }
-    return null;
-  }, [polygons]);
+      return null;
+    },
+    [polygons],
+  );
 
   const drawPoint = useCallback(
     (
@@ -291,9 +323,7 @@ export function BoundingBoxCanvas({
       ctx.arc(
         screenPoint.x,
         screenPoint.y,
-        selected
-          ? SELECTED_POINT_RADIUS
-          : POINT_RADIUS,
+        selected ? SELECTED_POINT_RADIUS : POINT_RADIUS,
         0,
         Math.PI * 2,
       );
@@ -330,15 +360,9 @@ export function BoundingBoxCanvas({
         const screenPoint = imageToScreen(point);
 
         if (index === 0) {
-          ctx.moveTo(
-            screenPoint.x,
-            screenPoint.y,
-          );
+          ctx.moveTo(screenPoint.x, screenPoint.y);
         } else {
-          ctx.lineTo(
-            screenPoint.x,
-            screenPoint.y,
-          );
+          ctx.lineTo(screenPoint.x, screenPoint.y);
         }
       });
 
@@ -412,29 +436,20 @@ export function BoundingBoxCanvas({
     );
 
     polygons.forEach((polygon) => {
-      drawPolygon(
-        ctx,
-        polygon.points,
-        true,
-        polygon.id === selectedPolygonId,
-      );
+      drawPolygon(ctx, polygon.points, true, polygon.id === selectedPolygonId);
 
       polygon.points.forEach((point) => {
         drawPoint(
           ctx,
           point,
-          hoveredPoint?.polygonId === polygon.id && hoveredPoint.index === polygon.points.indexOf(point),
+          hoveredPoint?.polygonId === polygon.id &&
+            hoveredPoint.index === polygon.points.indexOf(point),
         );
       });
     });
 
     if (points.length) {
-      drawPolygon(
-        ctx,
-        points,
-        false,
-        true,
-      );
+      drawPolygon(ctx, points, false, true);
 
       points.forEach((point, index) => {
         drawPoint(
@@ -459,7 +474,6 @@ export function BoundingBoxCanvas({
       ctx.stroke();
       ctx.restore();
     }
-
   }, [
     drawPoint,
     drawPolygon,
@@ -483,21 +497,13 @@ export function BoundingBoxCanvas({
       return;
     }
 
-    const rect =
-      container.getBoundingClientRect();
+    const rect = container.getBoundingClientRect();
 
-    const dpr =
-      window.devicePixelRatio || 1;
+    const dpr = window.devicePixelRatio || 1;
 
-    canvas.width = Math.max(
-      1,
-      Math.round(rect.width * dpr),
-    );
+    canvas.width = Math.max(1, Math.round(rect.width * dpr));
 
-    canvas.height = Math.max(
-      1,
-      Math.round(rect.height * dpr),
-    );
+    canvas.height = Math.max(1, Math.round(rect.height * dpr));
 
     canvas.style.width = `${rect.width}px`;
     canvas.style.height = `${rect.height}px`;
@@ -505,14 +511,7 @@ export function BoundingBoxCanvas({
     const ctx = canvas.getContext("2d");
 
     if (ctx) {
-      ctx.setTransform(
-        dpr,
-        0,
-        0,
-        dpr,
-        0,
-        0,
-      );
+      ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
     }
 
     const image = imageRef.current;
@@ -554,9 +553,14 @@ export function BoundingBoxCanvas({
       };
 
       const { width, height } = getCanvasSize();
-      fitScaleRef.current = width && height
-        ? Math.min(1, width / image.naturalWidth, height / image.naturalHeight)
-        : 1;
+      fitScaleRef.current =
+        width && height
+          ? Math.min(
+              1,
+              width / image.naturalWidth,
+              height / image.naturalHeight,
+            )
+          : 1;
       setZoomValue(1);
       onImageSizeChange?.({
         width: image.naturalWidth,
@@ -584,8 +588,7 @@ export function BoundingBoxCanvas({
       return;
     }
 
-    const observer =
-      new ResizeObserver(resizeCanvas);
+    const observer = new ResizeObserver(resizeCanvas);
 
     observer.observe(container);
     resizeCanvas();
@@ -602,63 +605,39 @@ export function BoundingBoxCanvas({
     const handleZoomOut = () => zoomOut();
     const handleFit = () => resetZoom();
 
-    window.addEventListener(
-      "polygon-zoom-in",
-      handleZoomIn,
-    );
+    window.addEventListener("polygon-zoom-in", handleZoomIn);
 
-    window.addEventListener(
-      "polygon-zoom-out",
-      handleZoomOut,
-    );
+    window.addEventListener("polygon-zoom-out", handleZoomOut);
 
-    window.addEventListener(
-      "polygon-fit",
-      handleFit,
-    );
+    window.addEventListener("polygon-fit", handleFit);
 
     return () => {
-      window.removeEventListener(
-        "polygon-zoom-in",
-        handleZoomIn,
-      );
+      window.removeEventListener("polygon-zoom-in", handleZoomIn);
 
-      window.removeEventListener(
-        "polygon-zoom-out",
-        handleZoomOut,
-      );
+      window.removeEventListener("polygon-zoom-out", handleZoomOut);
 
-      window.removeEventListener(
-        "polygon-fit",
-        handleFit,
-      );
+      window.removeEventListener("polygon-fit", handleFit);
     };
   }, [resetZoom, zoomIn, zoomOut]);
 
   const handlePointerDown = useCallback(
-    (
-      event: React.PointerEvent<HTMLCanvasElement>,
-    ) => {
+    (event: React.PointerEvent<HTMLCanvasElement>) => {
       const canvas = canvasRef.current;
 
       if (!canvas) {
         return;
       }
 
-      const rect =
-        canvas.getBoundingClientRect();
+      const rect = canvas.getBoundingClientRect();
 
-      const screenX =
-        event.clientX - rect.left;
+      const screenX = event.clientX - rect.left;
 
-      const screenY =
-        event.clientY - rect.top;
+      const screenY = event.clientY - rect.top;
 
       const shouldPan =
         event.button === 1 ||
         event.button === 2 ||
-        (event.button === 0 &&
-          event.shiftKey);
+        (event.button === 0 && event.shiftKey);
 
       if (shouldPan) {
         event.preventDefault();
@@ -674,9 +653,7 @@ export function BoundingBoxCanvas({
           ...offsetRef.current,
         };
 
-        canvas.setPointerCapture(
-          event.pointerId,
-        );
+        canvas.setPointerCapture(event.pointerId);
 
         return;
       }
@@ -685,20 +662,13 @@ export function BoundingBoxCanvas({
         return;
       }
 
-      const imagePoint = screenToImage(
-        event.clientX,
-        event.clientY,
-      );
+      const imagePoint = screenToImage(event.clientX, event.clientY);
 
       if (!imagePoint) {
         return;
       }
 
-      const pointIndex =
-        findPointAtScreenPosition(
-          screenX,
-          screenY,
-        );
+      const pointIndex = findPointAtScreenPosition(screenX, screenY);
 
       if (tool === "edit") {
         const polygonPoint = findPolygonPointAtScreenPosition(screenX, screenY);
@@ -723,12 +693,9 @@ export function BoundingBoxCanvas({
           canvas.setPointerCapture(event.pointerId);
         } else if (pointIndex !== null) {
           onSelectPoint(pointIndex);
-          editingPointRef.current =
-            pointIndex;
+          editingPointRef.current = pointIndex;
           editingPolygonRef.current = null;
-          canvas.setPointerCapture(
-            event.pointerId,
-          );
+          canvas.setPointerCapture(event.pointerId);
         } else {
           onSelectPoint(null);
           onSelectPolygon(findPolygonAtImagePoint(imagePoint));
@@ -756,8 +723,7 @@ export function BoundingBoxCanvas({
         isPointNear(
           imagePoint,
           points[0],
-          CLOSE_DISTANCE /
-            (fitScaleRef.current * zoomRef.current),
+          CLOSE_DISTANCE / (fitScaleRef.current * zoomRef.current),
         )
       ) {
         onCompletePolygon();
@@ -787,25 +753,15 @@ export function BoundingBoxCanvas({
   );
 
   const handlePointerMove = useCallback(
-    (
-      event: React.PointerEvent<HTMLCanvasElement>,
-    ) => {
+    (event: React.PointerEvent<HTMLCanvasElement>) => {
       if (isPanningRef.current) {
-        const dx =
-          event.clientX -
-          panStartRef.current.x;
+        const dx = event.clientX - panStartRef.current.x;
 
-        const dy =
-          event.clientY -
-          panStartRef.current.y;
+        const dy = event.clientY - panStartRef.current.y;
 
         offsetRef.current = {
-          x:
-            panOffsetStartRef.current.x +
-            dx,
-          y:
-            panOffsetStartRef.current.y +
-            dy,
+          x: panOffsetStartRef.current.x + dx,
+          y: panOffsetStartRef.current.y + dy,
         };
 
         draw();
@@ -815,32 +771,30 @@ export function BoundingBoxCanvas({
       const canvas = canvasRef.current;
       if (canvas && tool === "edit") {
         const rect = canvas.getBoundingClientRect();
-        setHoveredPoint(findPolygonPointAtScreenPosition(
-          event.clientX - rect.left,
-          event.clientY - rect.top,
-        ));
+        setHoveredPoint(
+          findPolygonPointAtScreenPosition(
+            event.clientX - rect.left,
+            event.clientY - rect.top,
+          ),
+        );
       } else {
         setHoveredPoint(null);
       }
       if (canvas) {
         const rect = canvas.getBoundingClientRect();
-        setCrosshair({ x: event.clientX - rect.left, y: event.clientY - rect.top });
+        setCrosshair({
+          x: event.clientX - rect.left,
+          y: event.clientY - rect.top,
+        });
       }
 
-      const editingIndex =
-        editingPointRef.current;
+      const editingIndex = editingPointRef.current;
 
-      if (
-        editingIndex === null ||
-        tool !== "edit"
-      ) {
+      if (editingIndex === null || tool !== "edit") {
         return;
       }
 
-      const imagePoint = screenToImage(
-        event.clientX,
-        event.clientY,
-      );
+      const imagePoint = screenToImage(event.clientX, event.clientY);
 
       if (!imagePoint) {
         return;
@@ -849,21 +803,9 @@ export function BoundingBoxCanvas({
       const image = imageRef.current;
 
       if (image) {
-        imagePoint.x = Math.max(
-          0,
-          Math.min(
-            image.naturalWidth,
-            imagePoint.x,
-          ),
-        );
+        imagePoint.x = Math.max(0, Math.min(image.naturalWidth, imagePoint.x));
 
-        imagePoint.y = Math.max(
-          0,
-          Math.min(
-            image.naturalHeight,
-            imagePoint.y,
-          ),
-        );
+        imagePoint.y = Math.max(0, Math.min(image.naturalHeight, imagePoint.y));
       }
 
       if (editingPolygonRef.current) {
@@ -872,43 +814,34 @@ export function BoundingBoxCanvas({
         onMovePoint(editingIndex, imagePoint);
       }
     },
-    [draw, findPolygonPointAtScreenPosition, onMovePoint, onMovePolygonPoint, screenToImage, tool],
+    [
+      draw,
+      findPolygonPointAtScreenPosition,
+      onMovePoint,
+      onMovePolygonPoint,
+      screenToImage,
+      tool,
+    ],
   );
 
   const handlePointerUp = useCallback(
-    (
-      event: React.PointerEvent<HTMLCanvasElement>,
-    ) => {
+    (event: React.PointerEvent<HTMLCanvasElement>) => {
       const canvas = canvasRef.current;
 
       if (isPanningRef.current) {
         isPanningRef.current = false;
 
-        if (
-          canvas?.hasPointerCapture(
-            event.pointerId,
-          )
-        ) {
-          canvas.releasePointerCapture(
-            event.pointerId,
-          );
+        if (canvas?.hasPointerCapture(event.pointerId)) {
+          canvas.releasePointerCapture(event.pointerId);
         }
       }
 
-      if (
-        editingPointRef.current !== null
-      ) {
+      if (editingPointRef.current !== null) {
         editingPointRef.current = null;
         editingPolygonRef.current = null;
 
-        if (
-          canvas?.hasPointerCapture(
-            event.pointerId,
-          )
-        ) {
-          canvas.releasePointerCapture(
-            event.pointerId,
-          );
+        if (canvas?.hasPointerCapture(event.pointerId)) {
+          canvas.releasePointerCapture(event.pointerId);
         }
       }
     },
@@ -925,16 +858,10 @@ export function BoundingBoxCanvas({
     }
 
     onCompletePolygon();
-  }, [
-    onCompletePolygon,
-    points.length,
-    tool,
-  ]);
+  }, [onCompletePolygon, points.length, tool]);
 
   const handleWheel = useCallback(
-    (
-      event: React.WheelEvent<HTMLCanvasElement>,
-    ) => {
+    (event: React.WheelEvent<HTMLCanvasElement>) => {
       if (!event.ctrlKey) {
         return;
       }
@@ -950,78 +877,45 @@ export function BoundingBoxCanvas({
 
       const oldZoom = zoomRef.current;
 
-      const delta = Math.max(
-        -100,
-        Math.min(100, event.deltaY),
-      );
+      const delta = Math.max(-100, Math.min(100, event.deltaY));
 
-      const zoomFactor = Math.exp(
-        -delta * WHEEL_ZOOM_SPEED,
-      );
+      const zoomFactor = Math.exp(-delta * WHEEL_ZOOM_SPEED);
 
       const nextZoom = Math.min(
         MAX_ZOOM,
-        Math.max(
-          MIN_ZOOM,
-          oldZoom * zoomFactor,
-        ),
+        Math.max(MIN_ZOOM, oldZoom * zoomFactor),
       );
 
-      if (
-        Math.abs(nextZoom - oldZoom) <
-        0.001
-      ) {
+      if (Math.abs(nextZoom - oldZoom) < 0.001) {
         return;
       }
 
-      const rect =
-        canvas.getBoundingClientRect();
+      const rect = canvas.getBoundingClientRect();
 
-      const mouseX =
-        event.clientX - rect.left;
+      const mouseX = event.clientX - rect.left;
 
-      const mouseY =
-        event.clientY - rect.top;
+      const mouseY = event.clientY - rect.top;
 
-      const oldTransform =
-        getImageTransform();
+      const oldTransform = getImageTransform();
 
       const oldScale = fitScaleRef.current * oldZoom;
-      const imageX =
-        (mouseX - oldTransform.x) /
-        oldScale;
+      const imageX = (mouseX - oldTransform.x) / oldScale;
 
-      const imageY =
-        (mouseY - oldTransform.y) /
-        oldScale;
+      const imageY = (mouseY - oldTransform.y) / oldScale;
 
       const newScale = fitScaleRef.current * nextZoom;
-      const newImageWidth =
-        image.naturalWidth * newScale;
+      const newImageWidth = image.naturalWidth * newScale;
 
-      const newImageHeight =
-        image.naturalHeight * newScale;
+      const newImageHeight = image.naturalHeight * newScale;
 
-      const centeredX =
-        (canvas.clientWidth -
-          newImageWidth) /
-        2;
+      const centeredX = (canvas.clientWidth - newImageWidth) / 2;
 
-      const centeredY =
-        (canvas.clientHeight -
-          newImageHeight) /
-        2;
+      const centeredY = (canvas.clientHeight - newImageHeight) / 2;
 
       offsetRef.current = {
-        x:
-          mouseX -
-          centeredX -
-          imageX * newScale,
+        x: mouseX - centeredX - imageX * newScale,
 
-        y:
-          mouseY -
-          centeredY -
-          imageY * newScale,
+        y: mouseY - centeredY - imageY * newScale,
       };
 
       setZoomValue(nextZoom);
@@ -1030,9 +924,7 @@ export function BoundingBoxCanvas({
   );
 
   const handleContextMenu = useCallback(
-    (
-      event: React.MouseEvent<HTMLCanvasElement>,
-    ) => {
+    (event: React.MouseEvent<HTMLCanvasElement>) => {
       event.preventDefault();
     },
     [],
@@ -1073,8 +965,7 @@ export function BoundingBoxCanvas({
             </p>
 
             <p className="mt-1 text-xs text-muted-foreground">
-              Import an image folder to begin
-              annotating.
+              Import an image folder to begin annotating.
             </p>
           </div>
         </div>

@@ -1,4 +1,3 @@
-
 "use client";
 
 import { useEffect, useState } from "react";
@@ -35,16 +34,13 @@ function Toggle({
 export default function StatusWidget() {
   const [statusWidget, setStatusWidget] = useState(true);
   const [musicWidget, setMusicWidget] = useState(true);
-  const [minimizeOnEmptyClick, setMinimizeOnEmptyClick] =
-    useState(false);
+  const [minimizeOnEmptyClick, setMinimizeOnEmptyClick] = useState(false);
 
   useEffect(() => {
     const root = document.documentElement;
     root.dataset.statusWidget = statusWidget ? "on" : "off";
     root.dataset.musicWidget = musicWidget ? "on" : "off";
-    root.dataset.minimizeOnEmptyClick = minimizeOnEmptyClick
-      ? "on"
-      : "off";
+    root.dataset.minimizeOnEmptyClick = minimizeOnEmptyClick ? "on" : "off";
   }, [statusWidget, musicWidget, minimizeOnEmptyClick]);
 
   return (

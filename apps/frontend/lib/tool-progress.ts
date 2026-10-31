@@ -3,13 +3,18 @@
 import { useEffect, useRef, useState } from "react";
 import { api } from "./api";
 
-export function useToolProgress<T extends Record<string, unknown>>(tool: string, initial: T) {
+export function useToolProgress<T extends Record<string, unknown>>(
+  tool: string,
+  initial: T,
+) {
   const [progress, setProgress] = useState<T>(initial);
   const progressRef = useRef(progress);
   progressRef.current = progress;
 
   useEffect(() => {
-    void api<{ progress: T }>(`/api/storage/progress/${encodeURIComponent(tool)}`)
+    void api<{ progress: T }>(
+      `/api/storage/progress/${encodeURIComponent(tool)}`,
+    )
       .then(({ progress: saved }) => setProgress(saved))
       .catch(() => undefined);
   }, [tool]);
@@ -24,7 +29,8 @@ export function useToolProgress<T extends Record<string, unknown>>(tool: string,
       }).catch(() => undefined);
     };
     window.addEventListener("utoolity:tool-closing", saveBeforeClose);
-    return () => window.removeEventListener("utoolity:tool-closing", saveBeforeClose);
+    return () =>
+      window.removeEventListener("utoolity:tool-closing", saveBeforeClose);
   }, [tool]);
 
   const updateProgress = (next: T) => {

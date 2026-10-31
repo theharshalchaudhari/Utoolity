@@ -1,6 +1,13 @@
 "use client";
 
-import { Check, ChevronDown, Gauge, Loader2, Video, Trash2 } from "lucide-react";
+import {
+  Check,
+  ChevronDown,
+  Gauge,
+  Loader2,
+  Video,
+  Trash2,
+} from "lucide-react";
 import { Button } from "@repo/ui/shadcn/button";
 import {
   Select,
@@ -24,14 +31,26 @@ interface ConversionSettingsProps {
 }
 
 const resolutionOptions = [
-  { value: "original", label: "Original", description: "Keep source resolution" },
+  {
+    value: "original",
+    label: "Original",
+    description: "Keep source resolution",
+  },
   { value: "720p", label: "720p", description: "HD · 1280 × 720 maximum" },
-  { value: "1080p", label: "1080p", description: "Full HD · 1920 × 1080 maximum" },
+  {
+    value: "1080p",
+    label: "1080p",
+    description: "Full HD · 1920 × 1080 maximum",
+  },
 ] as const;
 
 const compressionOptions = [
   { value: "low", label: "Low", description: "Higher quality, larger file" },
-  { value: "medium", label: "Medium", description: "Balanced quality and size" },
+  {
+    value: "medium",
+    label: "Medium",
+    description: "Balanced quality and size",
+  },
   { value: "high", label: "High", description: "Smaller output file" },
 ] as const;
 
@@ -53,8 +72,12 @@ export default function ConversionSettings({
           <Gauge className="h-5 w-5" />
         </div>
         <div className="min-w-0">
-          <h2 className="text-base font-semibold tracking-tight">Convert to MP4</h2>
-          <p className="mt-1 text-xs text-muted-foreground">H.264 video · AAC audio</p>
+          <h2 className="text-base font-semibold tracking-tight">
+            Convert to MP4
+          </h2>
+          <p className="mt-1 text-xs text-muted-foreground">
+            H.264 video · AAC audio
+          </p>
         </div>
       </div>
 
@@ -90,12 +113,22 @@ export default function ConversionSettings({
             <SelectTrigger className="h-11 w-full rounded-xl border-border/70 bg-background">
               <SelectValue placeholder="Select resolution" />
             </SelectTrigger>
-            <SelectContent className="z-50 border border-border bg-popover text-popover-foreground shadow-xl" position="popper" sideOffset={6}>
+            <SelectContent
+              className="z-50 border border-border bg-popover text-popover-foreground shadow-xl"
+              position="popper"
+              sideOffset={6}
+            >
               {resolutionOptions.map((option) => (
-                <SelectItem key={option.value} value={option.value} className="cursor-pointer rounded-lg py-2.5">
+                <SelectItem
+                  key={option.value}
+                  value={option.value}
+                  className="cursor-pointer rounded-lg py-2.5"
+                >
                   <div className="flex flex-col">
                     <span className="font-medium">{option.label}</span>
-                    <span className="text-xs text-muted-foreground">{option.description}</span>
+                    <span className="text-xs text-muted-foreground">
+                      {option.description}
+                    </span>
                   </div>
                 </SelectItem>
               ))}
@@ -115,12 +148,22 @@ export default function ConversionSettings({
             <SelectTrigger className="h-11 w-full rounded-xl border-border/70 bg-background">
               <SelectValue placeholder="Select compression" />
             </SelectTrigger>
-            <SelectContent className="z-50 border border-border bg-popover text-popover-foreground shadow-xl" position="popper" sideOffset={6}>
+            <SelectContent
+              className="z-50 border border-border bg-popover text-popover-foreground shadow-xl"
+              position="popper"
+              sideOffset={6}
+            >
               {compressionOptions.map((option) => (
-                <SelectItem key={option.value} value={option.value} className="cursor-pointer rounded-lg py-2.5">
+                <SelectItem
+                  key={option.value}
+                  value={option.value}
+                  className="cursor-pointer rounded-lg py-2.5"
+                >
                   <div className="flex flex-col">
                     <span className="font-medium">{option.label}</span>
-                    <span className="text-xs text-muted-foreground">{option.description}</span>
+                    <span className="text-xs text-muted-foreground">
+                      {option.description}
+                    </span>
                   </div>
                 </SelectItem>
               ))}

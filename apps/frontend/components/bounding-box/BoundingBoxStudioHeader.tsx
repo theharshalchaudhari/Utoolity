@@ -20,16 +20,34 @@ export default function BoundingBoxStudioHeader({
   return (
     <header className="z-40 flex min-h-12 shrink-0 flex-wrap items-center justify-between gap-2 border-b border-border bg-card/90 px-3 py-1.5 shadow-sm backdrop-blur-xl sm:px-4">
       <div className="flex min-w-0 max-w-full items-center gap-2 sm:gap-3">
-        <span className="shrink-0 font-semibold tracking-tight">Bounding Box Studio</span>
+        <span className="shrink-0 font-semibold tracking-tight">
+          Bounding Box Studio
+        </span>
         <span className="text-muted-foreground">/</span>
-        <button type="button" onClick={onPrevious} disabled={!canNavigate} aria-label="Previous image" className="rounded-full border border-border px-2 py-0.5 text-sm disabled:opacity-40">←</button>
+        <button
+          type="button"
+          onClick={onPrevious}
+          disabled={!canNavigate}
+          aria-label="Previous image"
+          className="rounded-full border border-border px-2 py-0.5 text-sm disabled:opacity-40"
+        >
+          ←
+        </button>
         <span
           className="max-w-[min(18rem,45vw)] truncate text-xs text-muted-foreground"
           title={imageName ?? "No image loaded"}
         >
           {imageName ?? "No image loaded"}
         </span>
-        <button type="button" onClick={onNext} disabled={!canNavigate} aria-label="Next image" className="rounded-full border border-border px-2 py-0.5 text-sm disabled:opacity-40">→</button>
+        <button
+          type="button"
+          onClick={onNext}
+          disabled={!canNavigate}
+          aria-label="Next image"
+          className="rounded-full border border-border px-2 py-0.5 text-sm disabled:opacity-40"
+        >
+          →
+        </button>
       </div>
       <div className="flex shrink-0 items-center gap-2 sm:gap-3">
         <span className="hidden text-xs text-muted-foreground md:inline">

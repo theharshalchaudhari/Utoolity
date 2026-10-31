@@ -1,6 +1,12 @@
 "use client";
 
-import { useCallback, useEffect, useRef, useState, type MouseEvent } from "react";
+import {
+  useCallback,
+  useEffect,
+  useRef,
+  useState,
+  type MouseEvent,
+} from "react";
 import DesktopBackground from "./DesktopBackground";
 import DesktopWindow, { type WindowState } from "./DesktopWindow";
 import Profile from "./Profile";
@@ -8,7 +14,12 @@ import SystemTray from "./SystemTray";
 import { api } from "../../lib/api";
 import DesktopContextMenu, { type MenuAction } from "./DesktopContextMenu";
 import DesktopApps from "./DesktopApps";
-import { WALLPAPERS, normalizeWallpaperId, readWallpaperPreference, saveWallpaperPreference } from "../../lib/wallpapers";
+import {
+  WALLPAPERS,
+  normalizeWallpaperId,
+  readWallpaperPreference,
+  saveWallpaperPreference,
+} from "../../lib/wallpapers";
 import ToolContent, { appTitles, type DesktopAppId } from "./ToolContent";
 import type { WindowSummary } from "./SystemTray/AllWindows";
 import CollaborationPanel from "../collaboration/CollaborationPanel";
@@ -20,22 +31,36 @@ type DesktopProps = {
   showChrome?: boolean;
 };
 
-export default function Desktop({ onSleep, onLock, isVisible = true, showChrome = isVisible }: DesktopProps) {
+export default function Desktop({
+  onSleep,
+  onLock,
+  isVisible = true,
+  showChrome = isVisible,
+}: DesktopProps) {
   const [expandedAppKey, setExpandedAppKey] = useState<string | null>(null);
   const [menu, setMenu] = useState<{ x: number; y: number } | null>(null);
   const [isDark, setIsDark] = useState(true);
   const [desktopScale, setDesktopScale] = useState(1);
-  const [openApps, setOpenApps] = useState<Array<{ app: DesktopAppId; filePath?: string; window?: WindowState }>>([]);
+  const [openApps, setOpenApps] = useState<
+    Array<{ app: DesktopAppId; filePath?: string; window?: WindowState }>
+  >([]);
   const [activeAppKey, setActiveAppKey] = useState<string | null>(null);
   const [workspaceHydrated, setWorkspaceHydrated] = useState(false);
   const [workspaceUserId, setWorkspaceUserId] = useState<string | null>(null);
-  const [sharedOwnerUserId, setSharedOwnerUserId] = useState<string | null>(null);
-  const [sharedPermission, setSharedPermission] = useState<"view" | "editor" | null>(null);
+  const [sharedOwnerUserId, setSharedOwnerUserId] = useState<string | null>(
+    null,
+  );
+  const [sharedPermission, setSharedPermission] = useState<
+    "view" | "editor" | null
+  >(null);
   const isSharedViewer = sharedOwnerUserId !== null;
   const closingWindowKeysRef = useRef(new Set<string>());
   useEffect(() => {
     const updateScale = () => {
-      const fitScale = Math.min(window.innerWidth / 1920, window.innerHeight / 1080);
+      const fitScale = Math.min(
+        window.innerWidth / 1920,
+        window.innerHeight / 1080,
+      );
       setDesktopScale(Math.max(0.68, fitScale));
     };
     updateScale();
@@ -43,43 +68,59 @@ export default function Desktop({ onSleep, onLock, isVisible = true, showChrome 
     return () => window.removeEventListener("resize", updateScale);
   }, []);
 
-  const openApp = useCallback((app: DesktopAppId, filePath?: string) => {
-    if (isSharedViewer) {
-      if (sharedPermission === "editor") {
-        window.dispatchEvent(new CustomEvent("utoolity:shared-command-outgoing", { detail: { command: "open-app", payload: { app, filePath } } }));
+  const openApp = useCallback(
+    (app: DesktopAppId, filePath?: string) => {
+      if (isSharedViewer) {
+        if (sharedPermission === "editor") {
+          window.dispatchEvent(
+            new CustomEvent("utoolity:shared-command-outgoing", {
+              detail: { command: "open-app", payload: { app, filePath } },
+            }),
+          );
+        }
+        return;
       }
-      return;
-    }
-    const key = `${app}:${filePath ?? ""}`;
-    setActiveAppKey(key);
-    setOpenApps((current) =>
-      current.some((item) => item.app === app && item.filePath === filePath)
-        ? current
-        : [...current, { app, filePath }],
-    );
-  }, [isSharedViewer, sharedPermission]);
+      const key = `${app}:${filePath ?? ""}`;
+      setActiveAppKey(key);
+      setOpenApps((current) =>
+        current.some((item) => item.app === app && item.filePath === filePath)
+          ? current
+          : [...current, { app, filePath }],
+      );
+    },
+    [isSharedViewer, sharedPermission],
+  );
   const closeMenu = useCallback(() => setMenu(null), []);
-  const updateWindowState = useCallback((key: string, windowState: WindowState) => {
-    if (isSharedViewer) {
-      if (sharedPermission === "editor") {
-        window.dispatchEvent(new CustomEvent("utoolity:shared-command-outgoing", {
-          detail: { command: "window-state", payload: { key, window: windowState } },
-        }));
+  const updateWindowState = useCallback(
+    (key: string, windowState: WindowState) => {
+      if (isSharedViewer) {
+        if (sharedPermission === "editor") {
+          window.dispatchEvent(
+            new CustomEvent("utoolity:shared-command-outgoing", {
+              detail: {
+                command: "window-state",
+                payload: { key, window: windowState },
+              },
+            }),
+          );
+        }
+        return;
       }
-      return;
-    }
-    setOpenApps((current) =>
-      current.map((item) =>
-        `${item.app}:${item.filePath ?? ""}` === key
-          ? { ...item, window: windowState }
-          : item,
-      ),
-    );
-  }, [isSharedViewer, sharedPermission]);
+      setOpenApps((current) =>
+        current.map((item) =>
+          `${item.app}:${item.filePath ?? ""}` === key
+            ? { ...item, window: windowState }
+            : item,
+        ),
+      );
+    },
+    [isSharedViewer, sharedPermission],
+  );
   // Derive maximized visibility from persisted window state as well as the
   // immediate expanded-window flag. This also covers restored maximized windows.
   const hasMaximizedWindow = openApps.some(
-    (item) => item.window?.maximized === true && item.window?.minimized !== true,
+    (item) =>
+      item.window?.maximized === true && item.window?.minimized !== true,
   );
   // Keep the desktop chrome mounted; app windows render above it by z-index.
   const hideDesktopChrome = !showChrome;
@@ -96,27 +137,42 @@ export default function Desktop({ onSleep, onLock, isVisible = true, showChrome 
       maximized: item.window?.maximized ?? false,
     };
   });
-  const closeWindow = useCallback((key: string) => {
-    if (isSharedViewer) {
-      if (sharedPermission === "editor") window.dispatchEvent(new CustomEvent("utoolity:shared-command-outgoing", { detail: { command: "close-app", payload: key } }));
-      return;
-    }
-    if (closingWindowKeysRef.current.has(key)) return;
-    closingWindowKeysRef.current.add(key);
-    window.dispatchEvent(
-      new CustomEvent("utoolity:tool-closing", { detail: { key } }),
-    );
-    window.setTimeout(() => {
-      closingWindowKeysRef.current.delete(key);
-      setOpenApps((current) =>
-        current.filter((item) => `${item.app}:${item.filePath ?? ""}` !== key),
+  const closeWindow = useCallback(
+    (key: string) => {
+      if (isSharedViewer) {
+        if (sharedPermission === "editor")
+          window.dispatchEvent(
+            new CustomEvent("utoolity:shared-command-outgoing", {
+              detail: { command: "close-app", payload: key },
+            }),
+          );
+        return;
+      }
+      if (closingWindowKeysRef.current.has(key)) return;
+      closingWindowKeysRef.current.add(key);
+      window.dispatchEvent(
+        new CustomEvent("utoolity:tool-closing", { detail: { key } }),
       );
-      setExpandedAppKey((current) => (current === key ? null : current));
-    }, 180);
-  }, [isSharedViewer, sharedPermission]);
+      window.setTimeout(() => {
+        closingWindowKeysRef.current.delete(key);
+        setOpenApps((current) =>
+          current.filter(
+            (item) => `${item.app}:${item.filePath ?? ""}` !== key,
+          ),
+        );
+        setExpandedAppKey((current) => (current === key ? null : current));
+      }, 180);
+    },
+    [isSharedViewer, sharedPermission],
+  );
 
   useEffect(() => {
-    if (activeAppKey && openApps.some((item) => `${item.app}:${item.filePath ?? ""}` === activeAppKey)) {
+    if (
+      activeAppKey &&
+      openApps.some(
+        (item) => `${item.app}:${item.filePath ?? ""}` === activeAppKey,
+      )
+    ) {
       return;
     }
     const next = openApps.at(-1);
@@ -129,28 +185,50 @@ export default function Desktop({ onSleep, onLock, isVisible = true, showChrome 
     const userId = localStorage.getItem("utoolity.authenticated-user-id");
     if (!userId) {
       setWorkspaceHydrated(true);
-      return () => { cancelled = true; };
+      return () => {
+        cancelled = true;
+      };
     }
     setWorkspaceUserId(userId);
     const storageKey = `utoolity.open-apps.${userId}`;
     try {
       const saved = localStorage.getItem(storageKey);
       if (saved) {
-        const restored = JSON.parse(saved) as Array<{ app: DesktopAppId; filePath?: string; window?: WindowState }>;
+        const restored = JSON.parse(saved) as Array<{
+          app: DesktopAppId;
+          filePath?: string;
+          window?: WindowState;
+        }>;
         if (Array.isArray(restored)) {
           setOpenApps(restored);
-          setActiveAppKey(restored.at(-1) ? `${restored.at(-1)?.app}:${restored.at(-1)?.filePath ?? ""}` : null);
+          setActiveAppKey(
+            restored.at(-1)
+              ? `${restored.at(-1)?.app}:${restored.at(-1)?.filePath ?? ""}`
+              : null,
+          );
         }
       }
     } catch {
       localStorage.removeItem(storageKey);
     }
-    void api<{ workspace: { openApps?: typeof openApps; activeAppKey?: string | null; context?: Record<string, unknown> } }>("/api/auth/workspace")
+    void api<{
+      workspace: {
+        openApps?: typeof openApps;
+        activeAppKey?: string | null;
+        context?: Record<string, unknown>;
+      };
+    }>("/api/auth/workspace")
       .then((result) => {
         if (cancelled || !result) return;
         if (Array.isArray(result.workspace.openApps)) {
           setOpenApps(result.workspace.openApps);
-          setActiveAppKey(typeof result.workspace.activeAppKey === "string" ? result.workspace.activeAppKey : result.workspace.openApps.at(-1) ? `${result.workspace.openApps.at(-1)?.app}:${result.workspace.openApps.at(-1)?.filePath ?? ""}` : null);
+          setActiveAppKey(
+            typeof result.workspace.activeAppKey === "string"
+              ? result.workspace.activeAppKey
+              : result.workspace.openApps.at(-1)
+                ? `${result.workspace.openApps.at(-1)?.app}:${result.workspace.openApps.at(-1)?.filePath ?? ""}`
+                : null,
+          );
         }
         const folder = result.workspace.context?.boundingBoxFolder;
         if (typeof folder === "string" && folder) {
@@ -162,12 +240,24 @@ export default function Desktop({ onSleep, onLock, isVisible = true, showChrome 
       .finally(() => {
         if (!cancelled) setWorkspaceHydrated(true);
       });
-    return () => { cancelled = true; };
+    return () => {
+      cancelled = true;
+    };
   }, []);
 
   useEffect(() => {
     const applySharedSession = (event: Event) => {
-      const detail = (event as CustomEvent<{ ownerUserId?: string; permission?: "view" | "editor"; workspace?: { openApps?: typeof openApps; activeAppKey?: string | null; context?: Record<string, unknown> } }>).detail;
+      const detail = (
+        event as CustomEvent<{
+          ownerUserId?: string;
+          permission?: "view" | "editor";
+          workspace?: {
+            openApps?: typeof openApps;
+            activeAppKey?: string | null;
+            context?: Record<string, unknown>;
+          };
+        }>
+      ).detail;
       if (!detail?.ownerUserId) return;
       setSharedOwnerUserId(detail.ownerUserId);
       setSharedPermission(detail.permission === "editor" ? "editor" : "view");
@@ -176,39 +266,85 @@ export default function Desktop({ onSleep, onLock, isVisible = true, showChrome 
         const boundingBoxFolder = workspace.context.boundingBoxFolder;
         const polygonFolder = workspace.context.polygonFolder;
         if (typeof boundingBoxFolder === "string" && boundingBoxFolder) {
-          localStorage.setItem("utoolity.bounding-box.folder", boundingBoxFolder);
-          window.dispatchEvent(new CustomEvent("utoolity:shared-folder-changed", { detail: { path: boundingBoxFolder } }));
+          localStorage.setItem(
+            "utoolity.bounding-box.folder",
+            boundingBoxFolder,
+          );
+          window.dispatchEvent(
+            new CustomEvent("utoolity:shared-folder-changed", {
+              detail: { path: boundingBoxFolder },
+            }),
+          );
         }
-        if (typeof polygonFolder === "string" && polygonFolder) localStorage.setItem("utoolity.polygon.folder", polygonFolder);
+        if (typeof polygonFolder === "string" && polygonFolder)
+          localStorage.setItem("utoolity.polygon.folder", polygonFolder);
       }
       if (Array.isArray(workspace?.openApps)) {
-        const next = workspace.openApps.filter((item) => item && typeof item.app === "string") as typeof openApps;
+        const next = workspace.openApps.filter(
+          (item) => item && typeof item.app === "string",
+        ) as typeof openApps;
         setOpenApps(next);
-        setActiveAppKey(typeof workspace.activeAppKey === "string" ? workspace.activeAppKey : next.at(-1) ? `${next.at(-1)?.app}:${next.at(-1)?.filePath ?? ""}` : null);
+        setActiveAppKey(
+          typeof workspace.activeAppKey === "string"
+            ? workspace.activeAppKey
+            : next.at(-1)
+              ? `${next.at(-1)?.app}:${next.at(-1)?.filePath ?? ""}`
+              : null,
+        );
       }
       setWorkspaceHydrated(true);
     };
     const applySharedWorkspace = (event: Event) => {
-      const detail = (event as CustomEvent<{ ownerUserId?: string; workspace?: { openApps?: typeof openApps; activeAppKey?: string | null; context?: Record<string, unknown> } }>).detail;
-      if (!detail?.workspace || (sharedOwnerUserId && detail.ownerUserId !== sharedOwnerUserId)) return;
+      const detail = (
+        event as CustomEvent<{
+          ownerUserId?: string;
+          workspace?: {
+            openApps?: typeof openApps;
+            activeAppKey?: string | null;
+            context?: Record<string, unknown>;
+          };
+        }>
+      ).detail;
+      if (
+        !detail?.workspace ||
+        (sharedOwnerUserId && detail.ownerUserId !== sharedOwnerUserId)
+      )
+        return;
       const workspace = detail.workspace;
       if (workspace.context && typeof workspace.context === "object") {
         const boundingBoxFolder = workspace.context.boundingBoxFolder;
         const polygonFolder = workspace.context.polygonFolder;
         if (typeof boundingBoxFolder === "string" && boundingBoxFolder) {
-          localStorage.setItem("utoolity.bounding-box.folder", boundingBoxFolder);
-          window.dispatchEvent(new CustomEvent("utoolity:shared-folder-changed", { detail: { path: boundingBoxFolder } }));
+          localStorage.setItem(
+            "utoolity.bounding-box.folder",
+            boundingBoxFolder,
+          );
+          window.dispatchEvent(
+            new CustomEvent("utoolity:shared-folder-changed", {
+              detail: { path: boundingBoxFolder },
+            }),
+          );
         }
-        if (typeof polygonFolder === "string" && polygonFolder) localStorage.setItem("utoolity.polygon.folder", polygonFolder);
+        if (typeof polygonFolder === "string" && polygonFolder)
+          localStorage.setItem("utoolity.polygon.folder", polygonFolder);
       }
       if (Array.isArray(workspace.openApps)) {
-        const next = workspace.openApps.filter((item) => item && typeof item.app === "string") as typeof openApps;
+        const next = workspace.openApps.filter(
+          (item) => item && typeof item.app === "string",
+        ) as typeof openApps;
         setOpenApps(next);
-        setActiveAppKey(typeof workspace.activeAppKey === "string" ? workspace.activeAppKey : next.at(-1) ? `${next.at(-1)?.app}:${next.at(-1)?.filePath ?? ""}` : null);
+        setActiveAppKey(
+          typeof workspace.activeAppKey === "string"
+            ? workspace.activeAppKey
+            : next.at(-1)
+              ? `${next.at(-1)?.app}:${next.at(-1)?.filePath ?? ""}`
+              : null,
+        );
       }
     };
     const applyPermission = (event: Event) => {
-      const detail = (event as CustomEvent<{ permission?: "view" | "editor" }>).detail;
+      const detail = (event as CustomEvent<{ permission?: "view" | "editor" }>)
+        .detail;
       setSharedPermission(detail?.permission === "editor" ? "editor" : "view");
     };
     const endSharedSession = () => {
@@ -218,89 +354,252 @@ export default function Desktop({ onSleep, onLock, isVisible = true, showChrome 
     };
     const applyCommand = (event: Event) => {
       if (isSharedViewer) return;
-      const detail = (event as CustomEvent<{ fromUserId?: string; fromDisplayName?: string; command?: string; payload?: unknown }>).detail;
+      const detail = (
+        event as CustomEvent<{
+          fromUserId?: string;
+          fromDisplayName?: string;
+          command?: string;
+          payload?: unknown;
+        }>
+      ).detail;
       if (!detail?.command) return;
-      if (detail.command === "open-app" && detail.payload && typeof detail.payload === "object") {
-        const payload = detail.payload as { app?: DesktopAppId; filePath?: string };
-        if (payload.app && Object.prototype.hasOwnProperty.call(appTitles, payload.app)) openApp(payload.app, payload.filePath);
-        window.dispatchEvent(new CustomEvent("utoolity:collaboration-audit", { detail: { actorUserId: detail.fromUserId, actorDisplayName: detail.fromDisplayName, action: "open-app", target: payload.app } }));
+      if (
+        detail.command === "open-app" &&
+        detail.payload &&
+        typeof detail.payload === "object"
+      ) {
+        const payload = detail.payload as {
+          app?: DesktopAppId;
+          filePath?: string;
+        };
+        if (
+          payload.app &&
+          Object.prototype.hasOwnProperty.call(appTitles, payload.app)
+        )
+          openApp(payload.app, payload.filePath);
+        window.dispatchEvent(
+          new CustomEvent("utoolity:collaboration-audit", {
+            detail: {
+              actorUserId: detail.fromUserId,
+              actorDisplayName: detail.fromDisplayName,
+              action: "open-app",
+              target: payload.app,
+            },
+          }),
+        );
       }
-      if (detail.command === "close-app" && typeof detail.payload === "string") {
+      if (
+        detail.command === "close-app" &&
+        typeof detail.payload === "string"
+      ) {
         closeWindow(detail.payload);
-        window.dispatchEvent(new CustomEvent("utoolity:collaboration-audit", { detail: { actorUserId: detail.fromUserId, actorDisplayName: detail.fromDisplayName, action: "close-app", target: detail.payload } }));
+        window.dispatchEvent(
+          new CustomEvent("utoolity:collaboration-audit", {
+            detail: {
+              actorUserId: detail.fromUserId,
+              actorDisplayName: detail.fromDisplayName,
+              action: "close-app",
+              target: detail.payload,
+            },
+          }),
+        );
       }
-      if (detail.command === "focus-app" && typeof detail.payload === "string") {
+      if (
+        detail.command === "focus-app" &&
+        typeof detail.payload === "string"
+      ) {
         setActiveAppKey(detail.payload);
-        window.dispatchEvent(new CustomEvent("utoolity:collaboration-audit", { detail: { actorUserId: detail.fromUserId, actorDisplayName: detail.fromDisplayName, action: "focus-app", target: detail.payload } }));
+        window.dispatchEvent(
+          new CustomEvent("utoolity:collaboration-audit", {
+            detail: {
+              actorUserId: detail.fromUserId,
+              actorDisplayName: detail.fromDisplayName,
+              action: "focus-app",
+              target: detail.payload,
+            },
+          }),
+        );
       }
-      if (detail.command === "workspace" && detail.payload && typeof detail.payload === "object") {
-        const workspace = detail.payload as { openApps?: typeof openApps; activeAppKey?: string | null; context?: Record<string, unknown> };
+      if (
+        detail.command === "workspace" &&
+        detail.payload &&
+        typeof detail.payload === "object"
+      ) {
+        const workspace = detail.payload as {
+          openApps?: typeof openApps;
+          activeAppKey?: string | null;
+          context?: Record<string, unknown>;
+        };
         if (Array.isArray(workspace.openApps)) setOpenApps(workspace.openApps);
-        if (typeof workspace.activeAppKey === "string") setActiveAppKey(workspace.activeAppKey);
-        if (typeof workspace.context?.boundingBoxFolder === "string" && workspace.context.boundingBoxFolder) {
-          localStorage.setItem("utoolity.bounding-box.folder", workspace.context.boundingBoxFolder);
-          localStorage.setItem("utoolity.polygon.folder", typeof workspace.context.polygonFolder === "string" ? workspace.context.polygonFolder : workspace.context.boundingBoxFolder);
-          window.dispatchEvent(new CustomEvent("utoolity:shared-folder-changed", { detail: { path: workspace.context.boundingBoxFolder } }));
+        if (typeof workspace.activeAppKey === "string")
+          setActiveAppKey(workspace.activeAppKey);
+        if (
+          typeof workspace.context?.boundingBoxFolder === "string" &&
+          workspace.context.boundingBoxFolder
+        ) {
+          localStorage.setItem(
+            "utoolity.bounding-box.folder",
+            workspace.context.boundingBoxFolder,
+          );
+          localStorage.setItem(
+            "utoolity.polygon.folder",
+            typeof workspace.context.polygonFolder === "string"
+              ? workspace.context.polygonFolder
+              : workspace.context.boundingBoxFolder,
+          );
+          window.dispatchEvent(
+            new CustomEvent("utoolity:shared-folder-changed", {
+              detail: { path: workspace.context.boundingBoxFolder },
+            }),
+          );
         }
-        window.dispatchEvent(new CustomEvent("utoolity:collaboration-audit", {
-          detail: { actorUserId: detail.fromUserId, actorDisplayName: detail.fromDisplayName, action: "workspace", target: "desktop" },
-        }));
+        window.dispatchEvent(
+          new CustomEvent("utoolity:collaboration-audit", {
+            detail: {
+              actorUserId: detail.fromUserId,
+              actorDisplayName: detail.fromDisplayName,
+              action: "workspace",
+              target: "desktop",
+            },
+          }),
+        );
       }
-      if (detail.command === "window-state" && detail.payload && typeof detail.payload === "object") {
-        const payload = detail.payload as { key?: string; window?: WindowState };
+      if (
+        detail.command === "window-state" &&
+        detail.payload &&
+        typeof detail.payload === "object"
+      ) {
+        const payload = detail.payload as {
+          key?: string;
+          window?: WindowState;
+        };
         if (typeof payload.key === "string" && payload.window) {
-          setOpenApps((current) => current.map((item) => `${item.app}:${item.filePath ?? ""}` === payload.key ? { ...item, window: payload.window } : item));
-          window.dispatchEvent(new CustomEvent("utoolity:collaboration-audit", { detail: { actorUserId: detail.fromUserId, actorDisplayName: detail.fromDisplayName, action: "window-state", target: payload.key } }));
+          setOpenApps((current) =>
+            current.map((item) =>
+              `${item.app}:${item.filePath ?? ""}` === payload.key
+                ? { ...item, window: payload.window }
+                : item,
+            ),
+          );
+          window.dispatchEvent(
+            new CustomEvent("utoolity:collaboration-audit", {
+              detail: {
+                actorUserId: detail.fromUserId,
+                actorDisplayName: detail.fromDisplayName,
+                action: "window-state",
+                target: payload.key,
+              },
+            }),
+          );
         }
       }
-      if (detail.command === "workspace" && detail.payload && typeof detail.payload === "object") {
-        const workspace = detail.payload as { openApps?: typeof openApps; activeAppKey?: string | null; context?: Record<string, unknown> };
+      if (
+        detail.command === "workspace" &&
+        detail.payload &&
+        typeof detail.payload === "object"
+      ) {
+        const workspace = detail.payload as {
+          openApps?: typeof openApps;
+          activeAppKey?: string | null;
+          context?: Record<string, unknown>;
+        };
         if (Array.isArray(workspace.openApps)) setOpenApps(workspace.openApps);
-        if (typeof workspace.activeAppKey === "string") setActiveAppKey(workspace.activeAppKey);
-        if (typeof workspace.context?.boundingBoxFolder === "string" && workspace.context.boundingBoxFolder) {
-          localStorage.setItem("utoolity.bounding-box.folder", workspace.context.boundingBoxFolder);
-          localStorage.setItem("utoolity.polygon.folder", typeof workspace.context.polygonFolder === "string" ? workspace.context.polygonFolder : workspace.context.boundingBoxFolder);
-          window.dispatchEvent(new CustomEvent("utoolity:shared-folder-changed", { detail: { path: workspace.context.boundingBoxFolder } }));
+        if (typeof workspace.activeAppKey === "string")
+          setActiveAppKey(workspace.activeAppKey);
+        if (
+          typeof workspace.context?.boundingBoxFolder === "string" &&
+          workspace.context.boundingBoxFolder
+        ) {
+          localStorage.setItem(
+            "utoolity.bounding-box.folder",
+            workspace.context.boundingBoxFolder,
+          );
+          localStorage.setItem(
+            "utoolity.polygon.folder",
+            typeof workspace.context.polygonFolder === "string"
+              ? workspace.context.polygonFolder
+              : workspace.context.boundingBoxFolder,
+          );
+          window.dispatchEvent(
+            new CustomEvent("utoolity:shared-folder-changed", {
+              detail: { path: workspace.context.boundingBoxFolder },
+            }),
+          );
         }
-        window.dispatchEvent(new CustomEvent("utoolity:collaboration-audit", {
-          detail: {
-            actorUserId: detail.fromUserId,
-            actorDisplayName: detail.fromDisplayName,
-            action: "workspace",
-            target: "desktop",
-          },
-        }));
+        window.dispatchEvent(
+          new CustomEvent("utoolity:collaboration-audit", {
+            detail: {
+              actorUserId: detail.fromUserId,
+              actorDisplayName: detail.fromDisplayName,
+              action: "workspace",
+              target: "desktop",
+            },
+          }),
+        );
       }
     };
-    window.addEventListener("utoolity:shared-session-changed", applySharedSession);
+    window.addEventListener(
+      "utoolity:shared-session-changed",
+      applySharedSession,
+    );
     window.addEventListener("utoolity:shared-workspace", applySharedWorkspace);
-    window.addEventListener("utoolity:shared-permission-changed", applyPermission);
+    window.addEventListener(
+      "utoolity:shared-permission-changed",
+      applyPermission,
+    );
     window.addEventListener("utoolity:shared-session-ended", endSharedSession);
     window.addEventListener("utoolity:shared-workspace-command", applyCommand);
     return () => {
-      window.removeEventListener("utoolity:shared-session-changed", applySharedSession);
-      window.removeEventListener("utoolity:shared-workspace", applySharedWorkspace);
-      window.removeEventListener("utoolity:shared-permission-changed", applyPermission);
-      window.removeEventListener("utoolity:shared-session-ended", endSharedSession);
-      window.removeEventListener("utoolity:shared-workspace-command", applyCommand);
+      window.removeEventListener(
+        "utoolity:shared-session-changed",
+        applySharedSession,
+      );
+      window.removeEventListener(
+        "utoolity:shared-workspace",
+        applySharedWorkspace,
+      );
+      window.removeEventListener(
+        "utoolity:shared-permission-changed",
+        applyPermission,
+      );
+      window.removeEventListener(
+        "utoolity:shared-session-ended",
+        endSharedSession,
+      );
+      window.removeEventListener(
+        "utoolity:shared-workspace-command",
+        applyCommand,
+      );
     };
   }, [sharedOwnerUserId, isSharedViewer, openApp, closeWindow]);
 
   useEffect(() => {
     const closeFileManager = () => closeWindow("files:");
     window.addEventListener("utoolity:close-file-manager", closeFileManager);
-    return () => window.removeEventListener("utoolity:close-file-manager", closeFileManager);
+    return () =>
+      window.removeEventListener(
+        "utoolity:close-file-manager",
+        closeFileManager,
+      );
   }, [closeWindow]);
 
   useEffect(() => {
     const openFolderPicker = (event: Event) => {
-      const requester = (event as CustomEvent<{ requester?: string }>).detail?.requester;
+      const requester = (event as CustomEvent<{ requester?: string }>).detail
+        ?.requester;
       if (!requester) return;
       localStorage.setItem("utoolity.files.folder-picker", requester);
       openApp("files");
     };
-    window.addEventListener("utoolity:polygon-folder-request", openFolderPicker);
-    return () => window.removeEventListener("utoolity:polygon-folder-request", openFolderPicker);
+    window.addEventListener(
+      "utoolity:polygon-folder-request",
+      openFolderPicker,
+    );
+    return () =>
+      window.removeEventListener(
+        "utoolity:polygon-folder-request",
+        openFolderPicker,
+      );
   }, []);
 
   useEffect(() => {
@@ -310,21 +609,31 @@ export default function Desktop({ onSleep, onLock, isVisible = true, showChrome 
         openApps,
         activeAppKey,
         context: {
-          boundingBoxFolder: localStorage.getItem("utoolity.bounding-box.folder"),
+          boundingBoxFolder: localStorage.getItem(
+            "utoolity.bounding-box.folder",
+          ),
           polygonFolder: localStorage.getItem("utoolity.polygon.folder"),
         },
       };
       const serializableApps = openApps.map((item) => ({
         app: item.app,
         ...(item.filePath !== undefined ? { filePath: item.filePath } : {}),
-        ...(item.window ? {
-          window: {
-            position: { x: item.window.position.x, y: item.window.position.y },
-            size: { width: item.window.size.width, height: item.window.size.height },
-            maximized: item.window.maximized,
-            minimized: item.window.minimized,
-          },
-        } : {}),
+        ...(item.window
+          ? {
+              window: {
+                position: {
+                  x: item.window.position.x,
+                  y: item.window.position.y,
+                },
+                size: {
+                  width: item.window.size.width,
+                  height: item.window.size.height,
+                },
+                maximized: item.window.maximized,
+                minimized: item.window.minimized,
+              },
+            }
+          : {}),
       }));
       localStorage.setItem(
         `utoolity.open-apps.${workspaceUserId}`,
@@ -332,12 +641,20 @@ export default function Desktop({ onSleep, onLock, isVisible = true, showChrome 
       );
       // Geometry stays local while the pointer moves; send one settled snapshot
       // over the existing authenticated WebSocket after the gesture.
-      window.dispatchEvent(new CustomEvent("utoolity:workspace-state-changed", {
-        detail: workspace,
-      }));
+      window.dispatchEvent(
+        new CustomEvent("utoolity:workspace-state-changed", {
+          detail: workspace,
+        }),
+      );
     }, 350);
     return () => window.clearTimeout(timer);
-  }, [openApps, activeAppKey, workspaceHydrated, workspaceUserId, isSharedViewer]);
+  }, [
+    openApps,
+    activeAppKey,
+    workspaceHydrated,
+    workspaceUserId,
+    isSharedViewer,
+  ]);
 
   const openMenu = (event: MouseEvent<HTMLElement>) => {
     event.preventDefault();
@@ -361,9 +678,13 @@ export default function Desktop({ onSleep, onLock, isVisible = true, showChrome 
       }
     } else if (action === "wallpaper") {
       if (WALLPAPERS.length) {
-        const current = normalizeWallpaperId(root.dataset.wallpaper ?? readWallpaperPreference());
+        const current = normalizeWallpaperId(
+          root.dataset.wallpaper ?? readWallpaperPreference(),
+        );
         const index = WALLPAPERS.findIndex(({ id }) => id === current);
-        saveWallpaperPreference(WALLPAPERS[(index + 1 + WALLPAPERS.length) % WALLPAPERS.length].id);
+        saveWallpaperPreference(
+          WALLPAPERS[(index + 1 + WALLPAPERS.length) % WALLPAPERS.length].id,
+        );
       }
     } else if (action === "theme") {
       const nextTheme = root.classList.contains("dark") ? "light" : "dark";
@@ -377,7 +698,8 @@ export default function Desktop({ onSleep, onLock, isVisible = true, showChrome 
         body: JSON.stringify({ "utoolity.theme": nextTheme }),
       }).catch(() => undefined);
     } else if (action === "icons") {
-      const next = root.dataset.desktopIconSize === "large" ? "medium" : "large";
+      const next =
+        root.dataset.desktopIconSize === "large" ? "medium" : "large";
       root.dataset.desktopIconSize = next;
       localStorage.setItem("utoolity.icon-size", next);
       window.dispatchEvent(new CustomEvent("utoolity:icon-size-changed"));
@@ -417,7 +739,11 @@ export default function Desktop({ onSleep, onLock, isVisible = true, showChrome 
       });
     };
     window.addEventListener("utoolity:wallpaper-changed", persistWallpaper);
-    return () => window.removeEventListener("utoolity:wallpaper-changed", persistWallpaper);
+    return () =>
+      window.removeEventListener(
+        "utoolity:wallpaper-changed",
+        persistWallpaper,
+      );
   }, []);
 
   useEffect(() => {
@@ -444,7 +770,10 @@ export default function Desktop({ onSleep, onLock, isVisible = true, showChrome 
         // The authenticated profile is the source of truth for persisted settings.
         // If it has no explicit theme, use the OS preference rather than a stale
         // theme left by another profile in this browser.
-        if (preferences["utoolity.theme"] === "dark" || preferences["utoolity.theme"] === "light") {
+        if (
+          preferences["utoolity.theme"] === "dark" ||
+          preferences["utoolity.theme"] === "light"
+        ) {
           const savedTheme = preferences["utoolity.theme"];
           localStorage.setItem("utoolity.theme", savedTheme);
           root.classList.toggle("dark", savedTheme === "dark");
@@ -453,7 +782,10 @@ export default function Desktop({ onSleep, onLock, isVisible = true, showChrome 
           setIsDark(savedTheme === "dark");
         } else {
           localStorage.removeItem("utoolity.theme");
-          const deviceTheme = window.matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light";
+          const deviceTheme = window.matchMedia("(prefers-color-scheme: dark)")
+            .matches
+            ? "dark"
+            : "light";
           root.classList.toggle("dark", deviceTheme === "dark");
           root.classList.toggle("light", deviceTheme === "light");
           root.style.colorScheme = deviceTheme;
@@ -463,29 +795,34 @@ export default function Desktop({ onSleep, onLock, isVisible = true, showChrome 
           saveWallpaperPreference(preferences["utoolity.wallpaper"]);
         }
         if (preferences["utoolity.animations"]) {
-          root.dataset.animations = preferences["utoolity.animations"].toLowerCase();
-          root.dataset.animation = preferences["utoolity.animations"].toLowerCase();
+          root.dataset.animations =
+            preferences["utoolity.animations"].toLowerCase();
+          root.dataset.animation =
+            preferences["utoolity.animations"].toLowerCase();
         }
         if (preferences["utoolity.grain"]) {
           root.dataset.grain = preferences["utoolity.grain"].toLowerCase();
-          window.dispatchEvent(new CustomEvent("utoolity:preference-changed", {
-            detail: {
-              key: "utoolity.grain",
-              value: preferences["utoolity.grain"],
-            },
-          }));
+          window.dispatchEvent(
+            new CustomEvent("utoolity:preference-changed", {
+              detail: {
+                key: "utoolity.grain",
+                value: preferences["utoolity.grain"],
+              },
+            }),
+          );
         }
         if (preferences["utoolity.lockscreen"]) {
-          root.dataset.lockscreen = preferences["utoolity.lockscreen"].toLowerCase();
+          root.dataset.lockscreen =
+            preferences["utoolity.lockscreen"].toLowerCase();
         }
         if (preferences["utoolity.icon-size"]) {
-          root.dataset.desktopIconSize = preferences["utoolity.icon-size"].toLowerCase();
+          root.dataset.desktopIconSize =
+            preferences["utoolity.icon-size"].toLowerCase();
         }
       })
       .catch(() => {
         // The desktop can continue with locally cached preferences.
       });
-
   }, []);
 
   return (
@@ -523,64 +860,92 @@ export default function Desktop({ onSleep, onLock, isVisible = true, showChrome 
       {openApps.map(({ app, filePath, window: windowState }, index) => {
         const key = `${app}:${filePath ?? ""}`;
         return (
-        <DesktopWindow
-          key={key}
-          windowKey={key}
-          title={appTitles[app]}
-          active={activeAppKey === key}
-          offset={{ x: (index % 3) * 28, y: (index % 3) * 24 }}
-          initialState={windowState}
-          onStateChange={(nextWindowState) => {
-            updateWindowState(key, nextWindowState);
-            if (!isSharedViewer || sharedPermission === "editor") {
-              window.dispatchEvent(new CustomEvent("utoolity:workspace-state-changed", {
-                detail: {
-                  openApps: openApps.map((item) => `${item.app}:${item.filePath ?? ""}` === key ? { ...item, window: nextWindowState } : item),
-                  activeAppKey,
-                  context: {
-                    boundingBoxFolder: localStorage.getItem("utoolity.bounding-box.folder"),
-                    polygonFolder: localStorage.getItem("utoolity.polygon.folder"),
-                  },
-                },
-              }));
-            }
-          }}
-          onFocus={() => {
-            if (isSharedViewer) {
-              if (sharedPermission === "editor") {
-                setActiveAppKey(key);
-                window.dispatchEvent(new CustomEvent("utoolity:shared-command-outgoing", { detail: { command: "focus-app", payload: key } }));
+          <DesktopWindow
+            key={key}
+            windowKey={key}
+            title={appTitles[app]}
+            active={activeAppKey === key}
+            offset={{ x: (index % 3) * 28, y: (index % 3) * 24 }}
+            initialState={windowState}
+            onStateChange={(nextWindowState) => {
+              updateWindowState(key, nextWindowState);
+              if (!isSharedViewer || sharedPermission === "editor") {
+                window.dispatchEvent(
+                  new CustomEvent("utoolity:workspace-state-changed", {
+                    detail: {
+                      openApps: openApps.map((item) =>
+                        `${item.app}:${item.filePath ?? ""}` === key
+                          ? { ...item, window: nextWindowState }
+                          : item,
+                      ),
+                      activeAppKey,
+                      context: {
+                        boundingBoxFolder: localStorage.getItem(
+                          "utoolity.bounding-box.folder",
+                        ),
+                        polygonFolder: localStorage.getItem(
+                          "utoolity.polygon.folder",
+                        ),
+                      },
+                    },
+                  }),
+                );
               }
-              return;
+            }}
+            onFocus={() => {
+              if (isSharedViewer) {
+                if (sharedPermission === "editor") {
+                  setActiveAppKey(key);
+                  window.dispatchEvent(
+                    new CustomEvent("utoolity:shared-command-outgoing", {
+                      detail: { command: "focus-app", payload: key },
+                    }),
+                  );
+                }
+                return;
+              }
+              setActiveAppKey(key);
+            }}
+            onExpandedChange={(expanded) =>
+              setExpandedAppKey((current) => {
+                if (expanded) return key;
+                return current === key ? null : current;
+              })
             }
-            setActiveAppKey(key);
-          }}
-          onExpandedChange={(expanded) =>
-            setExpandedAppKey((current) => {
-              if (expanded) return key;
-              return current === key ? null : current;
-            })
-          }
-          onClose={() => {
-            closeWindow(key);
-          }}
-          onBack={() => {
-            closeWindow(key);
-          }}
-        >
-          <ToolContent
-            app={app}
-            filePath={filePath}
-            onOpenFile={(path, type) => openApp(type === "image" ? "gallery" : "notepad", path)}
-          />
-        </DesktopWindow>
+            onClose={() => {
+              closeWindow(key);
+            }}
+            onBack={() => {
+              closeWindow(key);
+            }}
+          >
+            <ToolContent
+              app={app}
+              filePath={filePath}
+              onOpenFile={(path, type) =>
+                openApp(type === "image" ? "gallery" : "notepad", path)
+              }
+            />
+          </DesktopWindow>
         );
       })}
       {isSharedViewer && (
         <div className="fixed left-4 top-4 z-1001 flex items-center gap-3 rounded-full border border-border bg-card/90 px-4 py-2 text-xs shadow-lg backdrop-blur-xl">
           <span>Viewing shared desktop</span>
-          <span className="rounded-full bg-primary/10 px-2 py-1 font-semibold">{sharedPermission === "editor" ? "Editor" : "View only"}</span>
-          <button type="button" onClick={() => window.dispatchEvent(new CustomEvent("utoolity:leave-shared-session"))} className="rounded-full border border-border px-2 py-1 hover:bg-muted">Leave</button>
+          <span className="rounded-full bg-primary/10 px-2 py-1 font-semibold">
+            {sharedPermission === "editor" ? "Editor" : "View only"}
+          </span>
+          <button
+            type="button"
+            onClick={() =>
+              window.dispatchEvent(
+                new CustomEvent("utoolity:leave-shared-session"),
+              )
+            }
+            className="rounded-full border border-border px-2 py-1 hover:bg-muted"
+          >
+            Leave
+          </button>
         </div>
       )}
       <CollaborationPanel />

@@ -1,4 +1,3 @@
-
 "use client";
 
 import { useState } from "react";
@@ -47,8 +46,7 @@ const sections = [
 type SectionId = (typeof sections)[number]["id"];
 
 export default function Settings() {
-  const [activeSection, setActiveSection] =
-    useState<SectionId>("appearance");
+  const [activeSection, setActiveSection] = useState<SectionId>("appearance");
   const [query, setQuery] = useState("");
 
   const normalizedQuery = query.trim().toLowerCase();
@@ -134,9 +132,7 @@ export default function Settings() {
           <div className="border-t border-border p-3">
             <div className="flex items-center gap-2 text-muted-foreground">
               <Settings2 size={16} />
-              <span className="hidden text-sm sm:block">
-                System settings
-              </span>
+              <span className="hidden text-sm sm:block">System settings</span>
             </div>
           </div>
         </aside>

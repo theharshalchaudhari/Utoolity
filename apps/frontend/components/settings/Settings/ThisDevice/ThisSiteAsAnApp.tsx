@@ -1,4 +1,3 @@
-
 "use client";
 
 import { useState } from "react";
@@ -15,9 +14,9 @@ export default function ThisSiteAsAnApp() {
           <h3 className="text-sm font-semibold">This site as an app</h3>
 
           <p className="max-w-lg rounded-2xl bg-muted px-3.5 py-3 text-xs leading-5 text-muted-foreground">
-            Use your browser&apos;s menu and choose &quot;Install
-            app&quot; or &quot;Add to Home Screen&quot; to install this
-            desktop experience when your browser supports it.
+            Use your browser&apos;s menu and choose &quot;Install app&quot; or
+            &quot;Add to Home Screen&quot; to install this desktop experience
+            when your browser supports it.
           </p>
 
           <button

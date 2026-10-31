@@ -3,12 +3,30 @@
 @import "@repo/theme/custom.css";
 
 /* Prefer local Bibata cursor assets with native fallbacks. */
-html, body, button, a, [role="button"], input, textarea, select, summary {
-  cursor: url("/cursors/bibata-pointer.svg") 4 2, auto;
+html,
+body,
+button,
+a,
+[role="button"],
+input,
+textarea,
+select,
+summary {
+  cursor:
+    url("/cursors/bibata-pointer.svg") 4 2,
+    auto;
 }
-button, a, [role="button"], summary {
-  cursor: url("/cursors/bibata-hand.svg") 8 2, pointer;
+button,
+a,
+[role="button"],
+summary {
+  cursor:
+    url("/cursors/bibata-hand.svg") 8 2,
+    pointer;
 }
-input[type="text"], input[type="password"], textarea, [contenteditable="true"] {
+input[type="text"],
+input[type="password"],
+textarea,
+[contenteditable="true"] {
   cursor: text;
 }

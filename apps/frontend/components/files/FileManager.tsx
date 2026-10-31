@@ -1,4 +1,3 @@
-
 "use client";
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
@@ -25,7 +24,14 @@ import {
   X,
 } from "lucide-react";
 import { api, API_URL } from "@/lib/api";
-import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@repo/ui/shadcn/dialog";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@repo/ui/shadcn/dialog";
 
 type Entry = {
   name: string;
@@ -51,7 +57,8 @@ type Props = {
 };
 
 const imagePattern = /\.(avif|bmp|gif|jpe?g|png|svg|webp)$/i;
-const textPattern = /\.(txt|md|json|csv|xml|yaml|yml|log|ts|tsx|js|jsx|py|html|css)$/i;
+const textPattern =
+  /\.(txt|md|json|csv|xml|yaml|yml|log|ts|tsx|js|jsx|py|html|css)$/i;
 
 const formatSize = (bytes: number) => {
   if (!Number.isFinite(bytes) || bytes < 0) return "0 B";
@@ -86,7 +93,9 @@ export default function FileManager({ onOpenFile }: Props) {
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [folderDialogOpen, setFolderDialogOpen] = useState(false);
   const [folderPickerMode, setFolderPickerMode] = useState(false);
-  const [folderPickerRequester, setFolderPickerRequester] = useState<string | null>(null);
+  const [folderPickerRequester, setFolderPickerRequester] = useState<
+    string | null
+  >(null);
   const [query, setQuery] = useState("");
   const [busy, setBusy] = useState(false);
   const [storageUsage, setStorageUsage] = useState<StorageUsage | null>(null);
@@ -96,60 +105,63 @@ export default function FileManager({ onOpenFile }: Props) {
   const folderInputRef = useRef<HTMLInputElement>(null);
   const menuRef = useRef<HTMLDivElement>(null);
 
-  const load = useCallback(async (nextPath = path) => {
-    setLoading(true);
-    setError(null);
+  const load = useCallback(
+    async (nextPath = path) => {
+      setLoading(true);
+      setError(null);
 
-    try {
-      const result = await api<{ entries: Entry[] }>(
-        `/api/storage/list?path=${encodeURIComponent(nextPath)}`,
-      );
+      try {
+        const result = await api<{ entries: Entry[] }>(
+          `/api/storage/list?path=${encodeURIComponent(nextPath)}`,
+        );
 
-      const sorted = [...(result.entries ?? [])].sort((a, b) =>
-        a.type === b.type
-          ? a.name.localeCompare(b.name)
-          : a.type === "directory"
-            ? -1
-            : 1,
-      );
+        const sorted = [...(result.entries ?? [])].sort((a, b) =>
+          a.type === b.type
+            ? a.name.localeCompare(b.name)
+            : a.type === "directory"
+              ? -1
+              : 1,
+        );
 
-      setEntries(sorted);
+        setEntries(sorted);
 
-      // Storage information is optional and must not block file browsing.
-      void api<StorageUsage>("/api/storage/usage")
-        .then((usage) => {
-          if (
-            Number.isFinite(usage.totalBytes) &&
-            Number.isFinite(usage.usedBytes) &&
-            Number.isFinite(usage.availableBytes) &&
-            usage.totalBytes >= 0 &&
-            usage.usedBytes >= 0 &&
-            usage.availableBytes >= 0
-          ) {
-            setStorageUsage(usage);
-          }
-        })
-        .catch(() => undefined);
+        // Storage information is optional and must not block file browsing.
+        void api<StorageUsage>("/api/storage/usage")
+          .then((usage) => {
+            if (
+              Number.isFinite(usage.totalBytes) &&
+              Number.isFinite(usage.usedBytes) &&
+              Number.isFinite(usage.availableBytes) &&
+              usage.totalBytes >= 0 &&
+              usage.usedBytes >= 0 &&
+              usage.availableBytes >= 0
+            ) {
+              setStorageUsage(usage);
+            }
+          })
+          .catch(() => undefined);
 
-      setPath(nextPath);
-      localStorage.setItem("utoolity.files.path", nextPath);
-      setSelected(null);
-      setMenuOpen(false);
-    } catch (loadError) {
-      const message =
-        loadError instanceof Error
-          ? loadError.message
-          : "Unable to load files.";
+        setPath(nextPath);
+        localStorage.setItem("utoolity.files.path", nextPath);
+        setSelected(null);
+        setMenuOpen(false);
+      } catch (loadError) {
+        const message =
+          loadError instanceof Error
+            ? loadError.message
+            : "Unable to load files.";
 
-      // File Manager reports the storage operation's actual error. Desktop
-      // authentication is owned by the shell, not by individual applications.
-      setError(message);
+        // File Manager reports the storage operation's actual error. Desktop
+        // authentication is owned by the shell, not by individual applications.
+        setError(message);
 
-      setEntries([]);
-    } finally {
-      setLoading(false);
-    }
-  }, [path]);
+        setEntries([]);
+      } finally {
+        setLoading(false);
+      }
+    },
+    [path],
+  );
 
   useEffect(() => {
     const requester = localStorage.getItem("utoolity.files.folder-picker");
@@ -174,9 +186,8 @@ export default function FileManager({ onOpenFile }: Props) {
 
   useEffect(() => {
     const openPicker = (event: Event) => {
-      const requester = (
-        event as CustomEvent<{ requester?: string }>
-      ).detail?.requester;
+      const requester = (event as CustomEvent<{ requester?: string }>).detail
+        ?.requester;
 
       if (!requester) return;
 
@@ -196,10 +207,7 @@ export default function FileManager({ onOpenFile }: Props) {
 
   useEffect(() => {
     const closeMenu = (event: MouseEvent) => {
-      if (
-        menuRef.current &&
-        !menuRef.current.contains(event.target as Node)
-      ) {
+      if (menuRef.current && !menuRef.current.contains(event.target as Node)) {
         setMenuOpen(false);
       }
     };
@@ -212,9 +220,7 @@ export default function FileManager({ onOpenFile }: Props) {
     const normalized = query.trim().toLowerCase();
 
     return normalized
-      ? entries.filter((entry) =>
-          entry.name.toLowerCase().includes(normalized),
-        )
+      ? entries.filter((entry) => entry.name.toLowerCase().includes(normalized))
       : entries;
   }, [entries, query]);
 
@@ -256,9 +262,7 @@ export default function FileManager({ onOpenFile }: Props) {
         await load(path);
       } catch (cause) {
         setError(
-          cause instanceof Error
-            ? cause.message
-            : "Unable to create folder.",
+          cause instanceof Error ? cause.message : "Unable to create folder.",
         );
       }
     });
@@ -273,16 +277,15 @@ export default function FileManager({ onOpenFile }: Props) {
 
       const relativePaths = selectedFiles.map(
         (file) =>
-          (file as File & { webkitRelativePath?: string })
-            .webkitRelativePath || file.name,
+          (file as File & { webkitRelativePath?: string }).webkitRelativePath ||
+          file.name,
       );
 
       const folderRoot = relativePaths
         .map((value) => value.split("/")[0])
         .find(
           (root) =>
-            root &&
-            relativePaths.some((value) => value.startsWith(`${root}/`)),
+            root && relativePaths.some((value) => value.startsWith(`${root}/`)),
         );
 
       form.append("relativePaths", JSON.stringify(relativePaths));
@@ -318,13 +321,23 @@ export default function FileManager({ onOpenFile }: Props) {
   const renameSelected = async () => {
     if (!selected) return;
     const name = renameName.trim();
-    if (!name || name === selected.name || name === "." || name === ".." || name.includes("/") || name.includes("\\")) {
+    if (
+      !name ||
+      name === selected.name ||
+      name === "." ||
+      name === ".." ||
+      name.includes("/") ||
+      name.includes("\\")
+    ) {
       setError("Enter a different valid name without path separators.");
       return;
     }
     await withBusy(async () => {
       try {
-        await api("/api/storage/rename", { method: "POST", body: JSON.stringify({ path: selected.path, name }) });
+        await api("/api/storage/rename", {
+          method: "POST",
+          body: JSON.stringify({ path: selected.path, name }),
+        });
         setRenameDialogOpen(false);
         await load(path);
       } catch (cause) {
@@ -341,7 +354,10 @@ export default function FileManager({ onOpenFile }: Props) {
     if (!selected) return;
     await withBusy(async () => {
       try {
-        await api("/api/storage/delete", { method: "POST", body: JSON.stringify({ path: selected.path }) });
+        await api("/api/storage/delete", {
+          method: "POST",
+          body: JSON.stringify({ path: selected.path }),
+        });
         setDeleteDialogOpen(false);
         await load(path);
       } catch (cause) {
@@ -372,10 +388,7 @@ export default function FileManager({ onOpenFile }: Props) {
       setQuery("");
       void load(entry.path);
     } else if (isImage(entry.name) || textPattern.test(entry.name)) {
-      onOpenFile?.(
-        entry.path,
-        isImage(entry.name) ? "image" : "text",
-      );
+      onOpenFile?.(entry.path, isImage(entry.name) ? "image" : "text");
     } else {
       window.open(
         `${API_URL}/api/storage/download?path=${encodeURIComponent(entry.path)}`,
@@ -407,16 +420,15 @@ export default function FileManager({ onOpenFile }: Props) {
       ? "server"
       : path.split("/").slice(0, -1).join("/") || "server";
 
-  const breadcrumbs = path.split("/").filter((part) => part && part !== "server");
+  const breadcrumbs = path
+    .split("/")
+    .filter((part) => part && part !== "server");
 
   const storagePercent =
     storageUsage && storageUsage.totalBytes > 0
       ? Math.min(
           100,
-          Math.max(
-            0,
-            (storageUsage.usedBytes / storageUsage.totalBytes) * 100,
-          ),
+          Math.max(0, (storageUsage.usedBytes / storageUsage.totalBytes) * 100),
         )
       : 0;
 
@@ -635,7 +647,11 @@ export default function FileManager({ onOpenFile }: Props) {
                   <button
                     type="button"
                     aria-label={`Open ${entry.name}`}
-                    onClick={(event) => { event.stopPropagation(); setSelected(entry); setMenuOpen(false); }}
+                    onClick={(event) => {
+                      event.stopPropagation();
+                      setSelected(entry);
+                      setMenuOpen(false);
+                    }}
                     className="block w-full text-left"
                   >
                     <div
@@ -733,40 +749,45 @@ export default function FileManager({ onOpenFile }: Props) {
                           </a>
                         )}
 
-                        {!directory && entry.name.toLowerCase().endsWith(".zip") && (
-                          <button
-                            type="button"
-                            onClick={() =>
-                              void withBusy(async () => {
-                                try {
-                                  await api("/api/storage/extract", {
-                                    method: "POST",
-                                    body: JSON.stringify({
-                                      path: `${path}/${entry.name}`,
-                                    }),
-                                  });
+                        {!directory &&
+                          entry.name.toLowerCase().endsWith(".zip") && (
+                            <button
+                              type="button"
+                              onClick={() =>
+                                void withBusy(async () => {
+                                  try {
+                                    await api("/api/storage/extract", {
+                                      method: "POST",
+                                      body: JSON.stringify({
+                                        path: `${path}/${entry.name}`,
+                                      }),
+                                    });
 
-                                  await load(path);
-                                  setMenuOpen(false);
-                                } catch (cause) {
-                                  setError(
-                                    cause instanceof Error
-                                      ? cause.message
-                                      : "Unable to extract archive.",
-                                  );
-                                }
-                              })
-                            }
-                            className="flex w-full items-center gap-2 rounded-lg px-3 py-2 text-left text-sm hover:bg-accent"
-                          >
-                            <Archive className="size-4" />
-                            Extract here
-                          </button>
-                        )}
+                                    await load(path);
+                                    setMenuOpen(false);
+                                  } catch (cause) {
+                                    setError(
+                                      cause instanceof Error
+                                        ? cause.message
+                                        : "Unable to extract archive.",
+                                    );
+                                  }
+                                })
+                              }
+                              className="flex w-full items-center gap-2 rounded-lg px-3 py-2 text-left text-sm hover:bg-accent"
+                            >
+                              <Archive className="size-4" />
+                              Extract here
+                            </button>
+                          )}
 
                         <button
                           type="button"
-                          onClick={() => { setRenameName(selected?.name ?? ""); setRenameDialogOpen(true); setMenuOpen(false); }}
+                          onClick={() => {
+                            setRenameName(selected?.name ?? "");
+                            setRenameDialogOpen(true);
+                            setMenuOpen(false);
+                          }}
                           className="flex w-full items-center gap-2 rounded-lg px-3 py-2 text-left text-sm hover:bg-accent"
                         >
                           <Pencil className="size-4" />
@@ -978,13 +999,39 @@ export default function FileManager({ onOpenFile }: Props) {
         <DialogContent>
           <DialogHeader>
             <DialogTitle>Rename item</DialogTitle>
-            <DialogDescription>Enter a new name. Path separators are not allowed.</DialogDescription>
+            <DialogDescription>
+              Enter a new name. Path separators are not allowed.
+            </DialogDescription>
           </DialogHeader>
-          <form onSubmit={(event) => { event.preventDefault(); void renameSelected(); }} className="space-y-4">
-            <input autoFocus value={renameName} onChange={(event) => setRenameName(event.target.value)} maxLength={180} className="w-full rounded-xl border border-input bg-background px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-ring" />
+          <form
+            onSubmit={(event) => {
+              event.preventDefault();
+              void renameSelected();
+            }}
+            className="space-y-4"
+          >
+            <input
+              autoFocus
+              value={renameName}
+              onChange={(event) => setRenameName(event.target.value)}
+              maxLength={180}
+              className="w-full rounded-xl border border-input bg-background px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-ring"
+            />
             <DialogFooter>
-              <button type="button" onClick={() => setRenameDialogOpen(false)} className="rounded-lg border border-border px-4 py-2 text-sm font-semibold">Cancel</button>
-              <button type="submit" disabled={!renameName.trim() || busy} className="rounded-lg bg-primary px-4 py-2 text-sm font-bold text-primary-foreground disabled:opacity-50">Rename</button>
+              <button
+                type="button"
+                onClick={() => setRenameDialogOpen(false)}
+                className="rounded-lg border border-border px-4 py-2 text-sm font-semibold"
+              >
+                Cancel
+              </button>
+              <button
+                type="submit"
+                disabled={!renameName.trim() || busy}
+                className="rounded-lg bg-primary px-4 py-2 text-sm font-bold text-primary-foreground disabled:opacity-50"
+              >
+                Rename
+              </button>
             </DialogFooter>
           </form>
         </DialogContent>
@@ -992,12 +1039,32 @@ export default function FileManager({ onOpenFile }: Props) {
       <Dialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>Delete {selected?.type === "directory" ? "folder" : "file"}?</DialogTitle>
-            <DialogDescription>Delete “{selected?.name}”? {selected?.type === "directory" ? "Everything inside this folder will also be deleted." : "This action cannot be undone."}</DialogDescription>
+            <DialogTitle>
+              Delete {selected?.type === "directory" ? "folder" : "file"}?
+            </DialogTitle>
+            <DialogDescription>
+              Delete “{selected?.name}”?{" "}
+              {selected?.type === "directory"
+                ? "Everything inside this folder will also be deleted."
+                : "This action cannot be undone."}
+            </DialogDescription>
           </DialogHeader>
           <DialogFooter>
-            <button type="button" onClick={() => setDeleteDialogOpen(false)} className="rounded-lg border border-border px-4 py-2 text-sm font-semibold">Cancel</button>
-            <button type="button" onClick={() => void confirmDelete()} disabled={busy} className="rounded-lg bg-destructive px-4 py-2 text-sm font-bold text-white disabled:opacity-50">Delete</button>
+            <button
+              type="button"
+              onClick={() => setDeleteDialogOpen(false)}
+              className="rounded-lg border border-border px-4 py-2 text-sm font-semibold"
+            >
+              Cancel
+            </button>
+            <button
+              type="button"
+              onClick={() => void confirmDelete()}
+              disabled={busy}
+              className="rounded-lg bg-destructive px-4 py-2 text-sm font-bold text-white disabled:opacity-50"
+            >
+              Delete
+            </button>
           </DialogFooter>
         </DialogContent>
       </Dialog>

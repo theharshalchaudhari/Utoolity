@@ -2,9 +2,11 @@
 
 export default function BoundingBoxImportButton() {
   const requestFolder = () => {
-    window.dispatchEvent(new CustomEvent("utoolity:polygon-folder-request", {
-      detail: { requester: "bounding-box" },
-    }));
+    window.dispatchEvent(
+      new CustomEvent("utoolity:polygon-folder-request", {
+        detail: { requester: "bounding-box" },
+      }),
+    );
   };
 
   return (

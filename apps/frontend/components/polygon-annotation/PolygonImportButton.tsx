@@ -2,9 +2,11 @@
 
 export default function PolygonImportButton() {
   const requestFolder = () => {
-    window.dispatchEvent(new CustomEvent("utoolity:polygon-folder-request", {
-      detail: { requester: "polygon-annotation" },
-    }));
+    window.dispatchEvent(
+      new CustomEvent("utoolity:polygon-folder-request", {
+        detail: { requester: "polygon-annotation" },
+      }),
+    );
   };
 
   return (

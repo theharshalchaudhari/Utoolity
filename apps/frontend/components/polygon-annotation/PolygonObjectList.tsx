@@ -23,8 +23,12 @@ export default function PolygonObjectList({
               : "border-sidebar-border bg-sidebar-accent/50"
           }`}
         >
-          <span className="truncate">{index + 1}. {polygon.label}</span>
-          <span className="shrink-0 text-sidebar-foreground/60">{polygon.points.length}</span>
+          <span className="truncate">
+            {index + 1}. {polygon.label}
+          </span>
+          <span className="shrink-0 text-sidebar-foreground/60">
+            {polygon.points.length}
+          </span>
         </div>
       ))}
     </div>

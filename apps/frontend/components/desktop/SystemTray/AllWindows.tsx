@@ -77,17 +77,31 @@ export default function AllWindows({ windows, onFocus, onClose }: Props) {
                     className="flex min-w-0 flex-1 items-center gap-2 rounded-xl px-2.5 py-2 text-left text-sm hover:bg-accent"
                   >
                     {window.minimized ? (
-                      <Minus size={14} className="shrink-0 text-muted-foreground" />
+                      <Minus
+                        size={14}
+                        className="shrink-0 text-muted-foreground"
+                      />
                     ) : window.maximized ? (
                       <Maximize2 size={14} className="shrink-0 text-primary" />
                     ) : window.active ? (
                       <Check size={14} className="shrink-0 text-primary" />
                     ) : (
-                      <AppWindow size={14} className="shrink-0 text-muted-foreground" />
+                      <AppWindow
+                        size={14}
+                        className="shrink-0 text-muted-foreground"
+                      />
                     )}
-                    <span className="min-w-0 flex-1 truncate">{window.title}</span>
+                    <span className="min-w-0 flex-1 truncate">
+                      {window.title}
+                    </span>
                     <span className="text-[10px] text-muted-foreground">
-                      {window.minimized ? "Minimized" : window.maximized ? "Full" : window.active ? "Active" : "Open"}
+                      {window.minimized
+                        ? "Minimized"
+                        : window.maximized
+                          ? "Full"
+                          : window.active
+                            ? "Active"
+                            : "Open"}
                     </span>
                   </button>
                   <button

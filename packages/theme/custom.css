@@ -35,12 +35,11 @@
   }
 
   .desktop-window {
-    background:
-      linear-gradient(
-        135deg,
-        color-mix(in oklab, var(--card) 92%, transparent),
-        color-mix(in oklab, var(--background) 86%, transparent)
-      );
+    background: linear-gradient(
+      135deg,
+      color-mix(in oklab, var(--card) 92%, transparent),
+      color-mix(in oklab, var(--background) 86%, transparent)
+    );
     backdrop-filter: blur(32px) saturate(1.25);
   }
 
@@ -50,15 +49,31 @@
 
   .desktop-background-wash {
     background:
-      radial-gradient(ellipse 50% 38% at 25% 20%, color-mix(in oklab, #7c3aed 18%, transparent), transparent 70%),
-      radial-gradient(ellipse 45% 35% at 78% 25%, color-mix(in oklab, #06b6d4 15%, transparent), transparent 70%),
-      radial-gradient(ellipse 55% 40% at 55% 90%, color-mix(in oklab, #ec4899 12%, transparent), transparent 72%);
+      radial-gradient(
+        ellipse 50% 38% at 25% 20%,
+        color-mix(in oklab, #7c3aed 18%, transparent),
+        transparent 70%
+      ),
+      radial-gradient(
+        ellipse 45% 35% at 78% 25%,
+        color-mix(in oklab, #06b6d4 15%, transparent),
+        transparent 70%
+      ),
+      radial-gradient(
+        ellipse 55% 40% at 55% 90%,
+        color-mix(in oklab, #ec4899 12%, transparent),
+        transparent 72%
+      );
     filter: blur(18px) saturate(1.15);
     transform: scale(1.08);
   }
 
   .desktop-background-vignette {
-    background: radial-gradient(ellipse at center, transparent 25%, color-mix(in oklab, var(--background) 38%, transparent) 100%);
+    background: radial-gradient(
+      ellipse at center,
+      transparent 25%,
+      color-mix(in oklab, var(--background) 38%, transparent) 100%
+    );
   }
 
   [data-wallpaper="bloom"] .desktop-background {
@@ -214,20 +229,44 @@
       linear-gradient(145deg, #020617, #1e1b4b 52%, #0f172a);
   }
 
-  [data-wallpaper="bloom"] .lockscreen-wallpaper { background: linear-gradient(135deg, #170b2f, #2a123f 48%, #090d1d); }
-  [data-wallpaper="mesh"] .lockscreen-wallpaper { background: linear-gradient(135deg, #071c2b, #111a45 52%, #241044); }
-  [data-wallpaper="horizon"] .lockscreen-wallpaper { background: linear-gradient(180deg, #19133b, #101b42 54%, #082d35); }
-  [data-wallpaper="aurora"] .lockscreen-wallpaper { background: linear-gradient(135deg, #11143a, #062d35 50%, #280f2d); }
-  [data-wallpaper="dunes"] .lockscreen-wallpaper { background: linear-gradient(145deg, #29152c, #1a2938 52%, #082e32); }
+  [data-wallpaper="bloom"] .lockscreen-wallpaper {
+    background: linear-gradient(135deg, #170b2f, #2a123f 48%, #090d1d);
+  }
+  [data-wallpaper="mesh"] .lockscreen-wallpaper {
+    background: linear-gradient(135deg, #071c2b, #111a45 52%, #241044);
+  }
+  [data-wallpaper="horizon"] .lockscreen-wallpaper {
+    background: linear-gradient(180deg, #19133b, #101b42 54%, #082d35);
+  }
+  [data-wallpaper="aurora"] .lockscreen-wallpaper {
+    background: linear-gradient(135deg, #11143a, #062d35 50%, #280f2d);
+  }
+  [data-wallpaper="dunes"] .lockscreen-wallpaper {
+    background: linear-gradient(145deg, #29152c, #1a2938 52%, #082e32);
+  }
   [data-wallpaper="orbit"] .lockscreen-wallpaper,
-  [data-wallpaper="nightfall"] .lockscreen-wallpaper { background: linear-gradient(135deg, #030712, #0f1b3d 56%, #10152e); }
-  [data-wallpaper="plain"] .lockscreen-wallpaper { background: #0f172a; }
-  [data-wallpaper="gemini"] .lockscreen-wallpaper { background: linear-gradient(135deg, #142b62, #55318e 52%, #381b58); }
-  [data-wallpaper="chroma"] .lockscreen-wallpaper { background: linear-gradient(135deg, #073a3d, #551b42 55%, #4a2a0b); }
-  [data-wallpaper="expressive"] .lockscreen-wallpaper { background: linear-gradient(135deg, #21134d, #451a4c 52%, #102d5d); }
+  [data-wallpaper="nightfall"] .lockscreen-wallpaper {
+    background: linear-gradient(135deg, #030712, #0f1b3d 56%, #10152e);
+  }
+  [data-wallpaper="plain"] .lockscreen-wallpaper {
+    background: #0f172a;
+  }
+  [data-wallpaper="gemini"] .lockscreen-wallpaper {
+    background: linear-gradient(135deg, #142b62, #55318e 52%, #381b58);
+  }
+  [data-wallpaper="chroma"] .lockscreen-wallpaper {
+    background: linear-gradient(135deg, #073a3d, #551b42 55%, #4a2a0b);
+  }
+  [data-wallpaper="expressive"] .lockscreen-wallpaper {
+    background: linear-gradient(135deg, #21134d, #451a4c 52%, #102d5d);
+  }
   [data-wallpaper="pixel"] .lockscreen-wallpaper,
-  [data-wallpaper="swatches"] .lockscreen-wallpaper { background: linear-gradient(135deg, #15245a, #4a2c1b 52%, #082f32); }
-  [data-wallpaper="ribbons"] .lockscreen-wallpaper { background: linear-gradient(135deg, #1a1647, #084b61 52%, #101d4a); }
+  [data-wallpaper="swatches"] .lockscreen-wallpaper {
+    background: linear-gradient(135deg, #15245a, #4a2c1b 52%, #082f32);
+  }
+  [data-wallpaper="ribbons"] .lockscreen-wallpaper {
+    background: linear-gradient(135deg, #1a1647, #084b61 52%, #101d4a);
+  }
 
   .desktop-logo {
     filter: brightness(0) invert(1);
@@ -237,14 +276,21 @@
     color: var(--popover-foreground);
     background: color-mix(in oklab, var(--popover) 96%, transparent);
     border: 1px solid color-mix(in oklab, var(--border) 88%, transparent);
-    box-shadow: 0 18px 50px color-mix(in oklab, var(--foreground) 18%, transparent);
+    box-shadow: 0 18px 50px
+      color-mix(in oklab, var(--foreground) 18%, transparent);
     backdrop-filter: blur(24px) saturate(1.2);
     animation: desktop-menu-in 140ms cubic-bezier(0.22, 1, 0.36, 1);
   }
 
   @keyframes desktop-menu-in {
-    from { opacity: 0; transform: scale(0.96); }
-    to { opacity: 1; transform: scale(1); }
+    from {
+      opacity: 0;
+      transform: scale(0.96);
+    }
+    to {
+      opacity: 1;
+      transform: scale(1);
+    }
   }
 
   .desktop-canvas,
@@ -273,7 +319,8 @@
   }
 
   .desktop-app-art-reverse {
-    animation: desktop-icon-hover-reverse 420ms cubic-bezier(0.22, 1, 0.36, 1) forwards;
+    animation: desktop-icon-hover-reverse 420ms cubic-bezier(0.22, 1, 0.36, 1)
+      forwards;
   }
 
   @keyframes desktop-icon-hover {
@@ -282,12 +329,12 @@
     }
   }
 
-    @keyframes desktop-icon-hover-reverse {
-      0% {
-        transform: translateY(-2px) scale(1.08) rotate(0deg);
-      }
-      100% {
-        transform: translateY(0) scale(1) rotate(0deg);
+  @keyframes desktop-icon-hover-reverse {
+    0% {
+      transform: translateY(-2px) scale(1.08) rotate(0deg);
+    }
+    100% {
+      transform: translateY(0) scale(1) rotate(0deg);
     }
     45% {
       transform: translateY(-7px) scale(1.16) rotate(-4deg);
@@ -434,7 +481,6 @@
     background: transparent !important;
     background-color: transparent !important;
   }
-
 }
 
 :root {
@@ -455,61 +501,108 @@
   }
 
   @layer components {
-    .desktop-background { background: var(--background); }
+    .desktop-background {
+      background: var(--background);
+    }
 
     .desktop-background-wash {
       background:
-        radial-gradient(ellipse 50% 38% at 25% 20%, color-mix(in oklab, #7c3aed 18%, transparent), transparent 70%),
-        radial-gradient(ellipse 45% 35% at 78% 25%, color-mix(in oklab, #06b6d4 15%, transparent), transparent 70%),
-        radial-gradient(ellipse 55% 40% at 55% 90%, color-mix(in oklab, #ec4899 12%, transparent), transparent 72%);
+        radial-gradient(
+          ellipse 50% 38% at 25% 20%,
+          color-mix(in oklab, #7c3aed 18%, transparent),
+          transparent 70%
+        ),
+        radial-gradient(
+          ellipse 45% 35% at 78% 25%,
+          color-mix(in oklab, #06b6d4 15%, transparent),
+          transparent 70%
+        ),
+        radial-gradient(
+          ellipse 55% 40% at 55% 90%,
+          color-mix(in oklab, #ec4899 12%, transparent),
+          transparent 72%
+        );
       filter: blur(18px) saturate(1.15);
       transform: scale(1.08);
     }
 
     [data-wallpaper="bloom"] .desktop-background {
-      background: radial-gradient(ellipse at 18% 20%, #db2777 0%, transparent 42%), radial-gradient(ellipse at 82% 78%, #7c3aed 0%, transparent 46%), linear-gradient(135deg, #170b2f, #2a123f 48%, #090d1d);
+      background:
+        radial-gradient(ellipse at 18% 20%, #db2777 0%, transparent 42%),
+        radial-gradient(ellipse at 82% 78%, #7c3aed 0%, transparent 46%),
+        linear-gradient(135deg, #170b2f, #2a123f 48%, #090d1d);
     }
 
     [data-wallpaper="mesh"] .desktop-background {
-      background: radial-gradient(ellipse at 20% 15%, #14b8a6 0%, transparent 38%), radial-gradient(ellipse at 85% 70%, #2563eb 0%, transparent 42%), linear-gradient(135deg, #071c2b, #111a45 52%, #241044);
+      background:
+        radial-gradient(ellipse at 20% 15%, #14b8a6 0%, transparent 38%),
+        radial-gradient(ellipse at 85% 70%, #2563eb 0%, transparent 42%),
+        linear-gradient(135deg, #071c2b, #111a45 52%, #241044);
     }
 
     [data-wallpaper="horizon"] .desktop-background {
-      background: radial-gradient(ellipse at 50% 0%, #8b5cf6 0%, transparent 40%), radial-gradient(ellipse at 70% 100%, #10b981 0%, transparent 45%), linear-gradient(180deg, #19133b, #101b42 54%, #082d35);
+      background:
+        radial-gradient(ellipse at 50% 0%, #8b5cf6 0%, transparent 40%),
+        radial-gradient(ellipse at 70% 100%, #10b981 0%, transparent 45%),
+        linear-gradient(180deg, #19133b, #101b42 54%, #082d35);
     }
 
     [data-wallpaper="aurora"] .desktop-background {
-      background: radial-gradient(ellipse at 12% 20%, #22c55e 0%, transparent 38%), radial-gradient(ellipse at 88% 15%, #e11d48 0%, transparent 35%), linear-gradient(135deg, #11143a, #062d35 50%, #280f2d);
+      background:
+        radial-gradient(ellipse at 12% 20%, #22c55e 0%, transparent 38%),
+        radial-gradient(ellipse at 88% 15%, #e11d48 0%, transparent 35%),
+        linear-gradient(135deg, #11143a, #062d35 50%, #280f2d);
     }
 
     [data-wallpaper="dunes"] .desktop-background {
-      background: radial-gradient(ellipse at 25% 15%, #fb7185 0%, transparent 40%), radial-gradient(ellipse at 80% 88%, #14b8a6 0%, transparent 40%), linear-gradient(145deg, #29152c, #1a2938 52%, #082e32);
+      background:
+        radial-gradient(ellipse at 25% 15%, #fb7185 0%, transparent 40%),
+        radial-gradient(ellipse at 80% 88%, #14b8a6 0%, transparent 40%),
+        linear-gradient(145deg, #29152c, #1a2938 52%, #082e32);
     }
 
     [data-wallpaper="gemini"] .desktop-background {
-      background: radial-gradient(ellipse at 12% 14%, #38bdf8 0%, transparent 40%), radial-gradient(ellipse at 82% 74%, #f472b6 0%, transparent 45%), linear-gradient(135deg, #142b62, #55318e 52%, #381b58);
+      background:
+        radial-gradient(ellipse at 12% 14%, #38bdf8 0%, transparent 40%),
+        radial-gradient(ellipse at 82% 74%, #f472b6 0%, transparent 45%),
+        linear-gradient(135deg, #142b62, #55318e 52%, #381b58);
     }
 
     [data-wallpaper="chroma"] .desktop-background {
-      background: radial-gradient(ellipse at 20% 20%, #34d399 0%, transparent 38%), radial-gradient(ellipse at 82% 78%, #f59e0b 0%, transparent 42%), linear-gradient(135deg, #073a3d, #551b42 55%, #4a2a0b);
+      background:
+        radial-gradient(ellipse at 20% 20%, #34d399 0%, transparent 38%),
+        radial-gradient(ellipse at 82% 78%, #f59e0b 0%, transparent 42%),
+        linear-gradient(135deg, #073a3d, #551b42 55%, #4a2a0b);
     }
 
     [data-wallpaper="expressive"] .desktop-background {
-      background: radial-gradient(ellipse at 20% 10%, #a78bfa 0%, transparent 38%), radial-gradient(ellipse at 80% 90%, #fb7185 0%, transparent 44%), linear-gradient(135deg, #21134d, #451a4c 52%, #102d5d);
+      background:
+        radial-gradient(ellipse at 20% 10%, #a78bfa 0%, transparent 38%),
+        radial-gradient(ellipse at 80% 90%, #fb7185 0%, transparent 44%),
+        linear-gradient(135deg, #21134d, #451a4c 52%, #102d5d);
     }
 
     [data-wallpaper="pixel"] .desktop-background,
     [data-wallpaper="swatches"] .desktop-background {
-      background: radial-gradient(ellipse at 20% 20%, #f59e0b 0%, transparent 35%), radial-gradient(ellipse at 80% 80%, #10b981 0%, transparent 42%), linear-gradient(135deg, #15245a, #4a2c1b 52%, #082f32);
+      background:
+        radial-gradient(ellipse at 20% 20%, #f59e0b 0%, transparent 35%),
+        radial-gradient(ellipse at 80% 80%, #10b981 0%, transparent 42%),
+        linear-gradient(135deg, #15245a, #4a2c1b 52%, #082f32);
     }
 
     [data-wallpaper="ribbons"] .desktop-background {
-      background: radial-gradient(ellipse at 14% 80%, #22d3ee 0%, transparent 38%), radial-gradient(ellipse at 85% 15%, #8b5cf6 0%, transparent 42%), linear-gradient(135deg, #1a1647, #084b61 52%, #101d4a);
+      background:
+        radial-gradient(ellipse at 14% 80%, #22d3ee 0%, transparent 38%),
+        radial-gradient(ellipse at 85% 15%, #8b5cf6 0%, transparent 42%),
+        linear-gradient(135deg, #1a1647, #084b61 52%, #101d4a);
     }
 
     [data-wallpaper="orbit"] .desktop-background,
     [data-wallpaper="nightfall"] .desktop-background {
-      background: radial-gradient(ellipse at 70% 18%, #2563eb 0%, transparent 42%), radial-gradient(ellipse at 25% 82%, #4c1d95 0%, transparent 42%), linear-gradient(135deg, #030712, #0f1b3d 56%, #10152e);
+      background:
+        radial-gradient(ellipse at 70% 18%, #2563eb 0%, transparent 42%),
+        radial-gradient(ellipse at 25% 82%, #4c1d95 0%, transparent 42%),
+        linear-gradient(135deg, #030712, #0f1b3d 56%, #10152e);
     }
 
     [data-wallpaper="plain"] .desktop-background {
@@ -525,30 +618,29 @@
     }
   }
 
-
-/*
+  /*
  * The native cursor is hidden globally. CustomCursor renders the SVG cursor
  * as a fixed, pointer-events-free overlay at the top of the stacking order.
  */
-html,
-body,
-body *,
-body *::before,
-body *::after {
-  cursor: none !important;
-}
+  html,
+  body,
+  body *,
+  body *::before,
+  body *::after {
+    cursor: none !important;
+  }
 
-.utoolity-custom-cursor {
-  position: fixed;
-  z-index: 2147483647;
-  display: block;
-  object-fit: contain;
-  pointer-events: none;
-  user-select: none;
-  -webkit-user-drag: none;
-  transition: opacity 70ms linear;
-  will-change: left, top, width, height;
-}
+  .utoolity-custom-cursor {
+    position: fixed;
+    z-index: 2147483647;
+    display: block;
+    object-fit: contain;
+    pointer-events: none;
+    user-select: none;
+    -webkit-user-drag: none;
+    transition: opacity 70ms linear;
+    will-change: left, top, width, height;
+  }
 
   html {
     font-family: var(--font-nunito), sans-serif !important;
@@ -559,20 +651,12 @@ body *::after {
   }
 
   ::selection {
-    background: color-mix(
-      in oklab,
-      var(--secondary) 75%,
-      transparent
-    );
+    background: color-mix(in oklab, var(--secondary) 75%, transparent);
     color: var(--secondary-foreground);
   }
 
   ::-moz-selection {
-    background: color-mix(
-      in oklab,
-      var(--primary) 65%,
-      transparent
-    );
+    background: color-mix(in oklab, var(--primary) 65%, transparent);
     color: var(--primary-foreground);
   }
 }
@@ -580,22 +664,43 @@ body *::after {
 /* Desktop shell transitions. The user preference data-animation="off" below
    reduces these to effectively instant changes. */
 @keyframes desktop-window-enter {
-  from { opacity: 0; }
-  to { opacity: 1; }
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
 }
 @keyframes desktop-window-exit {
-  from { opacity: 1; }
-  to { opacity: 0; }
+  from {
+    opacity: 1;
+  }
+  to {
+    opacity: 0;
+  }
 }
 @keyframes desktop-panel-enter {
-  from { opacity: 0; transform: translateY(-6px) scale(0.985); }
-  to { opacity: 1; transform: translateY(0) scale(1); }
+  from {
+    opacity: 0;
+    transform: translateY(-6px) scale(0.985);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
 }
-.desktop-window-opening { animation: desktop-window-enter 180ms cubic-bezier(0.22, 1, 0.36, 1) both; }
-.desktop-window-closing { animation: desktop-window-exit 180ms cubic-bezier(0.4, 0, 1, 1) both; }
-.desktop-window-minimized { animation: desktop-panel-enter 180ms cubic-bezier(0.22, 1, 0.36, 1) both; }
-.desktop-panel { animation: desktop-panel-enter 160ms cubic-bezier(0.22, 1, 0.36, 1) both; }
-
+.desktop-window-opening {
+  animation: desktop-window-enter 180ms cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+.desktop-window-closing {
+  animation: desktop-window-exit 180ms cubic-bezier(0.4, 0, 1, 1) both;
+}
+.desktop-window-minimized {
+  animation: desktop-panel-enter 180ms cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+.desktop-panel {
+  animation: desktop-panel-enter 160ms cubic-bezier(0.22, 1, 0.36, 1) both;
+}
 
 /* Keep the desktop wallpaper surface flat: no CSS gradients, wash, or vignette overlays. */
 .desktop-background,

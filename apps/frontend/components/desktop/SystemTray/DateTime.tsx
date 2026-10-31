@@ -1,4 +1,3 @@
-
 "use client";
 
 import { useEffect, useState } from "react";
@@ -110,15 +109,11 @@ function Setting({
       </span>
 
       <span className="min-w-0">
-        <span className="block text-sm font-semibold leading-5">
-          {title}
-        </span>
+        <span className="block text-sm font-semibold leading-5">{title}</span>
 
         <span
           className={`mt-0.5 block text-xs leading-4 ${
-            active
-              ? "text-primary-foreground/80"
-              : "text-muted-foreground"
+            active ? "text-primary-foreground/80" : "text-muted-foreground"
           }`}
         >
           {value}
@@ -152,7 +147,10 @@ export default function DateTime({
     "utoolity.animations",
     "On",
   );
-  const [grain, setGrain] = useUserPreference<GrainLevel>("utoolity.grain", "Off");
+  const [grain, setGrain] = useUserPreference<GrainLevel>(
+    "utoolity.grain",
+    "Off",
+  );
   const [sound, setSound] = useState(true);
   const [fullscreen, setFullscreen] = useState(false);
 
@@ -168,13 +166,11 @@ export default function DateTime({
   }, []);
 
   useEffect(() => {
-    const update = () =>
-      setFullscreen(Boolean(document.fullscreenElement));
+    const update = () => setFullscreen(Boolean(document.fullscreenElement));
 
     document.addEventListener("fullscreenchange", update);
 
-    return () =>
-      document.removeEventListener("fullscreenchange", update);
+    return () => document.removeEventListener("fullscreenchange", update);
   }, []);
 
   useEffect(() => {
@@ -192,11 +188,7 @@ export default function DateTime({
   }, [grain]);
 
   const calendarDays = (() => {
-    const first = new Date(
-      month.getFullYear(),
-      month.getMonth(),
-      1,
-    );
+    const first = new Date(month.getFullYear(), month.getMonth(), 1);
 
     const offset = (first.getDay() + 6) % 7;
 
@@ -220,11 +212,7 @@ export default function DateTime({
   const changeMonth = (amount: number) => {
     setMonth(
       (current) =>
-        new Date(
-          current.getFullYear(),
-          current.getMonth() + amount,
-          1,
-        ),
+        new Date(current.getFullYear(), current.getMonth() + amount, 1),
     );
   };
 
@@ -323,9 +311,7 @@ export default function DateTime({
                 value={darkMode ? "On" : "Off"}
                 active={darkMode}
                 iconClassName="bg-primary text-primary-foreground"
-                onClick={() =>
-                  setTheme(darkMode ? "light" : "dark")
-                }
+                onClick={() => setTheme(darkMode ? "light" : "dark")}
               />
 
               <Setting
@@ -374,7 +360,6 @@ export default function DateTime({
                 iconClassName="bg-card text-card-foreground"
                 onClick={() => void toggleFullscreen()}
               />
-
             </div>
 
             <section className="mt-4 rounded-2xl bg-muted p-3">
@@ -405,24 +390,19 @@ export default function DateTime({
               </header>
 
               <div className="mt-3 grid grid-cols-7 gap-y-1 text-center">
-                {["M", "T", "W", "T", "F", "S", "S"].map(
-                  (day, index) => (
-                    <span
-                      key={`${day}-${index}`}
-                      className="py-1 text-xs font-semibold text-muted-foreground"
-                    >
-                      {day}
-                    </span>
-                  ),
-                )}
+                {["M", "T", "W", "T", "F", "S", "S"].map((day, index) => (
+                  <span
+                    key={`${day}-${index}`}
+                    className="py-1 text-xs font-semibold text-muted-foreground"
+                  >
+                    {day}
+                  </span>
+                ))}
 
                 {calendarDays.map((day, index) => {
                   if (day === null) {
                     return (
-                      <span
-                        key={`empty-${index}`}
-                        className="aspect-square"
-                      />
+                      <span key={`empty-${index}`} className="aspect-square" />
                     );
                   }
 
@@ -433,9 +413,7 @@ export default function DateTime({
                   );
 
                   const selected = sameDay(date, selectedDate);
-                  const today = now
-                    ? sameDay(date, now)
-                    : false;
+                  const today = now ? sameDay(date, now) : false;
 
                   return (
                     <button

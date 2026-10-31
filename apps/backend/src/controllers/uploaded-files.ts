@@ -1,4 +1,3 @@
-
 import type { FastifyRequest } from "fastify";
 import { createWriteStream } from "node:fs";
 import { mkdir } from "node:fs/promises";

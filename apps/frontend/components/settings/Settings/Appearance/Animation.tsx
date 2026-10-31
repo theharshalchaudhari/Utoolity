@@ -1,4 +1,3 @@
-
 "use client";
 
 import { useEffect } from "react";
@@ -6,7 +5,10 @@ import { Card, CardContent } from "@repo/ui/shadcn/card";
 import { useUserPreference } from "../../../../lib/user-preference";
 
 export default function Animation() {
-  const [animation, setAnimation] = useUserPreference<"on" | "off">("utoolity.animations", "on");
+  const [animation, setAnimation] = useUserPreference<"on" | "off">(
+    "utoolity.animations",
+    "on",
+  );
   const enabled = animation === "on";
 
   useEffect(() => {

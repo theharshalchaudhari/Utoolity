@@ -1,4 +1,3 @@
-
 "use client";
 
 import { useEffect } from "react";
@@ -8,7 +7,10 @@ import { useUserPreference } from "../../../../lib/user-preference";
 type GrainLevel = "Off" | "Soft" | "Strong";
 
 export default function Grain() {
-  const [level, setLevel] = useUserPreference<GrainLevel>("utoolity.grain", "Off");
+  const [level, setLevel] = useUserPreference<GrainLevel>(
+    "utoolity.grain",
+    "Off",
+  );
 
   useEffect(() => {
     document.documentElement.dataset.grain = level.toLowerCase();

@@ -15,7 +15,8 @@ export function useUserPreference<T extends string>(
 
   useEffect(() => {
     const preferenceChanged = (event: Event) => {
-      const detail = (event as CustomEvent<{ key?: string; value?: string }>).detail;
+      const detail = (event as CustomEvent<{ key?: string; value?: string }>)
+        .detail;
       if (detail?.key === key && typeof detail.value === "string") {
         setValue(detail.value as T);
       }
@@ -38,7 +39,10 @@ export function useUserPreference<T extends string>(
       });
 
     return () =>
-      window.removeEventListener("utoolity:preference-changed", preferenceChanged);
+      window.removeEventListener(
+        "utoolity:preference-changed",
+        preferenceChanged,
+      );
   }, [key]);
 
   const update = (nextValue: T) => {

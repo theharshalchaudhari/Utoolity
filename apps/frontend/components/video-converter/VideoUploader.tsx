@@ -1,20 +1,8 @@
 "use client";
 
-import {
-  ChangeEvent,
-  DragEvent,
-  useEffect,
-  useMemo,
-  useState,
-} from "react";
+import { ChangeEvent, DragEvent, useEffect, useMemo, useState } from "react";
 
-import {
-  FileVideo,
-  FolderOpen,
-  Plus,
-  Upload,
-  X,
-} from "lucide-react";
+import { FileVideo, FolderOpen, Plus, Upload, X } from "lucide-react";
 
 import { Button } from "@repo/ui/shadcn/button";
 
@@ -22,11 +10,7 @@ interface UploadedFile {
   file: File;
   jobId?: string;
   progress: number;
-  status:
-    | "waiting"
-    | "processing"
-    | "completed"
-    | "error";
+  status: "waiting" | "processing" | "completed" | "error";
   inputFormat: string;
   outputFormat: "MP4";
   error?: string;
@@ -267,12 +251,7 @@ export default function VideoUploader({
               </p>
 
               <label className="mt-7">
-                <Button
-                  type="button"
-                  asChild
-                  disabled={disabled}
-                  size="lg"
-                >
+                <Button type="button" asChild disabled={disabled} size="lg">
                   <span>
                     <FolderOpen className="mr-2 h-4 w-4" />
                     Choose Videos

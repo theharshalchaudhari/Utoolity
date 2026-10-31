@@ -1,9 +1,5 @@
-
 import type { UploadedFile } from "../types/uploaded-file.js";
-import {
-  createUploadJobResult,
-  getJobStatus,
-} from "./service-utils.js";
+import { createUploadJobResult, getJobStatus } from "./service-utils.js";
 
 export async function classify(
   files: UploadedFile[],

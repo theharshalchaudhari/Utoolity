@@ -39,7 +39,11 @@ export default function Home() {
   const connectSocketRef = useRef<() => void>(() => undefined);
   const connectActivitySocket = useCallback(() => {
     const existing = socketRef.current;
-    if (existing && (existing.readyState === WebSocket.OPEN || existing.readyState === WebSocket.CONNECTING)) {
+    if (
+      existing &&
+      (existing.readyState === WebSocket.OPEN ||
+        existing.readyState === WebSocket.CONNECTING)
+    ) {
       return;
     }
     if (socketRetryRef.current !== undefined) {
@@ -48,7 +52,9 @@ export default function Home() {
     }
 
     const protocol = window.location.protocol === "https:" ? "wss:" : "ws:";
-    const socket = new WebSocket(`${protocol}//${window.location.hostname}:4000/api/auth/socket`);
+    const socket = new WebSocket(
+      `${protocol}//${window.location.hostname}:4000/api/auth/socket`,
+    );
     socketRef.current = socket;
 
     socket.addEventListener("open", () => {
@@ -59,23 +65,31 @@ export default function Home() {
       lastSocketActivityRef.current = 0;
       sendSocketActivity();
       if (pendingWorkspaceRef.current !== null) {
-        socket.send(JSON.stringify({
-          type: "workspace",
-          workspace: pendingWorkspaceRef.current,
-        }));
+        socket.send(
+          JSON.stringify({
+            type: "workspace",
+            workspace: pendingWorkspaceRef.current,
+          }),
+        );
         pendingWorkspaceRef.current = null;
       }
     });
     socket.addEventListener("close", (event) => {
       if (socketRef.current === socket) socketRef.current = null;
-      if (event.code !== 1008 && event.code !== 1000 && shellStateRef.current !== "checking") {
+      if (
+        event.code !== 1008 &&
+        event.code !== 1000 &&
+        shellStateRef.current !== "checking"
+      ) {
         socketRetryRef.current = window.setTimeout(() => {
           socketRetryRef.current = undefined;
           connectSocketRef.current();
         }, 3000);
       }
     });
-    socket.addEventListener("error", () => socket.close(4000, "Connection error"));
+    socket.addEventListener("error", () =>
+      socket.close(4000, "Connection error"),
+    );
   }, [sendSocketActivity]);
   connectSocketRef.current = connectActivitySocket;
 
@@ -95,7 +109,11 @@ export default function Home() {
       setShellState("locked");
     };
     window.addEventListener("utoolity:session-invalid", handleInvalidSession);
-    return () => window.removeEventListener("utoolity:session-invalid", handleInvalidSession);
+    return () =>
+      window.removeEventListener(
+        "utoolity:session-invalid",
+        handleInvalidSession,
+      );
   }, []);
 
   useEffect(() => {
@@ -138,18 +156,32 @@ export default function Home() {
       pendingWorkspaceRef.current = workspace;
       const socket = socketRef.current;
       if (socket?.readyState !== WebSocket.OPEN) return;
-      socket.send(JSON.stringify({
-        type: "workspace",
-        workspace,
-      }));
+      socket.send(
+        JSON.stringify({
+          type: "workspace",
+          workspace,
+        }),
+      );
       pendingWorkspaceRef.current = null;
     };
-    window.addEventListener("utoolity:workspace-state-changed", handleWorkspaceState);
-    return () => window.removeEventListener("utoolity:workspace-state-changed", handleWorkspaceState);
+    window.addEventListener(
+      "utoolity:workspace-state-changed",
+      handleWorkspaceState,
+    );
+    return () =>
+      window.removeEventListener(
+        "utoolity:workspace-state-changed",
+        handleWorkspaceState,
+      );
   }, []);
 
   useEffect(() => {
-    const activityEvents = ["pointerdown", "keydown", "mousemove", "touchstart"];
+    const activityEvents = [
+      "pointerdown",
+      "keydown",
+      "mousemove",
+      "touchstart",
+    ];
     activityEvents.forEach((event) =>
       window.addEventListener(event, sendSocketActivity, { passive: true }),
     );
@@ -158,7 +190,8 @@ export default function Home() {
         window.removeEventListener(event, sendSocketActivity),
       );
       socketRef.current?.close(1000, "Page closed");
-      if (socketRetryRef.current !== undefined) window.clearTimeout(socketRetryRef.current);
+      if (socketRetryRef.current !== undefined)
+        window.clearTimeout(socketRetryRef.current);
     };
   }, [sendSocketActivity]);
 
@@ -169,9 +202,12 @@ export default function Home() {
       const cachedAuthenticated =
         localStorage.getItem(AUTHENTICATED_SESSION_KEY) === "true";
       const cachedState = localStorage.getItem(SHELL_STATE_KEY);
-      const cachedUserId = localStorage.getItem("utoolity.authenticated-user-id");
+      const cachedUserId = localStorage.getItem(
+        "utoolity.authenticated-user-id",
+      );
       const cachedShellState: ShellState =
-        cachedAuthenticated && (cachedState === "sleep" || cachedState === "locked")
+        cachedAuthenticated &&
+        (cachedState === "sleep" || cachedState === "locked")
           ? cachedState
           : cachedAuthenticated
             ? "authenticated"
@@ -181,17 +217,33 @@ export default function Home() {
         // Keep the shell in its checking state until the server confirms the
         // session. Mounting Desktop from stale localStorage here can trigger
         // protected preference writes before /auth/me rejects an expired session.
-        const lastActivity = Number(localStorage.getItem(LAST_ACTIVITY_KEY) ?? Date.now());
-        lastActivityRef.current = Number.isFinite(lastActivity) ? lastActivity : Date.now();
+        const lastActivity = Number(
+          localStorage.getItem(LAST_ACTIVITY_KEY) ?? Date.now(),
+        );
+        lastActivityRef.current = Number.isFinite(lastActivity)
+          ? lastActivity
+          : Date.now();
       }
 
       try {
-        const response = await api<{ user: { id: string; hostname: string; displayName: string; role?: "intern" | "admin" } }>("/api/auth/me");
+        const response = await api<{
+          user: {
+            id: string;
+            hostname: string;
+            displayName: string;
+            role?: "intern" | "admin";
+          };
+        }>("/api/auth/me");
         if (!active) return;
 
         const nextUserId = response.user.id;
-        const previousUserId = localStorage.getItem("utoolity.authenticated-user-id");
-        localStorage.setItem("utoolity.cached-user", JSON.stringify(response.user));
+        const previousUserId = localStorage.getItem(
+          "utoolity.authenticated-user-id",
+        );
+        localStorage.setItem(
+          "utoolity.cached-user",
+          JSON.stringify(response.user),
+        );
         localStorage.setItem("utoolity.authenticated-user-id", nextUserId);
 
         // A different authenticated account on this browser is the signal to
@@ -199,7 +251,10 @@ export default function Home() {
         if (previousUserId && previousUserId !== nextUserId) {
           // A changed identity must lock the desktop, but must not revoke the
           // newly authenticated server session as a side effect of refresh.
-          localStorage.setItem("utoolity.cached-user", JSON.stringify(response.user));
+          localStorage.setItem(
+            "utoolity.cached-user",
+            JSON.stringify(response.user),
+          );
           localStorage.setItem(AUTHENTICATED_SESSION_KEY, "false");
           localStorage.setItem(SHELL_STATE_KEY, "locked");
           localStorage.removeItem(SLEEP_STARTED_KEY);
@@ -215,8 +270,12 @@ export default function Home() {
             : "authenticated";
         localStorage.setItem(SHELL_STATE_KEY, nextState);
         setShellState(nextState);
-        const lastActivity = Number(localStorage.getItem(LAST_ACTIVITY_KEY) ?? Date.now());
-        lastActivityRef.current = Number.isFinite(lastActivity) ? lastActivity : Date.now();
+        const lastActivity = Number(
+          localStorage.getItem(LAST_ACTIVITY_KEY) ?? Date.now(),
+        );
+        lastActivityRef.current = Number.isFinite(lastActivity)
+          ? lastActivity
+          : Date.now();
       } catch (error) {
         if (!active) return;
 
@@ -234,7 +293,10 @@ export default function Home() {
         }
 
         if (!(error instanceof ApiError && error.status === 401)) {
-          console.warn("Session verification unavailable; preserving cached device state.", error);
+          console.warn(
+            "Session verification unavailable; preserving cached device state.",
+            error,
+          );
         }
       }
     }
@@ -253,7 +315,12 @@ export default function Home() {
       localStorage.setItem(LAST_ACTIVITY_KEY, String(lastActivityRef.current));
       sendSocketActivity();
     };
-    const activityEvents = ["pointerdown", "keydown", "mousemove", "touchstart"];
+    const activityEvents = [
+      "pointerdown",
+      "keydown",
+      "mousemove",
+      "touchstart",
+    ];
     activityEvents.forEach((event) =>
       window.addEventListener(event, recordActivity, { passive: true }),
     );
@@ -263,15 +330,22 @@ export default function Home() {
       if (busyRef.current) return;
       const inactiveFor = Date.now() - lastActivityRef.current;
       const remaining = SLEEP_AFTER_MS - inactiveFor;
-      if (remaining > 0 && remaining <= SLEEP_WARNING_BEFORE_MS && warningShownFor !== lastActivityRef.current) {
+      if (
+        remaining > 0 &&
+        remaining <= SLEEP_WARNING_BEFORE_MS &&
+        warningShownFor !== lastActivityRef.current
+      ) {
         warningShownFor = lastActivityRef.current;
-        window.dispatchEvent(new CustomEvent("utoolity:notification", {
-          detail: {
-            type: "system",
-            title: "Sleep warning",
-            message: "The desktop will enter sleep in 30 seconds due to inactivity. Move your mouse or press a key to stay active.",
-          },
-        }));
+        window.dispatchEvent(
+          new CustomEvent("utoolity:notification", {
+            detail: {
+              type: "system",
+              title: "Sleep warning",
+              message:
+                "The desktop will enter sleep in 30 seconds due to inactivity. Move your mouse or press a key to stay active.",
+            },
+          }),
+        );
       }
       if (remaining > 0) return;
       localStorage.setItem(SHELL_STATE_KEY, "sleep");
@@ -306,16 +380,14 @@ export default function Home() {
     };
   }, [sendSocketActivity]);
 
-
   useEffect(() => {
     if (shellState !== "sleep") return;
 
-    const storedSleepStarted = Number(
-      localStorage.getItem(SLEEP_STARTED_KEY),
-    );
-    const sleepStarted = Number.isFinite(storedSleepStarted) && storedSleepStarted > 0
-      ? storedSleepStarted
-      : Date.now();
+    const storedSleepStarted = Number(localStorage.getItem(SLEEP_STARTED_KEY));
+    const sleepStarted =
+      Number.isFinite(storedSleepStarted) && storedSleepStarted > 0
+        ? storedSleepStarted
+        : Date.now();
     localStorage.setItem(SLEEP_STARTED_KEY, String(sleepStarted));
     const timer = window.setInterval(() => {
       if (Date.now() - sleepStarted < LOCK_AFTER_MS) return;
@@ -387,7 +459,10 @@ export default function Home() {
               localStorage.setItem(SHELL_STATE_KEY, "authenticated");
               localStorage.removeItem(SLEEP_STARTED_KEY);
               lastActivityRef.current = Date.now();
-              localStorage.setItem(LAST_ACTIVITY_KEY, String(lastActivityRef.current));
+              localStorage.setItem(
+                LAST_ACTIVITY_KEY,
+                String(lastActivityRef.current),
+              );
               setShellState("authenticated");
             }}
           />

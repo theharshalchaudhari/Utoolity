@@ -1,12 +1,8 @@
-
 import type { FastifyReply, FastifyRequest } from "fastify";
 import * as service from "../services/imageConverter.service.js";
 import { parseUploadedFiles } from "./uploaded-files.js";
 
-export async function convert(
-  req: FastifyRequest,
-  reply: FastifyReply,
-) {
+export async function convert(req: FastifyRequest, reply: FastifyReply) {
   try {
     const { files, settings } = await parseUploadedFiles(req, "images");
 

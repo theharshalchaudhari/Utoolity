@@ -1,3 +1,3 @@
-import ffmpeg from 'fluent-ffmpeg';
+import ffmpeg from "fluent-ffmpeg";
 
 export { ffmpeg };

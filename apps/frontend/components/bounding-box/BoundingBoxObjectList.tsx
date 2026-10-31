@@ -24,10 +24,19 @@ export default function BoundingBoxObjectList({
               : "border-sidebar-border bg-sidebar-accent/50"
           }`}
         >
-          <span className="truncate">{index + 1}. {box.label}</span>
+          <span className="truncate">
+            {index + 1}. {box.label}
+          </span>
           <span className="text-sidebar-foreground/60">
-            {Math.round(Math.max(...box.points.map((point) => point.x)) - Math.min(...box.points.map((point) => point.x)))}×
-            {Math.round(Math.max(...box.points.map((point) => point.y)) - Math.min(...box.points.map((point) => point.y)))}
+            {Math.round(
+              Math.max(...box.points.map((point) => point.x)) -
+                Math.min(...box.points.map((point) => point.x)),
+            )}
+            ×
+            {Math.round(
+              Math.max(...box.points.map((point) => point.y)) -
+                Math.min(...box.points.map((point) => point.y)),
+            )}
           </span>
         </button>
       ))}

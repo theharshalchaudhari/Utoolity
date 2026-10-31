@@ -1,10 +1,23 @@
-
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { Bell, X, ShieldAlert, AppWindow, AlertTriangle, CheckCheck } from "lucide-react";
+import {
+  Bell,
+  X,
+  ShieldAlert,
+  AppWindow,
+  AlertTriangle,
+  CheckCheck,
+} from "lucide-react";
 
-type Notice = { id: string; title: string; message: string; type: "system" | "app" | "error"; createdAt: number; issue?: { appName?: string; errorName?: string; details?: string } };
+type Notice = {
+  id: string;
+  title: string;
+  message: string;
+  type: "system" | "app" | "error";
+  createdAt: number;
+  issue?: { appName?: string; errorName?: string; details?: string };
+};
 
 const NOTIFICATION_STORAGE_KEY = "utoolity.notifications";
 const CLEARED_NOTIFICATION_IDS_KEY = "utoolity.cleared-notification-ids";
@@ -15,36 +28,53 @@ type Props = {
   onClose: () => void;
 };
 
-export default function Notifications({
-  open,
-  onToggle,
-  onClose,
-}: Props) {
+export default function Notifications({ open, onToggle, onClose }: Props) {
   const [mounted, setMounted] = useState(open);
   const [notices, setNotices] = useState<Notice[]>([]);
   const [hasNewNotification, setHasNewNotification] = useState(false);
-  const [filter, setFilter] = useState<"all" | "system" | "app" | "error">("all");
+  const [filter, setFilter] = useState<"all" | "system" | "app" | "error">(
+    "all",
+  );
   const [clearedIds, setClearedIds] = useState<Set<string>>(new Set());
   const clearedIdsRef = useRef<Set<string>>(new Set());
 
   useEffect(() => {
     const persist = (items: Notice[]) => {
       try {
-        window.sessionStorage.setItem(NOTIFICATION_STORAGE_KEY, JSON.stringify(items.slice(0, 100)));
+        window.sessionStorage.setItem(
+          NOTIFICATION_STORAGE_KEY,
+          JSON.stringify(items.slice(0, 100)),
+        );
       } catch {
         // Notifications remain usable for this mount if session storage is unavailable.
       }
     };
     let cleared = new Set<string>();
     try {
-      const savedCleared = JSON.parse(window.sessionStorage.getItem(CLEARED_NOTIFICATION_IDS_KEY) || "[]") as unknown;
-      if (Array.isArray(savedCleared)) cleared = new Set(savedCleared.filter((id): id is string => typeof id === "string"));
+      const savedCleared = JSON.parse(
+        window.sessionStorage.getItem(CLEARED_NOTIFICATION_IDS_KEY) || "[]",
+      ) as unknown;
+      if (Array.isArray(savedCleared))
+        cleared = new Set(
+          savedCleared.filter((id): id is string => typeof id === "string"),
+        );
       clearedIdsRef.current = cleared;
       setClearedIds(cleared);
       const saved = window.sessionStorage.getItem(NOTIFICATION_STORAGE_KEY);
       if (saved) {
         const parsed = JSON.parse(saved) as Notice[];
-        if (Array.isArray(parsed)) setNotices(parsed.filter((item) => item && typeof item.id === "string" && typeof item.message === "string" && !cleared.has(item.id)).slice(0, 100));
+        if (Array.isArray(parsed))
+          setNotices(
+            parsed
+              .filter(
+                (item) =>
+                  item &&
+                  typeof item.id === "string" &&
+                  typeof item.message === "string" &&
+                  !cleared.has(item.id),
+              )
+              .slice(0, 100),
+          );
       }
     } catch {
       window.sessionStorage.removeItem(NOTIFICATION_STORAGE_KEY);
@@ -53,16 +83,28 @@ export default function Notifications({
       const detail = (event as CustomEvent<Partial<Notice>>).detail;
       if (!detail || !detail.message) return;
       if (clearedIdsRef.current.has(detail.id ?? "")) return;
-      const type = detail.type === "system" || detail.type === "error" ? detail.type : "app";
+      const type =
+        detail.type === "system" || detail.type === "error"
+          ? detail.type
+          : "app";
       const notice: Notice = {
         id: detail.id ?? `${Date.now()}-${Math.random()}`,
-        title: detail.title ?? (type === "system" ? "System" : type === "error" ? "Error" : "App notification"),
+        title:
+          detail.title ??
+          (type === "system"
+            ? "System"
+            : type === "error"
+              ? "Error"
+              : "App notification"),
         message: detail.message,
         type,
         createdAt: detail.createdAt ?? Date.now(),
         // Preserve the issue payload so clicking this notification can reopen
         // the report dialog with the original error details.
-        issue: detail.issue && typeof detail.issue === "object" ? detail.issue : undefined,
+        issue:
+          detail.issue && typeof detail.issue === "object"
+            ? detail.issue
+            : undefined,
       };
       setNotices((current) => {
         if (current.some((item) => item.id === notice.id)) return current;
@@ -71,13 +113,20 @@ export default function Notifications({
         persist(updated);
         return updated;
       });
-      if (type === "system") window.dispatchEvent(new CustomEvent("utoolity:system-notification-focus", { detail: notice }));
+      if (type === "system")
+        window.dispatchEvent(
+          new CustomEvent("utoolity:system-notification-focus", {
+            detail: notice,
+          }),
+        );
     };
     window.addEventListener("utoolity:notification", receive);
     return () => window.removeEventListener("utoolity:notification", receive);
   }, []);
 
-  const visibleNotices = notices.filter((notice) => filter === "all" || notice.type === filter);
+  const visibleNotices = notices.filter(
+    (notice) => filter === "all" || notice.type === filter,
+  );
 
   useEffect(() => {
     if (open) {
@@ -160,8 +209,15 @@ export default function Notifications({
           >
             <header className="flex min-h-7 items-center justify-between gap-3">
               <div className="flex min-w-0 items-center gap-2">
-                <h2 className="text-base font-bold leading-6 tracking-tight">Notifications</h2>
-                <span className="inline-flex min-w-5 items-center justify-center rounded-full bg-muted px-1.5 py-0.5 text-[11px] font-semibold tabular-nums text-muted-foreground" aria-label={`${notices.length} notifications`}>{notices.length}</span>
+                <h2 className="text-base font-bold leading-6 tracking-tight">
+                  Notifications
+                </h2>
+                <span
+                  className="inline-flex min-w-5 items-center justify-center rounded-full bg-muted px-1.5 py-0.5 text-[11px] font-semibold tabular-nums text-muted-foreground"
+                  aria-label={`${notices.length} notifications`}
+                >
+                  {notices.length}
+                </span>
               </div>
 
               <div className="flex items-center gap-1">
@@ -175,8 +231,14 @@ export default function Notifications({
                       setClearedIds(nextCleared);
                       setNotices([]);
                       try {
-                        window.sessionStorage.setItem(CLEARED_NOTIFICATION_IDS_KEY, JSON.stringify([...nextCleared].slice(-500)));
-                        window.sessionStorage.setItem(NOTIFICATION_STORAGE_KEY, "[]");
+                        window.sessionStorage.setItem(
+                          CLEARED_NOTIFICATION_IDS_KEY,
+                          JSON.stringify([...nextCleared].slice(-500)),
+                        );
+                        window.sessionStorage.setItem(
+                          NOTIFICATION_STORAGE_KEY,
+                          "[]",
+                        );
                       } catch {
                         // Clear the current view even if storage is unavailable.
                       }
@@ -190,13 +252,13 @@ export default function Notifications({
                   </button>
                 )}
                 <button
-                type="button"
-                onClick={onClose}
-                tabIndex={open ? 0 : -1}
-                aria-label="Close notifications"
-                className="flex size-8 shrink-0 items-center justify-center rounded-full text-muted-foreground transition-colors hover:bg-accent hover:text-accent-foreground"
-              >
-                <X size={17} strokeWidth={1.8} />
+                  type="button"
+                  onClick={onClose}
+                  tabIndex={open ? 0 : -1}
+                  aria-label="Close notifications"
+                  className="flex size-8 shrink-0 items-center justify-center rounded-full text-muted-foreground transition-colors hover:bg-accent hover:text-accent-foreground"
+                >
+                  <X size={17} strokeWidth={1.8} />
                 </button>
               </div>
             </header>
@@ -222,10 +284,18 @@ export default function Notifications({
                       clearedIdsRef.current = nextCleared;
                       setClearedIds(nextCleared);
                       setNotices((current) => {
-                        const updated = current.filter((item) => item.id !== notice.id);
+                        const updated = current.filter(
+                          (item) => item.id !== notice.id,
+                        );
                         try {
-                          window.sessionStorage.setItem(NOTIFICATION_STORAGE_KEY, JSON.stringify(updated));
-                          window.sessionStorage.setItem(CLEARED_NOTIFICATION_IDS_KEY, JSON.stringify([...nextCleared].slice(-500)));
+                          window.sessionStorage.setItem(
+                            NOTIFICATION_STORAGE_KEY,
+                            JSON.stringify(updated),
+                          );
+                          window.sessionStorage.setItem(
+                            CLEARED_NOTIFICATION_IDS_KEY,
+                            JSON.stringify([...nextCleared].slice(-500)),
+                          );
                         } catch {
                           // Removal still applies to the current session state.
                         }
@@ -234,21 +304,44 @@ export default function Notifications({
                       onClose();
                       if (notice.issue) {
                         window.setTimeout(() => {
-                          window.dispatchEvent(new CustomEvent("utoolity:reopen-issue", { detail: notice.issue }));
+                          window.dispatchEvent(
+                            new CustomEvent("utoolity:reopen-issue", {
+                              detail: notice.issue,
+                            }),
+                          );
                         }, 160);
                       }
                     }}
                     className="block w-full rounded-2xl border border-border/70 bg-background/70 p-3 text-left transition-colors hover:bg-accent/70 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
-                    aria-label={notice.issue ? `Reopen issue report: ${notice.title}` : notice.title}
+                    aria-label={
+                      notice.issue
+                        ? `Reopen issue report: ${notice.title}`
+                        : notice.title
+                    }
                   >
                     <div className="flex items-start gap-2">
-                      <span className={`mt-0.5 flex size-7 shrink-0 items-center justify-center rounded-full ${notice.type === "error" ? "bg-destructive/10 text-destructive" : "bg-muted text-muted-foreground"}`}>
-                        {notice.type === "error" ? <AlertTriangle size={15} /> : notice.type === "system" ? <ShieldAlert size={15} /> : <AppWindow size={15} />}
+                      <span
+                        className={`mt-0.5 flex size-7 shrink-0 items-center justify-center rounded-full ${notice.type === "error" ? "bg-destructive/10 text-destructive" : "bg-muted text-muted-foreground"}`}
+                      >
+                        {notice.type === "error" ? (
+                          <AlertTriangle size={15} />
+                        ) : notice.type === "system" ? (
+                          <ShieldAlert size={15} />
+                        ) : (
+                          <AppWindow size={15} />
+                        )}
                       </span>
                       <div className="min-w-0 flex-1">
-                        <h3 className="text-sm font-semibold">{notice.title}</h3>
-                        <p className="mt-1 whitespace-pre-wrap wrap-break-word text-xs leading-5 text-muted-foreground">{notice.message}</p>
-                        <time className="mt-2 block text-[11px] text-muted-foreground" dateTime={new Date(notice.createdAt).toISOString()}>
+                        <h3 className="text-sm font-semibold">
+                          {notice.title}
+                        </h3>
+                        <p className="mt-1 whitespace-pre-wrap wrap-break-word text-xs leading-5 text-muted-foreground">
+                          {notice.message}
+                        </p>
+                        <time
+                          className="mt-2 block text-[11px] text-muted-foreground"
+                          dateTime={new Date(notice.createdAt).toISOString()}
+                        >
                           {new Date(notice.createdAt).toLocaleString()}
                         </time>
                       </div>

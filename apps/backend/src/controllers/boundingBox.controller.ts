@@ -1,22 +1,22 @@
-
 import type { FastifyReply, FastifyRequest } from "fastify";
 import * as service from "../services/boundingBox.service.js";
 import { parseUploadedFiles } from "./uploaded-files.js";
 import { mkdir, writeFile } from "node:fs/promises";
 import path from "node:path";
 
-const storageRoot = path.resolve(process.env.STORAGE_ROOT ?? path.join(process.cwd(), "data"));
-const safeSegment = (value: string) => value.replace(/[^a-zA-Z0-9._-]/g, "-").replace(/^-+|-+$/g, "") || "user";
+const storageRoot = path.resolve(
+  process.env.STORAGE_ROOT ?? path.join(process.cwd(), "data"),
+);
+const safeSegment = (value: string) =>
+  value.replace(/[^a-zA-Z0-9._-]/g, "-").replace(/^-+|-+$/g, "") || "user";
 const resolveInside = (root: string, relative: string) => {
   const target = path.resolve(root, relative);
-  if (target !== root && !target.startsWith(`${root}${path.sep}`)) throw new Error("Invalid storage path.");
+  if (target !== root && !target.startsWith(`${root}${path.sep}`))
+    throw new Error("Invalid storage path.");
   return target;
 };
 
-export async function save(
-  req: FastifyRequest,
-  reply: FastifyReply,
-) {
+export async function save(req: FastifyRequest, reply: FastifyReply) {
   try {
     const { files, settings } = await parseUploadedFiles(req, "files");
 
@@ -48,71 +48,147 @@ export async function getStatus(
   }
 }
 
-export async function saveAnnotations(req: FastifyRequest, reply: FastifyReply) {
-    try {
-      const body = req.body as {
-        path?: string;
-        imagePath?: string;
-        imageWidth?: number;
-        imageHeight?: number;
+export async function saveAnnotations(
+  req: FastifyRequest,
+  reply: FastifyReply,
+) {
+  try {
+    const body = req.body as {
+      path?: string;
+      imagePath?: string;
+      imageWidth?: number;
+      imageHeight?: number;
+      updatedBy?: string;
+      boxes?: Array<{
+        id?: string;
+        label: string;
+        x: number;
+        y: number;
+        width: number;
+        height: number;
+        createdBy?: string;
         updatedBy?: string;
-        boxes?: Array<{ id?: string; label: string; x: number; y: number; width: number; height: number; createdBy?: string; updatedBy?: string }>;
-      };
-      const session = (req as FastifyRequest & { session: { userId?: string; collaborationOwnerUserId?: string; collaborationPermission?: "view" | "editor" } }).session;
-      const userId = session.userId;
-      if (!userId) return reply.code(401).send({ message: "Not authenticated." });
-      if (session.collaborationOwnerUserId && session.collaborationPermission !== "editor") {
-        return reply.code(403).send({ message: "View-only collaborators cannot modify annotations." });
+      }>;
+    };
+    const session = (
+      req as FastifyRequest & {
+        session: {
+          userId?: string;
+          collaborationOwnerUserId?: string;
+          collaborationPermission?: "view" | "editor";
+        };
       }
-      const users = await import("../data/users.json", { with: { type: "json" } });
-      const allUsers = users.default.users as Array<{ id: string; displayName: string; hostname: string }>;
-      const actor = allUsers.find((item) => item.id === userId);
-      const user = allUsers.find((item) => item.id === (session.collaborationOwnerUserId ?? userId));
-      if (!actor || !user) return reply.code(401).send({ message: "Session user no longer exists." });
-      if (!body.path || !body.imagePath || !body.imageWidth || !body.imageHeight || !Array.isArray(body.boxes)) {
-        return reply.code(400).send({ message: "Invalid bounding-box payload." });
-      }
-      if (!body.boxes.every((box) => typeof box.label === "string" && [box.x, box.y, box.width, box.height].every(Number.isFinite))) {
-        return reply.code(400).send({ message: "Invalid bounding-box coordinates." });
-      }
-      const imageWidth = body.imageWidth;
-      const imageHeight = body.imageHeight;
-      const root = path.join(storageRoot, "interns", `${safeSegment(user.displayName)}-${safeSegment(user.hostname)}`);
-      const relativePath = body.path.startsWith(path.relative(storageRoot, root))
-        ? body.path.slice(path.relative(storageRoot, root).length).replace(/^\/+/, "")
-        : body.path.replace(/^server\/?/, "");
-      const target = resolveInside(root, relativePath);
-      const labelMe = {
-        version: "7.0.3", flags: {},
-        shapes: body.boxes.map((box) => ({
-          id: box.id,
-          label: box.label,
-          points: [[box.x, box.y], [box.x + box.width, box.y + box.height]],
-          group_id: null,
-          description: "",
-          shape_type: "rectangle",
-          flags: {},
-          mask: null,
-          createdBy: box.createdBy ?? actor.displayName,
-          updatedBy: box.updatedBy ?? actor.displayName,
-        })),
-        imagePath: path.basename(body.imagePath), imageData: null,
-        imageHeight, imageWidth,
-      };
-      const yolo = body.boxes.map((box) => [
-        box.label,
-        (box.x + box.width / 2) / imageWidth,
-        (box.y + box.height / 2) / imageHeight,
-        box.width / imageWidth,
-        box.height / imageHeight,
-      ].map((value) => typeof value === "number" ? value.toFixed(6) : value).join(" ")).join("\n");
-      await mkdir(path.dirname(target), { recursive: true });
-      await Promise.all([
-        writeFile(target.replace(/\.[^/.]+$/, ".json"), JSON.stringify(labelMe, null, 2), "utf8"),
-        writeFile(target.replace(/\.[^/.]+$/, ".txt"), yolo, "utf8"),
-      ]);
-      const auditPath = path.join(storageRoot, "collaboration-audit.jsonl");
-      await writeFile(auditPath, JSON.stringify({
+    ).session;
+    const userId = session.userId;
+    if (!userId) return reply.code(401).send({ message: "Not authenticated." });
+    if (
+      session.collaborationOwnerUserId &&
+      session.collaborationPermission !== "editor"
+    ) {
+      return reply.code(403).send({
+        message: "View-only collaborators cannot modify annotations.",
+      });
+    }
+    const users = await import("../data/users.json", {
+      with: { type: "json" },
+    });
+    const allUsers = users.default.users as Array<{
+      id: string;
+      displayName: string;
+      hostname: string;
+    }>;
+    const actor = allUsers.find((item) => item.id === userId);
+    const user = allUsers.find(
+      (item) => item.id === (session.collaborationOwnerUserId ?? userId),
+    );
+    if (!actor || !user)
+      return reply
+        .code(401)
+        .send({ message: "Session user no longer exists." });
+    if (
+      !body.path ||
+      !body.imagePath ||
+      !body.imageWidth ||
+      !body.imageHeight ||
+      !Array.isArray(body.boxes)
+    ) {
+      return reply.code(400).send({ message: "Invalid bounding-box payload." });
+    }
+    if (
+      !body.boxes.every(
+        (box) =>
+          typeof box.label === "string" &&
+          [box.x, box.y, box.width, box.height].every(Number.isFinite),
+      )
+    ) {
+      return reply
+        .code(400)
+        .send({ message: "Invalid bounding-box coordinates." });
+    }
+    const imageWidth = body.imageWidth;
+    const imageHeight = body.imageHeight;
+    const root = path.join(
+      storageRoot,
+      "interns",
+      `${safeSegment(user.displayName)}-${safeSegment(user.hostname)}`,
+    );
+    const relativePath = body.path.startsWith(path.relative(storageRoot, root))
+      ? body.path
+          .slice(path.relative(storageRoot, root).length)
+          .replace(/^\/+/, "")
+      : body.path.replace(/^server\/?/, "");
+    const target = resolveInside(root, relativePath);
+    const labelMe = {
+      version: "7.0.3",
+      flags: {},
+      shapes: body.boxes.map((box) => ({
+        id: box.id,
+        label: box.label,
+        points: [
+          [box.x, box.y],
+          [box.x + box.width, box.y + box.height],
+        ],
+        group_id: null,
+        description: "",
+        shape_type: "rectangle",
+        flags: {},
+        mask: null,
+        createdBy: box.createdBy ?? actor.displayName,
+        updatedBy: box.updatedBy ?? actor.displayName,
+      })),
+      imagePath: path.basename(body.imagePath),
+      imageData: null,
+      imageHeight,
+      imageWidth,
+    };
+    const yolo = body.boxes
+      .map((box) =>
+        [
+          box.label,
+          (box.x + box.width / 2) / imageWidth,
+          (box.y + box.height / 2) / imageHeight,
+          box.width / imageWidth,
+          box.height / imageHeight,
+        ]
+          .map((value) =>
+            typeof value === "number" ? value.toFixed(6) : value,
+          )
+          .join(" "),
+      )
+      .join("\n");
+    await mkdir(path.dirname(target), { recursive: true });
+    await Promise.all([
+      writeFile(
+        target.replace(/\.[^/.]+$/, ".json"),
+        JSON.stringify(labelMe, null, 2),
+        "utf8",
+      ),
+      writeFile(target.replace(/\.[^/.]+$/, ".txt"), yolo, "utf8"),
+    ]);
+    const auditPath = path.join(storageRoot, "collaboration-audit.jsonl");
+    await writeFile(
+      auditPath,
+      JSON.stringify({
         timestamp: new Date().toISOString(),
         actorUserId: actor.id,
         actorDisplayName: actor.displayName,
@@ -120,10 +196,19 @@ export async function saveAnnotations(req: FastifyRequest, reply: FastifyReply) 
         imagePath: target,
         action: "bounding-box-annotations-saved",
         boxCount: body.boxes.length,
-      }) + "\n", { encoding: "utf8", flag: "a" });
-      return reply.send({ success: true, actor: { id: actor.id, displayName: actor.displayName }, workspaceOwnerUserId: user.id });
-    } catch (error) {
-      req.log.error(error, "Bounding-box annotation save failed");
-      return reply.code(400).send({ message: error instanceof Error ? error.message : "Unable to save annotations." });
+      }) + "\n",
+      { encoding: "utf8", flag: "a" },
+    );
+    return reply.send({
+      success: true,
+      actor: { id: actor.id, displayName: actor.displayName },
+      workspaceOwnerUserId: user.id,
+    });
+  } catch (error) {
+    req.log.error(error, "Bounding-box annotation save failed");
+    return reply.code(400).send({
+      message:
+        error instanceof Error ? error.message : "Unable to save annotations.",
+    });
   }
 }

@@ -1,4 +1,3 @@
-
 import SoundSettings from "./Sound/Sound";
 
 export default function Sound() {

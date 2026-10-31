@@ -1,12 +1,8 @@
-
 import type { FastifyReply, FastifyRequest } from "fastify";
 import * as service from "../services/videoTrim.service.js";
 import { parseUploadedFiles } from "./uploaded-files.js";
 
-export async function trim(
-  req: FastifyRequest,
-  reply: FastifyReply,
-) {
+export async function trim(req: FastifyRequest, reply: FastifyReply) {
   try {
     const { files, settings } = await parseUploadedFiles(req, "videos");
 

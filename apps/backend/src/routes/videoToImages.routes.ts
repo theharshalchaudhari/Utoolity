@@ -1,4 +1,3 @@
-
 import type { FastifyPluginAsync } from "fastify";
 import * as controller from "../controllers/videoToImages.controller.js";
 

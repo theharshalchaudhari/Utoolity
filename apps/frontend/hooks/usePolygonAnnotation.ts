@@ -16,22 +16,31 @@ export function usePolygonAnnotation() {
   const [points, setPoints] = useState<Point[]>([]);
   const [polygons, setPolygons] = useState<PolygonAnnotation[]>([]);
   const [currentLabel, setCurrentLabel] = useState("");
-  const [selectedPointIndex, setSelectedPointIndex] = useState<number | null>(null);
+  const [selectedPointIndex, setSelectedPointIndex] = useState<number | null>(
+    null,
+  );
   const [tool, setTool] = useState<AnnotationTool>("annotate");
-  const [history, setHistory] = useState<Array<{
-    points: Point[];
-    polygons: PolygonAnnotation[];
-  }>>([]);
+  const [history, setHistory] = useState<
+    Array<{
+      points: Point[];
+      polygons: PolygonAnnotation[];
+    }>
+  >([]);
   const [hydrated, setHydrated] = useState(false);
 
   useEffect(() => {
     try {
-      const savedPoints = JSON.parse(localStorage.getItem("utoolity.polygon.points") ?? "[]") as Point[];
-      const savedPolygons = JSON.parse(localStorage.getItem("utoolity.polygon.polygons") ?? "[]") as PolygonAnnotation[];
+      const savedPoints = JSON.parse(
+        localStorage.getItem("utoolity.polygon.points") ?? "[]",
+      ) as Point[];
+      const savedPolygons = JSON.parse(
+        localStorage.getItem("utoolity.polygon.polygons") ?? "[]",
+      ) as PolygonAnnotation[];
       const savedTool = localStorage.getItem("utoolity.polygon.tool");
       setPoints(savedPoints);
       setPolygons(savedPolygons);
-      if (savedTool === "edit" || savedTool === "delete" || savedTool === "add") setTool(savedTool);
+      if (savedTool === "edit" || savedTool === "delete" || savedTool === "add")
+        setTool(savedTool);
     } catch {
       // Ignore malformed local progress and start with a clean annotation.
     }
@@ -69,11 +78,21 @@ export function usePolygonAnnotation() {
   const updatePolygonPoint = useCallback(
     (polygonId: string, pointIndex: number, point: Point) => {
       const polygon = polygons.find(({ id }) => id === polygonId);
-      if (!polygon || pointIndex < 0 || pointIndex >= polygon.points.length) return;
+      if (!polygon || pointIndex < 0 || pointIndex >= polygon.points.length)
+        return;
       setHistory((prev) => [...prev, { points, polygons }]);
-      setPolygons((prev) => prev.map((item) => item.id !== polygonId
-        ? item
-        : { ...item, points: item.points.map((value, index) => index === pointIndex ? point : value) }));
+      setPolygons((prev) =>
+        prev.map((item) =>
+          item.id !== polygonId
+            ? item
+            : {
+                ...item,
+                points: item.points.map((value, index) =>
+                  index === pointIndex ? point : value,
+                ),
+              },
+        ),
+      );
     },
     [points, polygons],
   );
@@ -111,9 +130,20 @@ export function usePolygonAnnotation() {
       if (!polygon || polygon.points.length < 2) return;
       setHistory((prev) => [...prev, { points, polygons }]);
       const insertAt = Math.min(polygon.points.length, edgeIndex + 1);
-      setPolygons((prev) => prev.map((item) => item.id !== polygonId
-        ? item
-        : { ...item, points: [...item.points.slice(0, insertAt), point, ...item.points.slice(insertAt)] }));
+      setPolygons((prev) =>
+        prev.map((item) =>
+          item.id !== polygonId
+            ? item
+            : {
+                ...item,
+                points: [
+                  ...item.points.slice(0, insertAt),
+                  point,
+                  ...item.points.slice(insertAt),
+                ],
+              },
+        ),
+      );
       setSelectedPointIndex(insertAt);
     },
     [points, polygons],
@@ -124,24 +154,41 @@ export function usePolygonAnnotation() {
 
     saveHistory();
 
-    setPoints((prev) => prev.filter((_, index) => index !== selectedPointIndex));
+    setPoints((prev) =>
+      prev.filter((_, index) => index !== selectedPointIndex),
+    );
     setSelectedPointIndex(null);
   }, [points.length, selectedPointIndex, saveHistory]);
 
   const deletePolygonPoint = useCallback(
     (polygonId: string, pointIndex: number) => {
       const polygon = polygons.find(({ id }) => id === polygonId);
-      if (!polygon || polygon.points.length <= 3 || pointIndex < 0 || pointIndex >= polygon.points.length) return;
+      if (
+        !polygon ||
+        polygon.points.length <= 3 ||
+        pointIndex < 0 ||
+        pointIndex >= polygon.points.length
+      )
+        return;
       setHistory((prev) => [...prev, { points, polygons }]);
-      setPolygons((prev) => prev.map((item) => item.id !== polygonId
-        ? item
-        : { ...item, points: item.points.filter((_, index) => index !== pointIndex) }));
+      setPolygons((prev) =>
+        prev.map((item) =>
+          item.id !== polygonId
+            ? item
+            : {
+                ...item,
+                points: item.points.filter((_, index) => index !== pointIndex),
+              },
+        ),
+      );
     },
     [points, polygons],
   );
 
   const updatePolygonLabel = useCallback((polygonId: string, label: string) => {
-    setPolygons((prev) => prev.map((item) => item.id === polygonId ? { ...item, label } : item));
+    setPolygons((prev) =>
+      prev.map((item) => (item.id === polygonId ? { ...item, label } : item)),
+    );
   }, []);
 
   const completePolygon = useCallback(() => {

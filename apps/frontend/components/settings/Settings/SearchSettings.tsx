@@ -1,13 +1,6 @@
-
 "use client";
 
-import {
-  AppWindow,
-  Monitor,
-  Music2,
-  Palette,
-  Search,
-} from "lucide-react";
+import { AppWindow, Monitor, Music2, Palette, Search } from "lucide-react";
 import { Card, CardContent } from "@repo/ui/shadcn/card";
 
 type SectionId = "appearance" | "desktop" | "sound" | "device";
@@ -29,7 +22,8 @@ const results: {
     title: "Appearance",
     description: "Wallpaper, lock screen, animation, theme and text size",
     icon: Palette,
-    keywords: "wallpaper background lock screen animation grain theme text size",
+    keywords:
+      "wallpaper background lock screen animation grain theme text size",
   },
   {
     section: "desktop",
@@ -54,10 +48,7 @@ const results: {
   },
 ];
 
-export default function SearchSettings({
-  query,
-  onNavigate,
-}: Props) {
+export default function SearchSettings({ query, onNavigate }: Props) {
   const normalized = query.trim().toLowerCase();
 
   const filtered = results.filter((item) =>
@@ -69,9 +60,7 @@ export default function SearchSettings({
   return (
     <div className="space-y-4">
       <div>
-        <h2 className="text-base font-bold tracking-tight">
-          Search settings
-        </h2>
+        <h2 className="text-base font-bold tracking-tight">Search settings</h2>
         <p className="mt-1 text-sm text-muted-foreground">
           Results for &quot;{query}&quot;
         </p>

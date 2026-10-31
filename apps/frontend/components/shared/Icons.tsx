@@ -6,11 +6,7 @@ interface IconProps {
   className?: string;
 }
 
-export function Icon({
-  name,
-  size = 23,
-  className = "",
-}: IconProps) {
+export function Icon({ name, size = 23, className = "" }: IconProps) {
   return (
     <div
       aria-hidden="true"

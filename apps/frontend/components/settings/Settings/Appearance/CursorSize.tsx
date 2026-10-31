@@ -11,10 +11,7 @@ export default function CursorSize() {
     "utoolity.cursor-size",
     "32",
   );
-  const size = Math.min(
-    MAX_SIZE,
-    Math.max(MIN_SIZE, Number(sizeValue) || 32),
-  );
+  const size = Math.min(MAX_SIZE, Math.max(MIN_SIZE, Number(sizeValue) || 32));
 
   return (
     <Card>

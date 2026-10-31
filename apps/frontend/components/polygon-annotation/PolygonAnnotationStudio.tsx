@@ -19,19 +19,27 @@ type LabelMeShape = {
   shape_type: "polygon" | "rectangle";
 };
 
-const tools: Array<{ id: "annotate" | "edit"; label: string; shortcut: string; icon: string }> = [
+const tools: Array<{
+  id: "annotate" | "edit";
+  label: string;
+  shortcut: string;
+  icon: string;
+}> = [
   { id: "annotate", label: "Annotate", shortcut: "W", icon: "✦" },
   { id: "edit", label: "Edit Point", shortcut: "E", icon: "✎" },
 ] as const;
 
 export default function PolygonAnnotationPage() {
   const [images, setImages] = useState<ImageItem[]>([]);
-  const [selectedImageIndex, setSelectedImageIndex] = useState<number | null>(null);
-  const [selectedPolygonId, setSelectedPolygonId] = useState<string | null>(null);
+  const [selectedImageIndex, setSelectedImageIndex] = useState<number | null>(
+    null,
+  );
+  const [selectedPolygonId, setSelectedPolygonId] = useState<string | null>(
+    null,
+  );
   const [zoom, setZoom] = useState(1);
   const [removeMode, setRemoveMode] = useState(false);
   const [classPopupOpen, setClassPopupOpen] = useState(false);
-
 
   const {
     points,
@@ -57,7 +65,10 @@ export default function PolygonAnnotationPage() {
     canUndo,
   } = usePolygonAnnotation();
   const [annotationsLoaded, setAnnotationsLoaded] = useState(false);
-  const [imageDimensions, setImageDimensions] = useState({ width: 0, height: 0 });
+  const [imageDimensions, setImageDimensions] = useState({
+    width: 0,
+    height: 0,
+  });
   const annotationRequestRef = useRef(0);
 
   const loadImageAnnotations = async (image: ImageItem, folderPath: string) => {
@@ -75,19 +86,23 @@ export default function PolygonAnnotationPage() {
         typeof document.imageWidth === "number" &&
         typeof document.imageHeight === "number"
       ) {
-        setImageDimensions({ width: document.imageWidth, height: document.imageHeight });
+        setImageDimensions({
+          width: document.imageWidth,
+          height: document.imageHeight,
+        });
       }
       if (requestId !== annotationRequestRef.current) return;
       loadAnnotations(
         (document.shapes ?? []).map((shape) => {
-          const points = shape.shape_type === "rectangle" && shape.points.length === 2
-            ? [
-                { x: shape.points[0][0], y: shape.points[0][1] },
-                { x: shape.points[1][0], y: shape.points[0][1] },
-                { x: shape.points[1][0], y: shape.points[1][1] },
-                { x: shape.points[0][0], y: shape.points[1][1] },
-              ]
-            : shape.points.map(([x, y]) => ({ x, y }));
+          const points =
+            shape.shape_type === "rectangle" && shape.points.length === 2
+              ? [
+                  { x: shape.points[0][0], y: shape.points[0][1] },
+                  { x: shape.points[1][0], y: shape.points[0][1] },
+                  { x: shape.points[1][0], y: shape.points[1][1] },
+                  { x: shape.points[0][0], y: shape.points[1][1] },
+                ]
+              : shape.points.map(([x, y]) => ({ x, y }));
           return { id: crypto.randomUUID(), label: shape.label, points };
         }),
       );
@@ -95,16 +110,25 @@ export default function PolygonAnnotationPage() {
       if (requestId !== annotationRequestRef.current) return;
       loadAnnotations([]);
     } finally {
-      if (requestId === annotationRequestRef.current) setAnnotationsLoaded(true);
+      if (requestId === annotationRequestRef.current)
+        setAnnotationsLoaded(true);
     }
   };
 
   const loadFolder = async (folderPath: string) => {
     const result = await api<{
-      entries: Array<{ name: string; path: string; type: "file" | "directory" }>;
+      entries: Array<{
+        name: string;
+        path: string;
+        type: "file" | "directory";
+      }>;
     }>(`/api/storage/list?path=${encodeURIComponent(folderPath)}`);
     const loadedImages = result.entries
-      .filter((entry) => entry.type === "file" && /\.(avif|bmp|gif|jpe?g|png|svg|webp)$/i.test(entry.name))
+      .filter(
+        (entry) =>
+          entry.type === "file" &&
+          /\.(avif|bmp|gif|jpe?g|png|svg|webp)$/i.test(entry.name),
+      )
       .sort((a, b) => a.name.localeCompare(b.name))
       .map((entry) => ({
         name: entry.name,
@@ -124,7 +148,9 @@ export default function PolygonAnnotationPage() {
     const savedFolder = localStorage.getItem("utoolity.polygon.folder");
     if (savedFolder) void loadFolder(savedFolder).catch(() => undefined);
     const handleFolderSelected = (event: Event) => {
-      const detail = (event as CustomEvent<{ path?: string; requester?: string }>).detail;
+      const detail = (
+        event as CustomEvent<{ path?: string; requester?: string }>
+      ).detail;
       if (detail?.requester !== "polygon-annotation") return;
       const path = detail.path;
       if (path) void loadFolder(path).catch(() => undefined);
@@ -133,22 +159,38 @@ export default function PolygonAnnotationPage() {
       const detail = (event as CustomEvent<{ path?: string }>).detail;
       if (detail?.path) void loadFolder(detail.path).catch(() => undefined);
     };
-    window.addEventListener("utoolity:polygon-folder-selected", handleFolderSelected);
-    window.addEventListener("utoolity:shared-folder-changed", handleSharedFolderChanged);
+    window.addEventListener(
+      "utoolity:polygon-folder-selected",
+      handleFolderSelected,
+    );
+    window.addEventListener(
+      "utoolity:shared-folder-changed",
+      handleSharedFolderChanged,
+    );
     return () => {
-      window.removeEventListener("utoolity:polygon-folder-selected", handleFolderSelected);
-      window.removeEventListener("utoolity:shared-folder-changed", handleSharedFolderChanged);
+      window.removeEventListener(
+        "utoolity:polygon-folder-selected",
+        handleFolderSelected,
+      );
+      window.removeEventListener(
+        "utoolity:shared-folder-changed",
+        handleSharedFolderChanged,
+      );
     };
   }, []);
 
   const currentImage =
-    selectedImageIndex !== null
-      ? images[selectedImageIndex] ?? null
-      : null;
+    selectedImageIndex !== null ? (images[selectedImageIndex] ?? null) : null;
 
   const saveAnnotations = useCallback(async () => {
     const folder = localStorage.getItem("utoolity.polygon.folder");
-    if (!folder || !currentImage || imageDimensions.width <= 0 || imageDimensions.height <= 0) return;
+    if (
+      !folder ||
+      !currentImage ||
+      imageDimensions.width <= 0 ||
+      imageDimensions.height <= 0
+    )
+      return;
     const labelMeDocument = {
       version: "7.0.3",
       flags: {},
@@ -175,11 +217,14 @@ export default function PolygonAnnotationPage() {
     });
   }, [currentImage, imageDimensions, polygons]);
 
-  const navigateToImage = useCallback((nextIndex: number) => {
-    void saveAnnotations()
-      .catch(() => undefined)
-      .finally(() => setSelectedImageIndex(nextIndex));
-  }, [saveAnnotations]);
+  const navigateToImage = useCallback(
+    (nextIndex: number) => {
+      void saveAnnotations()
+        .catch(() => undefined)
+        .finally(() => setSelectedImageIndex(nextIndex));
+    },
+    [saveAnnotations],
+  );
 
   useEffect(() => {
     const handleKeyboard = (event: KeyboardEvent) => {
@@ -208,20 +253,22 @@ export default function PolygonAnnotationPage() {
         return;
       }
 
-      if (
-        (event.ctrlKey || event.metaKey) &&
-        event.key.toLowerCase() === "z"
-      ) {
+      if ((event.ctrlKey || event.metaKey) && event.key.toLowerCase() === "z") {
         event.preventDefault();
         undo();
         return;
       }
 
       if ((event.ctrlKey || event.metaKey) && event.key.toLowerCase() === "c") {
-        const polygon = polygons.find(({ id }) => id === selectedPolygonId) ?? polygons.at(-1);
+        const polygon =
+          polygons.find(({ id }) => id === selectedPolygonId) ??
+          polygons.at(-1);
         if (polygon) {
           event.preventDefault();
-          localStorage.setItem("utoolity.polygon.clipboard", JSON.stringify(polygon));
+          localStorage.setItem(
+            "utoolity.polygon.clipboard",
+            JSON.stringify(polygon),
+          );
         }
         return;
       }
@@ -230,7 +277,10 @@ export default function PolygonAnnotationPage() {
         const saved = localStorage.getItem("utoolity.polygon.clipboard");
         if (saved) {
           try {
-            const polygon = JSON.parse(saved) as { label?: string; points?: { x: number; y: number }[] };
+            const polygon = JSON.parse(saved) as {
+              label?: string;
+              points?: { x: number; y: number }[];
+            };
             if (Array.isArray(polygon.points) && polygon.points.length >= 3) {
               event.preventDefault();
               loadAnnotations([
@@ -294,11 +344,21 @@ export default function PolygonAnnotationPage() {
           break;
         case "a":
         case "arrowleft":
-          if (images.length) navigateToImage(selectedImageIndex === null ? 0 : (selectedImageIndex - 1 + images.length) % images.length);
+          if (images.length)
+            navigateToImage(
+              selectedImageIndex === null
+                ? 0
+                : (selectedImageIndex - 1 + images.length) % images.length,
+            );
           break;
         case "arrowright":
         case "d":
-          if (images.length) navigateToImage(selectedImageIndex === null ? 0 : (selectedImageIndex + 1) % images.length);
+          if (images.length)
+            navigateToImage(
+              selectedImageIndex === null
+                ? 0
+                : (selectedImageIndex + 1) % images.length,
+            );
           break;
       }
     };
@@ -356,7 +416,8 @@ export default function PolygonAnnotationPage() {
       selectedImageIndex === null ||
       imageDimensions.width <= 0 ||
       imageDimensions.height <= 0
-    ) return;
+    )
+      return;
     void saveAnnotations().catch(() => undefined);
   }, [annotationsLoaded, saveAnnotations, selectedImageIndex]);
 
@@ -384,10 +445,9 @@ export default function PolygonAnnotationPage() {
       imageHeight: imageDimensions.height,
       imageWidth: imageDimensions.width,
     };
-    const blob = new Blob(
-      [JSON.stringify(labelMeDocument, null, 2)],
-      { type: "application/json" },
-    );
+    const blob = new Blob([JSON.stringify(labelMeDocument, null, 2)], {
+      type: "application/json",
+    });
 
     const url = URL.createObjectURL(blob);
     const link = document.createElement("a");
@@ -410,10 +470,20 @@ export default function PolygonAnnotationPage() {
         onExport={downloadJSON}
         canNavigate={images.length > 1}
         onPrevious={() => {
-          if (images.length) navigateToImage(selectedImageIndex === null ? 0 : (selectedImageIndex - 1 + images.length) % images.length);
+          if (images.length)
+            navigateToImage(
+              selectedImageIndex === null
+                ? 0
+                : (selectedImageIndex - 1 + images.length) % images.length,
+            );
         }}
         onNext={() => {
-          if (images.length) navigateToImage(selectedImageIndex === null ? 0 : (selectedImageIndex + 1) % images.length);
+          if (images.length)
+            navigateToImage(
+              selectedImageIndex === null
+                ? 0
+                : (selectedImageIndex + 1) % images.length,
+            );
         }}
       />
 
@@ -450,10 +520,16 @@ export default function PolygonAnnotationPage() {
               {classPopupOpen && selectedPolygonId ? (
                 <input
                   autoFocus
-                  value={polygons.find(({ id }) => id === selectedPolygonId)?.label ?? ""}
-                  onChange={(event) => updatePolygonLabel(selectedPolygonId, event.target.value)}
+                  value={
+                    polygons.find(({ id }) => id === selectedPolygonId)
+                      ?.label ?? ""
+                  }
+                  onChange={(event) =>
+                    updatePolygonLabel(selectedPolygonId, event.target.value)
+                  }
                   onKeyDown={(event) => {
-                    if (event.key === "Enter" || event.key === "Escape") setClassPopupOpen(false);
+                    if (event.key === "Enter" || event.key === "Escape")
+                      setClassPopupOpen(false);
                   }}
                   aria-label="Change polygon class"
                   className="h-11 w-36 rounded-full border border-primary bg-background px-3 text-sm outline-none focus:ring-2 focus:ring-ring"
@@ -478,7 +554,11 @@ export default function PolygonAnnotationPage() {
                     <button
                       type="button"
                       onClick={() => setTool(item.id)}
-                      title={item.shortcut ? `${item.label} (${item.shortcut})` : item.label}
+                      title={
+                        item.shortcut
+                          ? `${item.label} (${item.shortcut})`
+                          : item.label
+                      }
                       className={`flex size-11 items-center justify-center rounded-full border text-base shadow-sm transition-all duration-200 hover:-translate-y-1 hover:scale-110 active:scale-95 ${
                         active
                           ? "border-primary bg-primary text-primary-foreground shadow-md"
@@ -489,7 +569,9 @@ export default function PolygonAnnotationPage() {
                     </button>
 
                     <span className="pointer-events-none absolute bottom-full left-1/2 mb-3 -translate-x-1/2 whitespace-nowrap rounded-md border border-border bg-popover px-2 py-1 text-[11px] text-popover-foreground opacity-0 shadow-md transition-opacity group-hover:opacity-100">
-                      {item.shortcut ? `${item.label} · ${item.shortcut}` : item.label}
+                      {item.shortcut
+                        ? `${item.label} · ${item.shortcut}`
+                        : item.label}
                     </span>
                   </div>
                 );
@@ -567,9 +649,7 @@ export default function PolygonAnnotationPage() {
                 <button
                   type="button"
                   onClick={() =>
-                    window.dispatchEvent(
-                      new CustomEvent("polygon-zoom-out"),
-                    )
+                    window.dispatchEvent(new CustomEvent("polygon-zoom-out"))
                   }
                   disabled={zoom <= 1}
                   title="Zoom Out (- / Ctrl+Wheel)"
@@ -594,9 +674,7 @@ export default function PolygonAnnotationPage() {
                 <button
                   type="button"
                   onClick={() =>
-                    window.dispatchEvent(
-                      new CustomEvent("polygon-zoom-in"),
-                    )
+                    window.dispatchEvent(new CustomEvent("polygon-zoom-in"))
                   }
                   disabled={zoom >= 5}
                   title="Zoom In (+ / Ctrl+Wheel)"
@@ -614,9 +692,7 @@ export default function PolygonAnnotationPage() {
                 <button
                   type="button"
                   onClick={() =>
-                    window.dispatchEvent(
-                      new CustomEvent("polygon-fit"),
-                    )
+                    window.dispatchEvent(new CustomEvent("polygon-fit"))
                   }
                   disabled={zoom === 1}
                   title="Reset Zoom (0)"

@@ -45,20 +45,41 @@ export const appTitles: Record<DesktopAppId, string> = {
   notepad: "Notepad",
 };
 
-export default function ToolContent({ app, filePath, onOpenFile }: { app: DesktopAppId; filePath?: string; onOpenFile?: (path: string, type: "image" | "text") => void }) {
+export default function ToolContent({
+  app,
+  filePath,
+  onOpenFile,
+}: {
+  app: DesktopAppId;
+  filePath?: string;
+  onOpenFile?: (path: string, type: "image" | "text") => void;
+}) {
   switch (app) {
-    case "files": return <FileManager onOpenFile={onOpenFile} />;
-    case "settings": return <Settings />;
-    case "polygon-annotation": return <PolygonAnnotationPage />;
-    case "video-converter": return <VideoConverterPage />;
-    case "image-converter": return <ImageConverterPage />;
-    case "image-classification": return <ImageClassificationPage />;
-    case "video-trim": return <VideoTrimPage />;
-    case "video-merge": return <VideoMergePage />;
-    case "video-to-images": return <VideoToImagesPage />;
-    case "bounding-box": return <BoundingBoxPage />;
-    case "augmentation": return <AugmentationPage />;
-    case "gallery": return <Gallery initialPath={filePath} />;
-    case "notepad": return <Notepad initialPath={filePath} />;
+    case "files":
+      return <FileManager onOpenFile={onOpenFile} />;
+    case "settings":
+      return <Settings />;
+    case "polygon-annotation":
+      return <PolygonAnnotationPage />;
+    case "video-converter":
+      return <VideoConverterPage />;
+    case "image-converter":
+      return <ImageConverterPage />;
+    case "image-classification":
+      return <ImageClassificationPage />;
+    case "video-trim":
+      return <VideoTrimPage />;
+    case "video-merge":
+      return <VideoMergePage />;
+    case "video-to-images":
+      return <VideoToImagesPage />;
+    case "bounding-box":
+      return <BoundingBoxPage />;
+    case "augmentation":
+      return <AugmentationPage />;
+    case "gallery":
+      return <Gallery initialPath={filePath} />;
+    case "notepad":
+      return <Notepad initialPath={filePath} />;
   }
 }

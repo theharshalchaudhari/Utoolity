@@ -1,4 +1,3 @@
-
 import Animation from "./Appearance/Animation";
 import CursorSize from "./Appearance/CursorSize";
 import Grain from "./Appearance/Grain";

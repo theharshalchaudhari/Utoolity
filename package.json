@@ -10,6 +10,7 @@
   },
   "devDependencies": {
     "prettier": "catalog:",
+    "prettier-plugin-tailwindcss-canonical-classes": "^0.1.6",
     "turbo": "catalog:",
     "typescript": "catalog:"
   },

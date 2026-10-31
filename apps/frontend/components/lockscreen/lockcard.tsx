@@ -6,12 +6,7 @@ import {
   useState,
   type FormEvent,
 } from "react";
-import {
-  LockKeyhole,
-  Maximize,
-  ShieldCheck,
-  WifiOff,
-} from "lucide-react";
+import { LockKeyhole, Maximize, ShieldCheck, WifiOff } from "lucide-react";
 import { api, ApiError } from "../../lib/api";
 import { useClock } from "../shared/useClock";
 import { saveWallpaperPreference } from "../../lib/wallpapers";
@@ -69,7 +64,10 @@ function applyProfilePreferences(preferences?: Record<string, string>) {
     root.style.colorScheme = theme;
   } else {
     localStorage.removeItem("utoolity.theme");
-    const deviceTheme = window.matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light";
+    const deviceTheme = window.matchMedia("(prefers-color-scheme: dark)")
+      .matches
+      ? "dark"
+      : "light";
     root.classList.toggle("dark", deviceTheme === "dark");
     root.classList.toggle("light", deviceTheme === "light");
     root.style.colorScheme = deviceTheme;
@@ -78,7 +76,11 @@ function applyProfilePreferences(preferences?: Record<string, string>) {
   localStorage.setItem("utoolity.grain", grain);
   root.dataset.grain = grain.toLowerCase();
 }
-function recordLockscreenError(title: string, message: string, errorName = "Lockscreen error") {
+function recordLockscreenError(
+  title: string,
+  message: string,
+  errorName = "Lockscreen error",
+) {
   const notice = {
     id: `lockscreen-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
     type: "error" as const,
@@ -89,16 +91,31 @@ function recordLockscreenError(title: string, message: string, errorName = "Lock
   // Persist before dispatch so startup errors survive refresh and do not depend
   // on whether the tray listener has mounted yet.
   try {
-    const saved = JSON.parse(window.sessionStorage.getItem("utoolity.notifications") || "[]") as Array<{ id?: string }>;
-    window.sessionStorage.setItem("utoolity.notifications", JSON.stringify([notice, ...saved.filter((item) => item.id !== notice.id)].slice(0, 100)));
+    const saved = JSON.parse(
+      window.sessionStorage.getItem("utoolity.notifications") || "[]",
+    ) as Array<{ id?: string }>;
+    window.sessionStorage.setItem(
+      "utoolity.notifications",
+      JSON.stringify(
+        [notice, ...saved.filter((item) => item.id !== notice.id)].slice(
+          0,
+          100,
+        ),
+      ),
+    );
   } catch {
     try {
-      window.sessionStorage.setItem("utoolity.notifications", JSON.stringify([notice]));
+      window.sessionStorage.setItem(
+        "utoolity.notifications",
+        JSON.stringify([notice]),
+      );
     } catch {
       // Keep the lock screen usable if browser storage is unavailable.
     }
   }
-  window.dispatchEvent(new CustomEvent("utoolity:notification", { detail: notice }));
+  window.dispatchEvent(
+    new CustomEvent("utoolity:notification", { detail: notice }),
+  );
 }
 
 function getGreeting(date: Date): string {
@@ -154,9 +171,7 @@ function Lockcard({
     clearInactivityTimer();
     setPassword("");
     setError("");
-    setProfile((current) =>
-      current ? { ...current, locked: true } : current,
-    );
+    setProfile((current) => (current ? { ...current, locked: true } : current));
   }, [clearInactivityTimer]);
   const startInactivityTimer = useCallback(() => {
     clearInactivityTimer();
@@ -181,7 +196,9 @@ function Lockcard({
       if (!active) return;
       setAuthenticated(hasAuthenticatedSession);
       setLockscreenState(
-        hasAuthenticatedSession && initialState === "sleep" ? "sleep" : "locked",
+        hasAuthenticatedSession && initialState === "sleep"
+          ? "sleep"
+          : "locked",
       );
 
       const savedHostname = window.localStorage
@@ -192,10 +209,14 @@ function Lockcard({
       setHostname(configuredHostname);
       // Cached profile is only a temporary display hint; keep the default wallpaper
       // and setup prompt visible instead of displaying a loading lock screen.
-      const cachedProfileRaw = window.localStorage.getItem("utoolity.cached-user");
+      const cachedProfileRaw = window.localStorage.getItem(
+        "utoolity.cached-user",
+      );
       if (cachedProfileRaw) {
         try {
-          const cached = JSON.parse(cachedProfileRaw) as LockProfileResponse["user"];
+          const cached = JSON.parse(
+            cachedProfileRaw,
+          ) as LockProfileResponse["user"];
           if (cached?.id && cached.hostname && cached.displayName) {
             setProfile({ ...cached, locked: true });
             setHostname(cached.hostname);
@@ -221,21 +242,40 @@ function Lockcard({
           setError("");
           return;
         }
-        if (!resolvedUser) throw new Error("The backend returned an empty profile.");
+        if (!resolvedUser)
+          throw new Error("The backend returned an empty profile.");
 
         // Profile preferences belong to the authenticated desktop session.
         // A lock-screen lookup only resolves the identity and must not swap the
         // wallpaper or theme underneath the persistent background layer.
-        window.localStorage.setItem("utoolity.cached-user", JSON.stringify(resolvedUser));
-        window.localStorage.setItem("utoolity.authenticated-user-id", resolvedUser.id);
-        window.localStorage.setItem(HOSTNAME_STORAGE_KEY, resolvedUser.hostname);
+        window.localStorage.setItem(
+          "utoolity.cached-user",
+          JSON.stringify(resolvedUser),
+        );
+        window.localStorage.setItem(
+          "utoolity.authenticated-user-id",
+          resolvedUser.id,
+        );
+        window.localStorage.setItem(
+          HOSTNAME_STORAGE_KEY,
+          resolvedUser.hostname,
+        );
         setProfile({ ...resolvedUser, locked: true });
         setHostname(resolvedUser.hostname);
         setError("");
       } catch (cause) {
         if (!active) return;
-        console.warn("Lock-screen profile lookup failed; preserving cached profile if available.", cause);
-        recordLockscreenError("Lock-screen profile lookup failed", cause instanceof Error ? cause.message : String(cause), cause instanceof ApiError ? `HTTP ${cause.status}` : "Profile lookup error");
+        console.warn(
+          "Lock-screen profile lookup failed; preserving cached profile if available.",
+          cause,
+        );
+        recordLockscreenError(
+          "Lock-screen profile lookup failed",
+          cause instanceof Error ? cause.message : String(cause),
+          cause instanceof ApiError
+            ? `HTTP ${cause.status}`
+            : "Profile lookup error",
+        );
         // Never turn a transport/server error into a fake Guest assignment.
         // Guest is shown only when the backend explicitly resolves Guest.
         setProfile((current) => current ?? null);
@@ -270,7 +310,10 @@ function Lockcard({
     };
     window.addEventListener("utoolity:shell-state-changed", syncShellState);
     return () =>
-      window.removeEventListener("utoolity:shell-state-changed", syncShellState);
+      window.removeEventListener(
+        "utoolity:shell-state-changed",
+        syncShellState,
+      );
   }, []);
   useEffect(() => {
     setLockscreenState(initialState);
@@ -297,7 +340,12 @@ function Lockcard({
   }, [authenticated, leaveLockscreen, lockscreenState, profile]);
   useEffect(() => {
     if (!profile || lockscreenState !== "locked") return;
-    const activityEvents = ["pointerdown", "keydown", "mousemove", "touchstart"];
+    const activityEvents = [
+      "pointerdown",
+      "keydown",
+      "mousemove",
+      "touchstart",
+    ];
     const handleActivity = () => startInactivityTimer();
     activityEvents.forEach((event) =>
       window.addEventListener(event, handleActivity, { passive: true }),
@@ -329,14 +377,28 @@ function Lockcard({
       }
       window.localStorage.setItem(HOSTNAME_STORAGE_KEY, response.user.hostname);
       window.localStorage.setItem("utoolity.device-id", response.user.hostname);
-      window.localStorage.setItem("utoolity.cached-user", JSON.stringify(response.user));
-      window.localStorage.setItem("utoolity.authenticated-user-id", response.user.id);
+      window.localStorage.setItem(
+        "utoolity.cached-user",
+        JSON.stringify(response.user),
+      );
+      window.localStorage.setItem(
+        "utoolity.authenticated-user-id",
+        response.user.id,
+      );
       setHostname(response.user.hostname);
       setProfile({ ...response.user, locked: true });
       setDeviceIdInput("");
     } catch (cause) {
-      recordLockscreenError("Device ID lookup failed", cause instanceof Error ? cause.message : String(cause), cause instanceof ApiError ? `HTTP ${cause.status}` : "Device ID error");
-      setError(cause instanceof Error ? cause.message : "Unable to verify this device ID.");
+      recordLockscreenError(
+        "Device ID lookup failed",
+        cause instanceof Error ? cause.message : String(cause),
+        cause instanceof ApiError ? `HTTP ${cause.status}` : "Device ID error",
+      );
+      setError(
+        cause instanceof Error
+          ? cause.message
+          : "Unable to verify this device ID.",
+      );
     } finally {
       setChecking(false);
     }
@@ -345,14 +407,27 @@ function Lockcard({
     event.preventDefault();
     const hostId = deviceIdInput.trim();
     const displayName = displayNameInput.trim();
-    if (!hostId || displayName.length < 2 || newPasswordInput.length < 8 || checking) return;
+    if (
+      !hostId ||
+      displayName.length < 2 ||
+      newPasswordInput.length < 8 ||
+      checking
+    )
+      return;
     setChecking(true);
     setError("");
     try {
-      const response = await api<{ success: boolean; user: NonNullable<LockProfileResponse["user"]> }>(
-        "/api/lockscreen/register",
-        { method: "POST", body: JSON.stringify({ hostname: hostId, displayName, password: newPasswordInput }) },
-      );
+      const response = await api<{
+        success: boolean;
+        user: NonNullable<LockProfileResponse["user"]>;
+      }>("/api/lockscreen/register", {
+        method: "POST",
+        body: JSON.stringify({
+          hostname: hostId,
+          displayName,
+          password: newPasswordInput,
+        }),
+      });
       const user = response.user;
       setNewPasswordInput("");
       applyProfilePreferences(user.preferences);
@@ -365,8 +440,18 @@ function Lockcard({
       setHostname(user.hostname);
       leaveLockscreen();
     } catch (cause) {
-      recordLockscreenError("Device registration failed", cause instanceof Error ? cause.message : String(cause), cause instanceof ApiError ? `HTTP ${cause.status}` : "Registration error");
-      setError(cause instanceof Error ? cause.message : "Unable to create this profile.");
+      recordLockscreenError(
+        "Device registration failed",
+        cause instanceof Error ? cause.message : String(cause),
+        cause instanceof ApiError
+          ? `HTTP ${cause.status}`
+          : "Registration error",
+      );
+      setError(
+        cause instanceof Error
+          ? cause.message
+          : "Unable to create this profile.",
+      );
     } finally {
       setChecking(false);
     }
@@ -395,7 +480,13 @@ function Lockcard({
       window.localStorage.setItem(HOSTNAME_STORAGE_KEY, user.hostname);
       leaveLockscreen();
     } catch (cause) {
-      recordLockscreenError("Unlock failed", cause instanceof Error ? cause.message : String(cause), cause instanceof ApiError ? `HTTP ${cause.status}` : "Authentication error");
+      recordLockscreenError(
+        "Unlock failed",
+        cause instanceof Error ? cause.message : String(cause),
+        cause instanceof ApiError
+          ? `HTTP ${cause.status}`
+          : "Authentication error",
+      );
       if (!(cause instanceof ApiError && cause.status === 401)) {
         console.error("Lockscreen authentication failed:", cause);
       }
@@ -418,7 +509,11 @@ function Lockcard({
         await document.exitFullscreen();
       }
     } catch (cause) {
-      recordLockscreenError("Fullscreen unavailable", cause instanceof Error ? cause.message : String(cause), "Fullscreen error");
+      recordLockscreenError(
+        "Fullscreen unavailable",
+        cause instanceof Error ? cause.message : String(cause),
+        "Fullscreen error",
+      );
       setError("Fullscreen is not available.");
     }
   };
@@ -440,140 +535,193 @@ function Lockcard({
     >
       <div
         className={`lockscreen-content relative z-10 flex w-full flex-col items-center transition-[opacity,transform] duration-350 ease-out motion-reduce:transition-none ${
-          leaving ? "-translate-y-3 opacity-0" : isVisible ? "translate-y-0 opacity-100" : "translate-y-0 opacity-0"
+          leaving
+            ? "-translate-y-3 opacity-0"
+            : isVisible
+              ? "translate-y-0 opacity-100"
+              : "translate-y-0 opacity-0"
         }`}
       >
-
-
-      <button
-        type="button"
-        onClick={toggleFullscreen}
-        onPointerDown={(event) => event.stopPropagation()}
-        onKeyDown={(event) => event.stopPropagation()}
-        aria-label={fullscreen ? "Exit fullscreen" : "Enter fullscreen"}
-        className="absolute top-5 right-5 z-20 rounded-full border border-white/20 bg-black/20 p-3 text-white/80 backdrop-blur-2xl transition hover:bg-black/35 hover:text-white"
-      >
-        <Maximize className="size-4" />
-      </button>
-
-
-
-
-      <div className="backdrop-blur-xs h-screen relative flex w-full flex-col items-center px-5 py-8 text-center">
-        <p className="text-xl font-bold tracking-[0.24em] text-white/80">
-          {getGreeting(now)}
-        </p>
-        <time
-          dateTime={now.toISOString()}
-          className="mt-3 bg-linear-to-b from-primary to-black bg-clip-text font-mono text-[clamp(1rem,16vw,11.5rem)] leading-none font-black tracking-[-0.08em] text-transparent tabular-nums"
+        <button
+          type="button"
+          onClick={toggleFullscreen}
+          onPointerDown={(event) => event.stopPropagation()}
+          onKeyDown={(event) => event.stopPropagation()}
+          aria-label={fullscreen ? "Exit fullscreen" : "Enter fullscreen"}
+          className="absolute top-5 right-5 z-20 rounded-full border border-white/20 bg-black/20 p-3 text-white/80 backdrop-blur-2xl transition hover:bg-black/35 hover:text-white"
         >
-          {now.toLocaleTimeString(undefined, {
-            hour: "numeric",
-            minute: "2-digit",
-            hour12: true,
-          })}
-        </time>
-        <p className="mt-5 text-base font-semibold text-white/80 sm:text-xl">
-          {now.toLocaleDateString(undefined, {
-            weekday: "long",
-            month: "long",
-            day: "numeric",
-          })}
-        </p>
-        <div className="mt-12 flex w-full flex-col items-center">
-          <div className="mb-4 flex size-20 items-center justify-center rounded-full border border-white/25 bg-black/15 shadow-lg backdrop-blur-sm">
-            <LockKeyhole
-              className={`size-8 text-white/90 transition-opacity duration-500 ${
-                lockscreenState === "locked" ? "opacity-100" : "opacity-35"
-              }`}
-            />
-          </div>
-          <h1 className="max-w-full wrap-break-word text-xl font-bold text-white">
-            {profile?.displayName ?? "Set up this device"}
-          </h1>
-          {!profile && !needsRegistration ? (
-            <form
-              onSubmit={handleDeviceIdSubmit}
-              className="mt-8 flex w-full max-w-sm flex-col items-center"
-            >
-              <p className="mb-4 text-sm font-medium tracking-wide text-white/80">
-                Enter your assigned device ID
-              </p>
-              <input
-                aria-label="Device ID"
-                type="text"
-                value={deviceIdInput}
-                onChange={(event) => setDeviceIdInput(event.target.value)}
-                placeholder="e.g. L-MHP-001"
-                autoComplete="off"
-                autoCapitalize="none"
-                spellCheck={false}
-                disabled={checking}
-                className="w-full rounded-2xl border border-white/20 bg-black/25 px-5 py-4 text-center text-lg text-white outline-none backdrop-blur-sm placeholder:text-white/45 focus:border-white/50 focus:ring-2 focus:ring-white/20 disabled:opacity-50"
+          <Maximize className="size-4" />
+        </button>
+
+        <div className="backdrop-blur-xs h-screen relative flex w-full flex-col items-center px-5 py-8 text-center">
+          <p className="text-xl font-bold tracking-[0.24em] text-white/80">
+            {getGreeting(now)}
+          </p>
+          <time
+            dateTime={now.toISOString()}
+            className="mt-3 bg-linear-to-b from-primary to-black bg-clip-text font-mono text-[clamp(1rem,16vw,11.5rem)] leading-none font-black tracking-[-0.08em] text-transparent tabular-nums"
+          >
+            {now.toLocaleTimeString(undefined, {
+              hour: "numeric",
+              minute: "2-digit",
+              hour12: true,
+            })}
+          </time>
+          <p className="mt-5 text-base font-semibold text-white/80 sm:text-xl">
+            {now.toLocaleDateString(undefined, {
+              weekday: "long",
+              month: "long",
+              day: "numeric",
+            })}
+          </p>
+          <div className="mt-12 flex w-full flex-col items-center">
+            <div className="mb-4 flex size-20 items-center justify-center rounded-full border border-white/25 bg-black/15 shadow-lg backdrop-blur-sm">
+              <LockKeyhole
+                className={`size-8 text-white/90 transition-opacity duration-500 ${
+                  lockscreenState === "locked" ? "opacity-100" : "opacity-35"
+                }`}
               />
-              <button
-                type="submit"
-                disabled={checking || !deviceIdInput.trim()}
-                className="mt-4 inline-flex items-center gap-2 rounded-full bg-primary px-5 py-2.5 text-sm font-semibold text-primary-foreground transition hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-50"
+            </div>
+            <h1 className="max-w-full wrap-break-word text-xl font-bold text-white">
+              {profile?.displayName ?? "Set up this device"}
+            </h1>
+            {!profile && !needsRegistration ? (
+              <form
+                onSubmit={handleDeviceIdSubmit}
+                className="mt-8 flex w-full max-w-sm flex-col items-center"
               >
-                {checking ? "Checking..." : "Use this device"}
-              </button>
-              {error && <p role="alert" className="mt-3 text-sm text-destructive">{error}</p>}
-            </form>
-          ) : !profile && needsRegistration ? (
-            <form onSubmit={handleRegisterDevice} className="mt-8 flex w-full max-w-sm flex-col items-center">
-              <p className="mb-4 text-sm font-medium tracking-wide text-white/80">New device — enter your name</p>
-              <input aria-label="Your name" type="text" value={displayNameInput} onChange={(event) => setDisplayNameInput(event.target.value)} placeholder="Your name" autoComplete="name" maxLength={80} disabled={checking} className="w-full rounded-2xl border border-white/20 bg-black/25 px-5 py-4 text-center text-lg text-white outline-none placeholder:text-white/45 focus:border-white/50 disabled:opacity-50" />
-              <input aria-label="Create password" type="password" value={newPasswordInput} onChange={(event) => setNewPasswordInput(event.target.value)} placeholder="Create password (8+ characters)" autoComplete="new-password" minLength={8} maxLength={1024} required disabled={checking} className="mt-3 w-full rounded-2xl border border-white/20 bg-black/25 px-5 py-4 text-center text-lg text-white outline-none placeholder:text-white/45 focus:border-white/50 disabled:opacity-50" />
-              <button type="submit" disabled={checking || displayNameInput.trim().length < 2 || newPasswordInput.length < 8} className="mt-4 rounded-full bg-primary px-5 py-2.5 text-sm font-semibold text-primary-foreground disabled:opacity-50">{checking ? "Saving profile…" : "Save and continue"}</button>
-              {error && <p role="alert" className="mt-3 text-sm text-destructive">{error}</p>}
-            </form>
-          ) : isLocked && lockscreenState === "locked" ? (
-            <form
-              onSubmit={handleUnlock}
-              className="mt-8 flex w-full max-w-sm flex-col items-center"
-            >
-              <p className="mb-4 text-sm font-medium tracking-wide text-white/80">
-                Sign in to unlock
-              </p>
-              <input
-                _aria-label_="Password"
-                type="password"
-                value={password}
-                onChange={(event) => setPassword(event.target.value)}
-                placeholder={profile?.passwordConfigured === false ? "No password set — leave blank" : "••••••••"}
-                autoComplete="current-password"
-                disabled={loadingProfile || checking}
-                className="w-full rounded-2xl border border-white/20 bg-black/25 px-5 py-4 text-center font-mono text-3xl tracking-[0.45em] text-white outline-none backdrop-blur-sm placeholder:text-white/45 focus:border-white/50 focus:ring-2 focus:ring-white/20 disabled:opacity-50"
-              />
-              <button
-                type="submit"
-                _aria-label_="Unlock"
-                disabled={loadingProfile || checking || (!password && profile?.passwordConfigured !== false) || !profile?.hostname}
-                className="mt-4 inline-flex items-center gap-2 rounded-full bg-primary px-5 py-2.5 text-sm font-semibold text-primary-foreground transition hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-50"
-              >
-                <ShieldCheck className="size-4" />
-                {checking ? "Checking..." : "Unlock"}
-              </button>
-              {error && (
-                <p role="alert" className="mt-3 text-sm text-destructive">
-                  {error}
+                <p className="mb-4 text-sm font-medium tracking-wide text-white/80">
+                  Enter your assigned device ID
                 </p>
-              )}
-            </form>
-          ) : (
-            <p className="mt-18 text-sm font-medium tracking-wide text-foreground/80">
-              Tap or press any key to wake
-            </p>
-          )}
+                <input
+                  aria-label="Device ID"
+                  type="text"
+                  value={deviceIdInput}
+                  onChange={(event) => setDeviceIdInput(event.target.value)}
+                  placeholder="e.g. L-MHP-001"
+                  autoComplete="off"
+                  autoCapitalize="none"
+                  spellCheck={false}
+                  disabled={checking}
+                  className="w-full rounded-2xl border border-white/20 bg-black/25 px-5 py-4 text-center text-lg text-white outline-none backdrop-blur-sm placeholder:text-white/45 focus:border-white/50 focus:ring-2 focus:ring-white/20 disabled:opacity-50"
+                />
+                <button
+                  type="submit"
+                  disabled={checking || !deviceIdInput.trim()}
+                  className="mt-4 inline-flex items-center gap-2 rounded-full bg-primary px-5 py-2.5 text-sm font-semibold text-primary-foreground transition hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-50"
+                >
+                  {checking ? "Checking..." : "Use this device"}
+                </button>
+                {error && (
+                  <p role="alert" className="mt-3 text-sm text-destructive">
+                    {error}
+                  </p>
+                )}
+              </form>
+            ) : !profile && needsRegistration ? (
+              <form
+                onSubmit={handleRegisterDevice}
+                className="mt-8 flex w-full max-w-sm flex-col items-center"
+              >
+                <p className="mb-4 text-sm font-medium tracking-wide text-white/80">
+                  New device — enter your name
+                </p>
+                <input
+                  aria-label="Your name"
+                  type="text"
+                  value={displayNameInput}
+                  onChange={(event) => setDisplayNameInput(event.target.value)}
+                  placeholder="Your name"
+                  autoComplete="name"
+                  maxLength={80}
+                  disabled={checking}
+                  className="w-full rounded-2xl border border-white/20 bg-black/25 px-5 py-4 text-center text-lg text-white outline-none placeholder:text-white/45 focus:border-white/50 disabled:opacity-50"
+                />
+                <input
+                  aria-label="Create password"
+                  type="password"
+                  value={newPasswordInput}
+                  onChange={(event) => setNewPasswordInput(event.target.value)}
+                  placeholder="Create password (8+ characters)"
+                  autoComplete="new-password"
+                  minLength={8}
+                  maxLength={1024}
+                  required
+                  disabled={checking}
+                  className="mt-3 w-full rounded-2xl border border-white/20 bg-black/25 px-5 py-4 text-center text-lg text-white outline-none placeholder:text-white/45 focus:border-white/50 disabled:opacity-50"
+                />
+                <button
+                  type="submit"
+                  disabled={
+                    checking ||
+                    displayNameInput.trim().length < 2 ||
+                    newPasswordInput.length < 8
+                  }
+                  className="mt-4 rounded-full bg-primary px-5 py-2.5 text-sm font-semibold text-primary-foreground disabled:opacity-50"
+                >
+                  {checking ? "Saving profile…" : "Save and continue"}
+                </button>
+                {error && (
+                  <p role="alert" className="mt-3 text-sm text-destructive">
+                    {error}
+                  </p>
+                )}
+              </form>
+            ) : isLocked && lockscreenState === "locked" ? (
+              <form
+                onSubmit={handleUnlock}
+                className="mt-8 flex w-full max-w-sm flex-col items-center"
+              >
+                <p className="mb-4 text-sm font-medium tracking-wide text-white/80">
+                  Sign in to unlock
+                </p>
+                <input
+                  _aria-label_="Password"
+                  type="password"
+                  value={password}
+                  onChange={(event) => setPassword(event.target.value)}
+                  placeholder={
+                    profile?.passwordConfigured === false
+                      ? "No password set — leave blank"
+                      : "••••••••"
+                  }
+                  autoComplete="current-password"
+                  disabled={loadingProfile || checking}
+                  className="w-full rounded-2xl border border-white/20 bg-black/25 px-5 py-4 text-center font-mono text-3xl tracking-[0.45em] text-white outline-none backdrop-blur-sm placeholder:text-white/45 focus:border-white/50 focus:ring-2 focus:ring-white/20 disabled:opacity-50"
+                />
+                <button
+                  type="submit"
+                  _aria-label_="Unlock"
+                  disabled={
+                    loadingProfile ||
+                    checking ||
+                    (!password && profile?.passwordConfigured !== false) ||
+                    !profile?.hostname
+                  }
+                  className="mt-4 inline-flex items-center gap-2 rounded-full bg-primary px-5 py-2.5 text-sm font-semibold text-primary-foreground transition hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-50"
+                >
+                  <ShieldCheck className="size-4" />
+                  {checking ? "Checking..." : "Unlock"}
+                </button>
+                {error && (
+                  <p role="alert" className="mt-3 text-sm text-destructive">
+                    {error}
+                  </p>
+                )}
+              </form>
+            ) : (
+              <p className="mt-18 text-sm font-medium tracking-wide text-foreground/80">
+                Tap or press any key to wake
+              </p>
+            )}
+          </div>
         </div>
-      </div>
-      {socketDisconnected && isLocked && (
-        <div className="absolute bottom-5 left-1/2 z-10 flex -translate-x-1/2 items-center gap-2 whitespace-nowrap rounded-full border border-border/60 bg-card/50 px-3 py-2 text-xs text-muted-foreground backdrop-blur-xl">
-          <WifiOff className="size-3.5" />
-          Connection lost
-        </div>
-      )}
+        {socketDisconnected && isLocked && (
+          <div className="absolute bottom-5 left-1/2 z-10 flex -translate-x-1/2 items-center gap-2 whitespace-nowrap rounded-full border border-border/60 bg-card/50 px-3 py-2 text-xs text-muted-foreground backdrop-blur-xl">
+            <WifiOff className="size-3.5" />
+            Connection lost
+          </div>
+        )}
       </div>
     </section>
   );

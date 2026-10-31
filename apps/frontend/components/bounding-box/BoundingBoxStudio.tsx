@@ -23,19 +23,27 @@ type LabelMeShape = {
   updatedAt?: number;
 };
 
-const tools: Array<{ id: "annotate" | "edit"; label: string; shortcut: string; icon: string }> = [
+const tools: Array<{
+  id: "annotate" | "edit";
+  label: string;
+  shortcut: string;
+  icon: string;
+}> = [
   { id: "annotate", label: "Annotate", shortcut: "W", icon: "✦" },
   { id: "edit", label: "Edit Point", shortcut: "E", icon: "✎" },
 ] as const;
 
 export default function BoundingBoxStudio() {
   const [images, setImages] = useState<ImageItem[]>([]);
-  const [selectedImageIndex, setSelectedImageIndex] = useState<number | null>(null);
-  const [selectedPolygonId, setSelectedPolygonId] = useState<string | null>(null);
+  const [selectedImageIndex, setSelectedImageIndex] = useState<number | null>(
+    null,
+  );
+  const [selectedPolygonId, setSelectedPolygonId] = useState<string | null>(
+    null,
+  );
   const [zoom, setZoom] = useState(1);
   const [removeMode, setRemoveMode] = useState(false);
   const [classPopupOpen, setClassPopupOpen] = useState(false);
-
 
   const {
     points,
@@ -61,26 +69,48 @@ export default function BoundingBoxStudio() {
     canUndo,
   } = useBoundingBoxAnnotation();
   const [annotationsLoaded, setAnnotationsLoaded] = useState(false);
-  const [collaborationPermission, setCollaborationPermission] = useState<"owner" | "view" | "editor">("owner");
-  const [imageDimensions, setImageDimensions] = useState({ width: 0, height: 0 });
+  const [collaborationPermission, setCollaborationPermission] = useState<
+    "owner" | "view" | "editor"
+  >("owner");
+  const [imageDimensions, setImageDimensions] = useState({
+    width: 0,
+    height: 0,
+  });
   const annotationRequestRef = useRef(0);
   const suppressAnnotationSyncRef = useRef(false);
   const currentActorRef = useRef("Unknown");
-  const remoteWriteTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const loadImageAnnotationsRef = useRef<(image: ImageItem, folderPath: string) => Promise<void>>(async () => undefined);
+  const remoteWriteTimerRef = useRef<ReturnType<typeof setTimeout> | null>(
+    null,
+  );
+  const loadImageAnnotationsRef = useRef<
+    (image: ImageItem, folderPath: string) => Promise<void>
+  >(async () => undefined);
 
   useEffect(() => {
     const applyPermission = (event: Event) => {
-      const permission = (event as CustomEvent<{ permission?: "view" | "editor" }>).detail?.permission;
-      setCollaborationPermission(permission === "view" || permission === "editor" ? permission : "owner");
+      const permission = (
+        event as CustomEvent<{ permission?: "view" | "editor" }>
+      ).detail?.permission;
+      setCollaborationPermission(
+        permission === "view" || permission === "editor" ? permission : "owner",
+      );
     };
     const endSession = () => setCollaborationPermission("owner");
     window.addEventListener("utoolity:shared-session-changed", applyPermission);
-    window.addEventListener("utoolity:shared-permission-changed", applyPermission);
+    window.addEventListener(
+      "utoolity:shared-permission-changed",
+      applyPermission,
+    );
     window.addEventListener("utoolity:shared-session-ended", endSession);
     return () => {
-      window.removeEventListener("utoolity:shared-session-changed", applyPermission);
-      window.removeEventListener("utoolity:shared-permission-changed", applyPermission);
+      window.removeEventListener(
+        "utoolity:shared-session-changed",
+        applyPermission,
+      );
+      window.removeEventListener(
+        "utoolity:shared-permission-changed",
+        applyPermission,
+      );
       window.removeEventListener("utoolity:shared-session-ended", endSession);
     };
   }, []);
@@ -100,13 +130,19 @@ export default function BoundingBoxStudio() {
         typeof document.imageWidth === "number" &&
         typeof document.imageHeight === "number"
       ) {
-        setImageDimensions({ width: document.imageWidth, height: document.imageHeight });
+        setImageDimensions({
+          width: document.imageWidth,
+          height: document.imageHeight,
+        });
       }
       if (requestId !== annotationRequestRef.current) return;
       suppressAnnotationSyncRef.current = true;
       loadAnnotations(
         (document.shapes ?? [])
-          .filter((shape) => shape.shape_type === "rectangle" && shape.points.length === 2)
+          .filter(
+            (shape) =>
+              shape.shape_type === "rectangle" && shape.points.length === 2,
+          )
           .map((shape) => ({
             id: shape.id ?? crypto.randomUUID(),
             label: shape.label,
@@ -128,7 +164,9 @@ export default function BoundingBoxStudio() {
     } finally {
       if (requestId === annotationRequestRef.current) {
         setAnnotationsLoaded(true);
-        window.setTimeout(() => { suppressAnnotationSyncRef.current = false; }, 120);
+        window.setTimeout(() => {
+          suppressAnnotationSyncRef.current = false;
+        }, 120);
       }
     }
   };
@@ -136,10 +174,18 @@ export default function BoundingBoxStudio() {
 
   const loadFolder = async (folderPath: string) => {
     const result = await api<{
-      entries: Array<{ name: string; path: string; type: "file" | "directory" }>;
+      entries: Array<{
+        name: string;
+        path: string;
+        type: "file" | "directory";
+      }>;
     }>(`/api/storage/list?path=${encodeURIComponent(folderPath)}`);
     const loadedImages = result.entries
-      .filter((entry) => entry.type === "file" && /\.(avif|bmp|gif|jpe?g|png|svg|webp)$/i.test(entry.name))
+      .filter(
+        (entry) =>
+          entry.type === "file" &&
+          /\.(avif|bmp|gif|jpe?g|png|svg|webp)$/i.test(entry.name),
+      )
       .sort((a, b) => a.name.localeCompare(b.name))
       .map((entry) => ({
         name: entry.name,
@@ -159,7 +205,9 @@ export default function BoundingBoxStudio() {
     const savedFolder = localStorage.getItem("utoolity.bounding-box.folder");
     if (savedFolder) void loadFolder(savedFolder).catch(() => undefined);
     const handleFolderSelected = (event: Event) => {
-      const detail = (event as CustomEvent<{ path?: string; requester?: string }>).detail;
+      const detail = (
+        event as CustomEvent<{ path?: string; requester?: string }>
+      ).detail;
       if (detail?.requester !== "bounding-box") return;
       const path = detail.path;
       if (path) void loadFolder(path).catch(() => undefined);
@@ -168,23 +216,39 @@ export default function BoundingBoxStudio() {
       const detail = (event as CustomEvent<{ path?: string }>).detail;
       if (detail?.path) void loadFolder(detail.path).catch(() => undefined);
     };
-    window.addEventListener("utoolity:polygon-folder-selected", handleFolderSelected);
-    window.addEventListener("utoolity:shared-folder-changed", handleSharedFolderChanged);
+    window.addEventListener(
+      "utoolity:polygon-folder-selected",
+      handleFolderSelected,
+    );
+    window.addEventListener(
+      "utoolity:shared-folder-changed",
+      handleSharedFolderChanged,
+    );
     return () => {
-      window.removeEventListener("utoolity:polygon-folder-selected", handleFolderSelected);
-      window.removeEventListener("utoolity:shared-folder-changed", handleSharedFolderChanged);
+      window.removeEventListener(
+        "utoolity:polygon-folder-selected",
+        handleFolderSelected,
+      );
+      window.removeEventListener(
+        "utoolity:shared-folder-changed",
+        handleSharedFolderChanged,
+      );
     };
   }, []);
 
   const currentImage =
-    selectedImageIndex !== null
-      ? images[selectedImageIndex] ?? null
-      : null;
+    selectedImageIndex !== null ? (images[selectedImageIndex] ?? null) : null;
 
   const saveAnnotations = useCallback(async () => {
     if (collaborationPermission === "view") return;
     const folder = localStorage.getItem("utoolity.bounding-box.folder");
-    if (!folder || !currentImage || imageDimensions.width <= 0 || imageDimensions.height <= 0) return;
+    if (
+      !folder ||
+      !currentImage ||
+      imageDimensions.width <= 0 ||
+      imageDimensions.height <= 0
+    )
+      return;
     await api("/api/tools/bounding-box/annotations", {
       method: "PUT",
       body: JSON.stringify({
@@ -217,42 +281,60 @@ export default function BoundingBoxStudio() {
       const cached = localStorage.getItem("utoolity.cached-user");
       if (cached) {
         const user = JSON.parse(cached) as { displayName?: unknown };
-        if (typeof user.displayName === "string") currentActorRef.current = user.displayName;
+        if (typeof user.displayName === "string")
+          currentActorRef.current = user.displayName;
       }
     } catch {
-      currentActorRef.current = localStorage.getItem("utoolity.authenticated-user-id") ?? "Unknown";
+      currentActorRef.current =
+        localStorage.getItem("utoolity.authenticated-user-id") ?? "Unknown";
     }
     const receiveRemoteAnnotations = (event: Event) => {
-      const detail = (event as CustomEvent<{
-        ownerUserId?: string;
-        fromUserId?: string;
-        fromDisplayName?: string;
-        payload?: {
-          folderPath?: string;
-          imageName?: string;
-          imageWidth?: number;
-          imageHeight?: number;
-          annotations?: typeof polygons;
-        };
-      }>).detail;
+      const detail = (
+        event as CustomEvent<{
+          ownerUserId?: string;
+          fromUserId?: string;
+          fromDisplayName?: string;
+          payload?: {
+            folderPath?: string;
+            imageName?: string;
+            imageWidth?: number;
+            imageHeight?: number;
+            annotations?: typeof polygons;
+          };
+        }>
+      ).detail;
       const payload = detail?.payload;
       if (!payload || !Array.isArray(payload.annotations)) return;
       const localFolder = localStorage.getItem("utoolity.bounding-box.folder");
-      if (payload.folderPath && localFolder && payload.folderPath !== localFolder) return;
+      if (
+        payload.folderPath &&
+        localFolder &&
+        payload.folderPath !== localFolder
+      )
+        return;
       if (!payload.imageName || !payload.folderPath) return;
       if (payload.imageName !== currentImage?.name) {
         const folder = localStorage.getItem("utoolity.bounding-box.folder");
         if (!folder || folder !== payload.folderPath) return;
-        const imageIndex = images.findIndex((image) => image.name === payload.imageName);
+        const imageIndex = images.findIndex(
+          (image) => image.name === payload.imageName,
+        );
         if (imageIndex < 0) return;
         suppressAnnotationSyncRef.current = true;
         setSelectedImageIndex(imageIndex);
         setImageDimensions({
-          width: typeof payload.imageWidth === "number" ? payload.imageWidth : imageDimensions.width,
-          height: typeof payload.imageHeight === "number" ? payload.imageHeight : imageDimensions.height,
+          width:
+            typeof payload.imageWidth === "number"
+              ? payload.imageWidth
+              : imageDimensions.width,
+          height:
+            typeof payload.imageHeight === "number"
+              ? payload.imageHeight
+              : imageDimensions.height,
         });
         loadAnnotations(payload.annotations);
-        if (remoteWriteTimerRef.current) clearTimeout(remoteWriteTimerRef.current);
+        if (remoteWriteTimerRef.current)
+          clearTimeout(remoteWriteTimerRef.current);
         remoteWriteTimerRef.current = setTimeout(() => {
           remoteWriteTimerRef.current = null;
           suppressAnnotationSyncRef.current = false;
@@ -262,53 +344,87 @@ export default function BoundingBoxStudio() {
       }
       if (selectedImageIndex === null) return;
       suppressAnnotationSyncRef.current = true;
-      if (typeof payload.imageWidth === "number" && typeof payload.imageHeight === "number") {
-        setImageDimensions({ width: payload.imageWidth, height: payload.imageHeight });
+      if (
+        typeof payload.imageWidth === "number" &&
+        typeof payload.imageHeight === "number"
+      ) {
+        setImageDimensions({
+          width: payload.imageWidth,
+          height: payload.imageHeight,
+        });
       }
       loadAnnotations(payload.annotations);
-      if (remoteWriteTimerRef.current) clearTimeout(remoteWriteTimerRef.current);
+      if (remoteWriteTimerRef.current)
+        clearTimeout(remoteWriteTimerRef.current);
       remoteWriteTimerRef.current = setTimeout(() => {
         remoteWriteTimerRef.current = null;
         suppressAnnotationSyncRef.current = false;
         void saveAnnotations().catch(() => undefined);
       }, 160);
     };
-    window.addEventListener("utoolity:annotation-state", receiveRemoteAnnotations);
+    window.addEventListener(
+      "utoolity:annotation-state",
+      receiveRemoteAnnotations,
+    );
     return () => {
-      window.removeEventListener("utoolity:annotation-state", receiveRemoteAnnotations);
-      if (remoteWriteTimerRef.current) clearTimeout(remoteWriteTimerRef.current);
+      window.removeEventListener(
+        "utoolity:annotation-state",
+        receiveRemoteAnnotations,
+      );
+      if (remoteWriteTimerRef.current)
+        clearTimeout(remoteWriteTimerRef.current);
     };
-  }, [currentImage, selectedImageIndex, loadAnnotations, saveAnnotations, polygons, images, imageDimensions]);
+  }, [
+    currentImage,
+    selectedImageIndex,
+    loadAnnotations,
+    saveAnnotations,
+    polygons,
+    images,
+    imageDimensions,
+  ]);
 
   useEffect(() => {
-    if (!annotationsLoaded || !currentImage || selectedImageIndex === null) return;
+    if (!annotationsLoaded || !currentImage || selectedImageIndex === null)
+      return;
     if (suppressAnnotationSyncRef.current) return;
     const folderPath = localStorage.getItem("utoolity.bounding-box.folder");
     if (!folderPath) return;
     const timer = window.setTimeout(() => {
-      window.dispatchEvent(new CustomEvent("utoolity:annotation-state-outgoing", {
-        detail: {
-          folderPath,
-          imageName: currentImage.name,
-          imageWidth: imageDimensions.width,
-          imageHeight: imageDimensions.height,
-          annotations: polygons.map((polygon) => ({
-            ...polygon,
-            createdBy: polygon.createdBy ?? currentActorRef.current,
-            updatedBy: polygon.updatedBy ?? currentActorRef.current,
-            updatedAt: polygon.updatedAt ?? Date.now(),
-          })),
-        },
-      }));
+      window.dispatchEvent(
+        new CustomEvent("utoolity:annotation-state-outgoing", {
+          detail: {
+            folderPath,
+            imageName: currentImage.name,
+            imageWidth: imageDimensions.width,
+            imageHeight: imageDimensions.height,
+            annotations: polygons.map((polygon) => ({
+              ...polygon,
+              createdBy: polygon.createdBy ?? currentActorRef.current,
+              updatedBy: polygon.updatedBy ?? currentActorRef.current,
+              updatedAt: polygon.updatedAt ?? Date.now(),
+            })),
+          },
+        }),
+      );
     }, 90);
     return () => window.clearTimeout(timer);
-  }, [annotationsLoaded, currentImage, imageDimensions, polygons, selectedImageIndex]);
+  }, [
+    annotationsLoaded,
+    currentImage,
+    imageDimensions,
+    polygons,
+    selectedImageIndex,
+  ]);
 
-  const navigateToImage = useCallback((nextIndex: number) => {
-    void saveAnnotations()
-      .catch(() => undefined)
-      .finally(() => setSelectedImageIndex(nextIndex));
-  }, [saveAnnotations]);
+  const navigateToImage = useCallback(
+    (nextIndex: number) => {
+      void saveAnnotations()
+        .catch(() => undefined)
+        .finally(() => setSelectedImageIndex(nextIndex));
+    },
+    [saveAnnotations],
+  );
 
   useEffect(() => {
     const handleKeyboard = (event: KeyboardEvent) => {
@@ -337,20 +453,22 @@ export default function BoundingBoxStudio() {
         return;
       }
 
-      if (
-        (event.ctrlKey || event.metaKey) &&
-        event.key.toLowerCase() === "z"
-      ) {
+      if ((event.ctrlKey || event.metaKey) && event.key.toLowerCase() === "z") {
         event.preventDefault();
         undo();
         return;
       }
 
       if ((event.ctrlKey || event.metaKey) && event.key.toLowerCase() === "c") {
-        const polygon = polygons.find(({ id }) => id === selectedPolygonId) ?? polygons.at(-1);
+        const polygon =
+          polygons.find(({ id }) => id === selectedPolygonId) ??
+          polygons.at(-1);
         if (polygon) {
           event.preventDefault();
-          localStorage.setItem("utoolity.bounding-box.clipboard", JSON.stringify(polygon));
+          localStorage.setItem(
+            "utoolity.bounding-box.clipboard",
+            JSON.stringify(polygon),
+          );
         }
         return;
       }
@@ -359,7 +477,10 @@ export default function BoundingBoxStudio() {
         const saved = localStorage.getItem("utoolity.bounding-box.clipboard");
         if (saved) {
           try {
-            const polygon = JSON.parse(saved) as { label?: string; points?: { x: number; y: number }[] };
+            const polygon = JSON.parse(saved) as {
+              label?: string;
+              points?: { x: number; y: number }[];
+            };
             if (Array.isArray(polygon.points) && polygon.points.length >= 2) {
               event.preventDefault();
               const xs = polygon.points.map((point) => point.x);
@@ -434,11 +555,21 @@ export default function BoundingBoxStudio() {
           break;
         case "a":
         case "arrowleft":
-          if (images.length) navigateToImage(selectedImageIndex === null ? 0 : (selectedImageIndex - 1 + images.length) % images.length);
+          if (images.length)
+            navigateToImage(
+              selectedImageIndex === null
+                ? 0
+                : (selectedImageIndex - 1 + images.length) % images.length,
+            );
           break;
         case "arrowright":
         case "d":
-          if (images.length) navigateToImage(selectedImageIndex === null ? 0 : (selectedImageIndex + 1) % images.length);
+          if (images.length)
+            navigateToImage(
+              selectedImageIndex === null
+                ? 0
+                : (selectedImageIndex + 1) % images.length,
+            );
           break;
       }
     };
@@ -496,7 +627,8 @@ export default function BoundingBoxStudio() {
       selectedImageIndex === null ||
       imageDimensions.width <= 0 ||
       imageDimensions.height <= 0
-    ) return;
+    )
+      return;
     void saveAnnotations().catch(() => undefined);
   }, [annotationsLoaded, saveAnnotations, selectedImageIndex]);
 
@@ -527,10 +659,9 @@ export default function BoundingBoxStudio() {
       imageHeight: imageDimensions.height,
       imageWidth: imageDimensions.width,
     };
-    const blob = new Blob(
-      [JSON.stringify(labelMeDocument, null, 2)],
-      { type: "application/json" },
-    );
+    const blob = new Blob([JSON.stringify(labelMeDocument, null, 2)], {
+      type: "application/json",
+    });
 
     const url = URL.createObjectURL(blob);
     const link = document.createElement("a");
@@ -553,10 +684,20 @@ export default function BoundingBoxStudio() {
         onExport={downloadJSON}
         canNavigate={images.length > 1}
         onPrevious={() => {
-          if (images.length) navigateToImage(selectedImageIndex === null ? 0 : (selectedImageIndex - 1 + images.length) % images.length);
+          if (images.length)
+            navigateToImage(
+              selectedImageIndex === null
+                ? 0
+                : (selectedImageIndex - 1 + images.length) % images.length,
+            );
         }}
         onNext={() => {
-          if (images.length) navigateToImage(selectedImageIndex === null ? 0 : (selectedImageIndex + 1) % images.length);
+          if (images.length)
+            navigateToImage(
+              selectedImageIndex === null
+                ? 0
+                : (selectedImageIndex + 1) % images.length,
+            );
         }}
       />
 
@@ -594,10 +735,16 @@ export default function BoundingBoxStudio() {
               {classPopupOpen && selectedPolygonId ? (
                 <input
                   autoFocus
-                  value={polygons.find(({ id }) => id === selectedPolygonId)?.label ?? ""}
-                  onChange={(event) => updatePolygonLabel(selectedPolygonId, event.target.value)}
+                  value={
+                    polygons.find(({ id }) => id === selectedPolygonId)
+                      ?.label ?? ""
+                  }
+                  onChange={(event) =>
+                    updatePolygonLabel(selectedPolygonId, event.target.value)
+                  }
                   onKeyDown={(event) => {
-                    if (event.key === "Enter" || event.key === "Escape") setClassPopupOpen(false);
+                    if (event.key === "Enter" || event.key === "Escape")
+                      setClassPopupOpen(false);
                   }}
                   aria-label="Change polygon class"
                   className="h-11 w-36 rounded-full border border-primary bg-background px-3 text-sm outline-none focus:ring-2 focus:ring-ring"
@@ -622,7 +769,11 @@ export default function BoundingBoxStudio() {
                     <button
                       type="button"
                       onClick={() => setTool(item.id)}
-                      title={item.shortcut ? `${item.label} (${item.shortcut})` : item.label}
+                      title={
+                        item.shortcut
+                          ? `${item.label} (${item.shortcut})`
+                          : item.label
+                      }
                       className={`flex size-11 items-center justify-center rounded-full border text-base shadow-sm transition-all duration-200 hover:-translate-y-1 hover:scale-110 active:scale-95 ${
                         active
                           ? "border-primary bg-primary text-primary-foreground shadow-md"
@@ -633,7 +784,9 @@ export default function BoundingBoxStudio() {
                     </button>
 
                     <span className="pointer-events-none absolute bottom-full left-1/2 mb-3 -translate-x-1/2 whitespace-nowrap rounded-md border border-border bg-popover px-2 py-1 text-[11px] text-popover-foreground opacity-0 shadow-md transition-opacity group-hover:opacity-100">
-                      {item.shortcut ? `${item.label} · ${item.shortcut}` : item.label}
+                      {item.shortcut
+                        ? `${item.label} · ${item.shortcut}`
+                        : item.label}
                     </span>
                   </div>
                 );
@@ -711,9 +864,7 @@ export default function BoundingBoxStudio() {
                 <button
                   type="button"
                   onClick={() =>
-                    window.dispatchEvent(
-                      new CustomEvent("polygon-zoom-out"),
-                    )
+                    window.dispatchEvent(new CustomEvent("polygon-zoom-out"))
                   }
                   disabled={zoom <= 1}
                   title="Zoom Out (- / Ctrl+Wheel)"
@@ -738,9 +889,7 @@ export default function BoundingBoxStudio() {
                 <button
                   type="button"
                   onClick={() =>
-                    window.dispatchEvent(
-                      new CustomEvent("polygon-zoom-in"),
-                    )
+                    window.dispatchEvent(new CustomEvent("polygon-zoom-in"))
                   }
                   disabled={zoom >= 5}
                   title="Zoom In (+ / Ctrl+Wheel)"
@@ -758,9 +907,7 @@ export default function BoundingBoxStudio() {
                 <button
                   type="button"
                   onClick={() =>
-                    window.dispatchEvent(
-                      new CustomEvent("polygon-fit"),
-                    )
+                    window.dispatchEvent(new CustomEvent("polygon-fit"))
                   }
                   disabled={zoom === 1}
                   title="Reset Zoom (0)"
