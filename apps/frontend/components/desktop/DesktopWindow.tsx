@@ -376,9 +376,9 @@ export default function DesktopWindow({
         setMaximizedState(!maximized);
       }}
       className={`desktop-window fixed ${
-        active ? "z-50" : "z-40"
+        active ? "z-1000" : "z-1000"
       } flex min-h-0 min-w-0 flex-col overflow-hidden border border-border bg-background text-foreground shadow-2xl transition-[width,height,transform,top,left,opacity,border-radius] duration-300 ease-[cubic-bezier(0.22,1,0.36,1)] ${
-        interacting ? "!transition-none" : ""
+        interacting ? "transition-none!" : ""
       } ${
         closing
           ? "desktop-window-closing pointer-events-none"

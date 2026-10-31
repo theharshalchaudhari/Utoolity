@@ -88,7 +88,7 @@ export default function Profile({ onSleep }: ProfileProps) {
 
   if (profileState === "error" || !profile) {
     return (
-      <div className="fixed inset-0 z-[100] flex flex-col items-center justify-center gap-4 bg-background px-6 text-center text-foreground">
+      <div className="fixed inset-0 z-100 flex flex-col items-center justify-center gap-4 bg-background px-6 text-center text-foreground">
         <UserRound className="size-10 text-muted-foreground" />
         <h1 className="text-xl font-bold">Session unavailable</h1>
         <p className="max-w-md text-sm text-muted-foreground">

@@ -9,8 +9,8 @@
       "preferences": {
         "utoolity.wallpaper": "Default",
         "utoolity.icon-size": "large",
-        "utoolity.theme": "dark",
-        "utoolity.grain": "none"
+        "utoolity.grain": "none",
+        "utoolity.theme": "dark"
       },
       "deviceId": "L-MHP-IXMT2"
     },
@@ -21,10 +21,10 @@
       "password": "12345678",
       "role": "intern",
       "preferences": {
-        "utoolity.wallpaper": "Default",
+        "utoolity.wallpaper": "Desert",
         "utoolity.icon-size": "large",
-        "utoolity.theme": "light",
-        "utoolity.grain": "Soft"
+        "utoolity.grain": "Soft",
+        "utoolity.theme": "dark"
       },
       "deviceId": "wraith-os"
     },
@@ -35,10 +35,10 @@
       "password": "guest",
       "role": "intern",
       "preferences": {
-        "utoolity.wallpaper": "Default",
-        "utoolity.icon-size": "large",
-        "utoolity.theme": "device",
-        "utoolity.grain": "none"
+        "utoolity.wallpaper": "Lakeside",
+        "utoolity.icon-size": "medium",
+        "utoolity.grain": "none",
+        "utoolity.theme": "light"
       },
       "deviceId": "guest-intern"
     }
