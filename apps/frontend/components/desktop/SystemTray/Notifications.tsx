@@ -143,7 +143,7 @@ export default function Notifications({
             tabIndex={-1}
             aria-label="Close notifications"
             onClick={onClose}
-            className={`fixed inset-0 z-[85] cursor-default bg-transparent transition-opacity duration-150 ${
+            className={`fixed inset-0 z-85 cursor-default bg-transparent transition-opacity duration-150 ${
               open ? "opacity-100" : "pointer-events-none opacity-0"
             }`}
           />
@@ -152,7 +152,7 @@ export default function Notifications({
             role="dialog"
             aria-label="Notifications"
             aria-hidden={!open}
-            className={`absolute right-0 top-[calc(100%+12px)] z-[86] w-[min(350px,calc(100vw-24px))] origin-top-right overflow-hidden rounded-3xl border border-border/80 bg-popover p-4 text-popover-foreground shadow-lg shadow-black/10 transition-[opacity,transform] duration-150 ease-out will-change-transform desktop-panel sm:p-5 ${
+            className={`absolute right-0 top-[calc(100%+12px)] z-86 w-[min(350px,calc(100vw-24px))] origin-top-right overflow-hidden rounded-3xl border border-border/80 bg-popover p-4 text-popover-foreground shadow-lg shadow-black/10 transition-[opacity,transform] duration-150 ease-out will-change-transform desktop-panel sm:p-5 ${
               open
                 ? "translate-y-0 scale-100 opacity-100"
                 : "pointer-events-none -translate-y-2 scale-[0.98] opacity-0"
@@ -247,7 +247,7 @@ export default function Notifications({
                       </span>
                       <div className="min-w-0 flex-1">
                         <h3 className="text-sm font-semibold">{notice.title}</h3>
-                        <p className="mt-1 whitespace-pre-wrap break-words text-xs leading-5 text-muted-foreground">{notice.message}</p>
+                        <p className="mt-1 whitespace-pre-wrap wrap-break-word text-xs leading-5 text-muted-foreground">{notice.message}</p>
                         <time className="mt-2 block text-[11px] text-muted-foreground" dateTime={new Date(notice.createdAt).toISOString()}>
                           {new Date(notice.createdAt).toLocaleString()}
                         </time>

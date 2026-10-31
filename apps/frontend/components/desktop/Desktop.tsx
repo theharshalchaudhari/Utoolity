@@ -577,7 +577,7 @@ export default function Desktop({ onSleep, onLock, isVisible = true, showChrome 
         );
       })}
       {isSharedViewer && (
-        <div className="fixed left-4 top-4 z-[1001] flex items-center gap-3 rounded-full border border-border bg-card/90 px-4 py-2 text-xs shadow-lg backdrop-blur-xl">
+        <div className="fixed left-4 top-4 z-1001 flex items-center gap-3 rounded-full border border-border bg-card/90 px-4 py-2 text-xs shadow-lg backdrop-blur-xl">
           <span>Viewing shared desktop</span>
           <span className="rounded-full bg-primary/10 px-2 py-1 font-semibold">{sharedPermission === "editor" ? "Editor" : "View only"}</span>
           <button type="button" onClick={() => window.dispatchEvent(new CustomEvent("utoolity:leave-shared-session"))} className="rounded-full border border-border px-2 py-1 hover:bg-muted">Leave</button>

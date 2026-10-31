@@ -163,12 +163,13 @@ export default function DesktopApps({ onOpen }: { onOpen: (app: DesktopAppId) =>
       next.splice(to, 0, item);
       localStorage.setItem("utoolity.desktop-app-order", JSON.stringify(next.map((app) => app.id)));
       return next;
-    });
+    }); 
+    //
     setDraggedId(null);
   };
 
   return (
-    <div className="desktop-app-grid absolute left-6 top-24 z-20 grid w-[190px] grid-cols-2 gap-3" data-desktop-interactive>
+    <div className="desktop-app-grid absolute left-6 top-24 z-20 grid w-47.5 grid-cols-2 gap-3" data-desktop-interactive>
       {orderedApps.map((app) => {
         const dimensions = iconDimensions[iconSize];
         return (
@@ -187,7 +188,7 @@ export default function DesktopApps({ onOpen }: { onOpen: (app: DesktopAppId) =>
               {app.label}
             </button>
             {openTools === app.id && app.tools && (
-              <div className="desktop-panel absolute left-[100px] top-0 z-30 w-52 rounded-2xl border border-border bg-popover p-2 text-sm text-popover-foreground shadow-2xl">
+              <div className="desktop-panel absolute left-25 top-0 z-30 w-52 rounded-2xl border border-border bg-popover p-2 text-sm text-popover-foreground shadow-2xl">
                 {app.tools.map((tool) => (
                   <button
                     key={tool.route}

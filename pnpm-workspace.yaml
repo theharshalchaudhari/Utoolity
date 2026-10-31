@@ -14,7 +14,7 @@ catalog:
   next: 16.2.11
   "@next/eslint-plugin-next": 16.2.11
   eslint-config-next: 16.2.11
-  tailwindcss: 4.3.0
+  tailwindcss: 4.3.3
   "@tailwindcss/postcss": 4.3.0
   "@tailwindcss/cli": 4.3.0
   autoprefixer: 10.4.23
@@ -73,6 +73,7 @@ catalog:
   "@fastify/session": 11.1.0
   "@fastify/multipart": ^9.0.3
   "@fastify/websocket": 11.3.1
+  "prettier-plugin-tailwindcss-canonical-classes": "^0.1.6"
 
 allowBuilds:
   bcrypt: true

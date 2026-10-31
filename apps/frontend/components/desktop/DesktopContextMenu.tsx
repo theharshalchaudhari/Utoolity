@@ -109,7 +109,7 @@ export default function DesktopContextMenu({
       aria-label="Desktop menu"
       data-desktop-interactive
       style={{ left: position.left, top: position.top }}
-      className="desktop-context-menu fixed z-[100] w-[220px] rounded-[20px] border border-border bg-popover p-2 text-sm font-semibold text-popover-foreground shadow-2xl backdrop-blur-2xl"
+      className="desktop-context-menu fixed z-100 w-55 rounded-[20px] border border-border bg-popover p-2 text-sm font-semibold text-popover-foreground shadow-2xl backdrop-blur-2xl"
     >
       {menuItems.map((item, index) => {
         if ("divider" in item) {

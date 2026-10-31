@@ -566,10 +566,10 @@ export default function FileManager({ onOpenFile }: Props) {
             aria-valuemin={0}
             aria-valuemax={100}
             aria-valuenow={Math.round(storagePercent)}
-            className="relative h-[2px] w-full overflow-visible rounded-full bg-border/70"
+            className="relative h-0.5 w-full overflow-visible rounded-full bg-border/70"
           >
             <div
-              className="relative h-full min-w-[2px] rounded-full bg-primary shadow-[0_0_5px_hsl(var(--primary)/0.7)] transition-[width] duration-500 ease-out motion-reduce:transition-none after:absolute after:-right-[2px] after:top-1/2 after:size-[5px] after:-translate-y-1/2 after:rounded-full after:bg-primary after:shadow-[0_0_5px_2px_hsl(var(--primary)/0.75)] after:content-[''] after:animate-pulse motion-reduce:after:animate-none"
+              className="relative h-full min-w-0.5 rounded-full bg-primary shadow-[0_0_5px_hsl(var(--primary)/0.7)] transition-[width] duration-500 ease-out motion-reduce:transition-none after:absolute after:-right-0.5 after:top-1/2 after:size-1.25 after:-translate-y-1/2 after:rounded-full after:bg-primary after:shadow-[0_0_5px_2px_hsl(var(--primary)/0.75)] after:content-[''] after:animate-pulse motion-reduce:after:animate-none"
               style={{ width: `${storagePercent}%` }}
             />
           </div>
@@ -640,7 +640,7 @@ export default function FileManager({ onOpenFile }: Props) {
                   >
                     <div
                       className={`flex h-28 items-center justify-center ${
-                        directory ? "bg-amber-500/[0.08]" : "bg-muted/40"
+                        directory ? "bg-amber-500/8" : "bg-muted/40"
                       }`}
                     >
                       {directory ? (
@@ -701,7 +701,7 @@ export default function FileManager({ onOpenFile }: Props) {
                     </button>
 
                     {active && menuOpen && (
-                      <div className="absolute right-0 top-9 z-[9999] w-48 rounded-xl border border-border bg-popover p-1.5 text-popover-foreground shadow-xl">
+                      <div className="absolute right-0 top-9 z-9999 w-48 rounded-xl border border-border bg-popover p-1.5 text-popover-foreground shadow-xl">
                         {folderPickerMode && directory && (
                           <button
                             type="button"
@@ -913,7 +913,7 @@ export default function FileManager({ onOpenFile }: Props) {
 
       {folderDialogOpen && (
         <div
-          className="fixed inset-0 z-[90] flex items-center justify-center bg-black/45 p-4 backdrop-blur-sm"
+          className="fixed inset-0 z-90 flex items-center justify-center bg-black/45 p-4 backdrop-blur-sm"
           onMouseDown={(event) => {
             if (event.target === event.currentTarget) {
               setFolderDialogOpen(false);
@@ -1003,7 +1003,7 @@ export default function FileManager({ onOpenFile }: Props) {
       </Dialog>
       {shareOpen && (
         <div
-          className="fixed inset-0 z-[90] flex items-center justify-center bg-black/45 p-4 backdrop-blur-sm"
+          className="fixed inset-0 z-90 flex items-center justify-center bg-black/45 p-4 backdrop-blur-sm"
           onMouseDown={(event) => {
             if (event.target === event.currentTarget) {
               setShareOpen(false);

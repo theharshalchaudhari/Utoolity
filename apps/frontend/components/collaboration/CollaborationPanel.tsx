@@ -269,13 +269,13 @@ export default function CollaborationPanel() {
   return (
     <>
       {Object.values(cursors).map((cursor) => (
-        <div key={cursor.userId} aria-hidden="true" className="pointer-events-none fixed z-[1100] flex items-center gap-1.5 transition-[left,top] duration-75" style={{ left: `${cursor.x * 100}vw`, top: `${cursor.y * 100}vh` }}>
+        <div key={cursor.userId} aria-hidden="true" className="pointer-events-none fixed z-1100 flex items-center gap-1.5 transition-[left,top] duration-75" style={{ left: `${cursor.x * 100}vw`, top: `${cursor.y * 100}vh` }}>
           <img src="/cursors/bibata-pointer.svg" alt="" className="h-8 w-8 object-contain drop-shadow-md" style={{ transform: "translate(-3px, -3px)", transformOrigin: "top left" }} />
           <span className="rounded-md bg-primary px-2 py-1 text-[10px] font-semibold text-primary-foreground shadow">{cursor.displayName}</span>
         </div>
       ))}
       {open && (
-        <section className="fixed bottom-4 right-4 z-[1200] w-[min(27rem,calc(100vw-2rem))] overflow-hidden rounded-2xl border border-border bg-card/95 text-card-foreground shadow-2xl backdrop-blur-xl">
+        <section className="fixed bottom-4 right-4 z-1200 w-[min(27rem,calc(100vw-2rem))] overflow-hidden rounded-2xl border border-border bg-card/95 text-card-foreground shadow-2xl backdrop-blur-xl">
           <header className="flex items-center justify-between border-b border-border px-4 py-3">
             <div className="flex items-center gap-2 text-sm font-semibold"><Users className="size-4" /> Collaboration <span className={connected ? "size-2 rounded-full bg-emerald-500" : "size-2 rounded-full bg-destructive"} /></div>
             <button type="button" aria-label="Close collaboration" onClick={() => setOpen(false)} className="rounded-lg p-1.5 hover:bg-muted"><X className="size-4" /></button>
@@ -348,7 +348,7 @@ export default function CollaborationPanel() {
           ) : (
             <div className="flex h-64 flex-col">
               <div className="flex-1 space-y-2 overflow-y-auto p-3">
-                {messages.map((message) => <div key={message.id} className="rounded-xl bg-muted/70 px-3 py-2"><p className="text-xs font-semibold">{message.displayName}</p><p className="break-words text-sm">{message.text}</p></div>)}
+                {messages.map((message) => <div key={message.id} className="rounded-xl bg-muted/70 px-3 py-2"><p className="text-xs font-semibold">{message.displayName}</p><p className="wrap-break-word text-sm">{message.text}</p></div>)}
                 {messages.length === 0 && <p className="py-8 text-center text-sm text-muted-foreground">No messages yet.</p>}
               </div>
               <form onSubmit={sendChat} className="flex gap-2 border-t border-border p-3">

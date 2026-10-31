@@ -277,13 +277,13 @@ export default function DateTime({
             type="button"
             aria-label="Close quick settings"
             onClick={onClose}
-            className="fixed inset-0 z-[85] cursor-default"
+            className="fixed inset-0 z-85 cursor-default"
           />
 
           <section
             role="dialog"
             aria-label="Quick settings and calendar"
-            className="desktop-panel absolute right-0 top-12 z-[86] max-h-[calc(100dvh-76px)] w-[min(360px,calc(100vw-24px))] overflow-y-auto rounded-3xl border border-border bg-popover p-4 text-popover-foreground shadow-2xl shadow-black/20"
+            className="desktop-panel absolute right-0 top-12 z-86 max-h-[calc(100dvh-76px)] w-[min(360px,calc(100vw-24px))] overflow-y-auto rounded-3xl border border-border bg-popover p-4 text-popover-foreground shadow-2xl shadow-black/20"
           >
             <header className="flex items-start justify-between gap-3">
               <div className="min-w-0">

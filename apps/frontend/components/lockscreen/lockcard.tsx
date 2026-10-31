@@ -436,26 +436,30 @@ function Lockcard({
       aria-label="Lock screen"
       aria-hidden={!isVisible}
       inert={!isVisible || undefined}
-      className={`lockscreen-shell fixed inset-0 z-[110] flex h-screen min-h-screen w-screen flex-col items-center justify-center overflow-hidden rounded-none border-0 bg-transparent p-0 text-foreground transition-opacity duration-200 ease-out motion-reduce:transition-none ${
-        isVisible ? "pointer-events-auto opacity-100" : "pointer-events-none opacity-0"
-      }`}
+      className="lockscreen-shell fixed inset-0 z-110 flex h-screen min-h-screen w-screen flex-col items-center justify-center overflow-hidden rounded-none border-0 bg-transparent p-0 text-foreground transition-opacity duration-200 ease-out motion-reduce:transition-none"
     >
       <div
         className={`lockscreen-content relative z-10 flex w-full flex-col items-center transition-[opacity,transform] duration-350 ease-out motion-reduce:transition-none ${
-          leaving ? "translate-y-[-12px] opacity-0" : isVisible ? "translate-y-0 opacity-100" : "translate-y-0 opacity-0"
+          leaving ? "-translate-y-3 opacity-0" : isVisible ? "translate-y-0 opacity-100" : "translate-y-0 opacity-0"
         }`}
       >
+
+
       <button
         type="button"
         onClick={toggleFullscreen}
         onPointerDown={(event) => event.stopPropagation()}
         onKeyDown={(event) => event.stopPropagation()}
-        _aria-label_={fullscreen ? "Exit fullscreen" : "Enter fullscreen"}
+        aria-label={fullscreen ? "Exit fullscreen" : "Enter fullscreen"}
         className="absolute top-5 right-5 z-20 rounded-full border border-white/20 bg-black/20 p-3 text-white/80 backdrop-blur-2xl transition hover:bg-black/35 hover:text-white"
       >
         <Maximize className="size-4" />
       </button>
-      <div className="lockscreen-frost-panel relative flex w-full flex-col items-center px-5 py-8 text-center">
+
+
+
+
+      <div className="backdrop-blur-xs h-screen relative flex w-full flex-col items-center px-5 py-8 text-center">
         <p className="text-xl font-bold tracking-[0.24em] text-white/80">
           {getGreeting(now)}
         </p>
@@ -500,7 +504,7 @@ function Lockcard({
                 type="text"
                 value={deviceIdInput}
                 onChange={(event) => setDeviceIdInput(event.target.value)}
-                placeholder="e.g. wraith-os"
+                placeholder="e.g. L-MHP-001"
                 autoComplete="off"
                 autoCapitalize="none"
                 spellCheck={false}
@@ -558,7 +562,7 @@ function Lockcard({
               )}
             </form>
           ) : (
-            <p className="mt-8 text-sm font-medium tracking-wide text-background/80">
+            <p className="mt-18 text-sm font-medium tracking-wide text-foreground/80">
               Tap or press any key to wake
             </p>
           )}

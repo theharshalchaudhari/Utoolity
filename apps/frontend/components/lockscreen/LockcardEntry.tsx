@@ -7,7 +7,7 @@ const Lockcard = dynamic(() => import("./lockcard"), {
   loading: () => (
     <section
       aria-label="Lock screen"
-      className="lockscreen-shell flex h-full min-h-dvh w-full items-center justify-center rounded-xl"
+      className="lockscreen-shell flex h-full min-h-dvh w-full items-center justify-center"
     >
       <span className="text-sm text-muted-foreground">Loading lock screen...</span>
     </section>
