@@ -16,9 +16,10 @@ import CollaborationPanel from "../collaboration/CollaborationPanel";
 type DesktopProps = {
   onSleep?: () => void;
   onLock?: () => void;
+  isVisible?: boolean;
 };
 
-export default function Desktop({ onSleep, onLock }: DesktopProps) {
+export default function Desktop({ onSleep, onLock, isVisible = true }: DesktopProps) {
   const [expandedAppKey, setExpandedAppKey] = useState<string | null>(null);
   const [menu, setMenu] = useState<{ x: number; y: number } | null>(null);
   const [isDark, setIsDark] = useState(true);
@@ -475,7 +476,12 @@ export default function Desktop({ onSleep, onLock }: DesktopProps) {
   }, []);
 
   return (
-    <main className="desktop-canvas relative min-h-dvh w-full select-none" onContextMenu={openMenu}>
+    <main
+      aria-hidden={!isVisible}
+      inert={!isVisible}
+      className={`desktop-canvas relative min-h-dvh w-full select-none transition-opacity duration-200 ${isVisible ? "opacity-100" : "pointer-events-none opacity-0"}`}
+      onContextMenu={openMenu}
+    >
       <DesktopBackground />
       {!hideDesktopChrome && <DesktopApps onOpen={openApp} />}
       {!hideDesktopChrome && <Profile onSleep={onSleep} />}

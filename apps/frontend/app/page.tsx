@@ -2,7 +2,6 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 import Desktop from "@/components/desktop/Desktop";
-import DesktopBackground from "@/components/desktop/DesktopBackground";
 import Lockcard from "@/components/lockscreen/LockcardEntry";
 import { api, ApiError } from "@/lib/api";
 import Image from "next/image";
@@ -368,24 +367,27 @@ export default function Home() {
             className="h-24 w-24 brightness-0 invert opacity-90"
           />
         </div>
-      ) : shellState === "authenticated" ? (
-        <Desktop onSleep={enterSleep} onLock={enterLocked} />
       ) : (
         <>
-        <DesktopBackground />
-        <Lockcard
-          socketDisconnected={false}
-          initialAuthenticated={shellState === "sleep"}
-          initialState={shellState === "sleep" ? "sleep" : "locked"}
-          onUnlock={() => {
-            localStorage.setItem(AUTHENTICATED_SESSION_KEY, "true");
-            localStorage.setItem(SHELL_STATE_KEY, "authenticated");
-            localStorage.removeItem(SLEEP_STARTED_KEY);
-            lastActivityRef.current = Date.now();
-            localStorage.setItem(LAST_ACTIVITY_KEY, String(lastActivityRef.current));
-            setShellState("authenticated");
-          }}
-        />
+          <Desktop
+            onSleep={enterSleep}
+            onLock={enterLocked}
+            isVisible={shellState === "authenticated"}
+          />
+          <Lockcard
+            socketDisconnected={false}
+            initialAuthenticated={shellState === "sleep"}
+            initialState={shellState === "sleep" ? "sleep" : "locked"}
+            isVisible={shellState === "locked" || shellState === "sleep"}
+            onUnlock={() => {
+              localStorage.setItem(AUTHENTICATED_SESSION_KEY, "true");
+              localStorage.setItem(SHELL_STATE_KEY, "authenticated");
+              localStorage.removeItem(SLEEP_STARTED_KEY);
+              lastActivityRef.current = Date.now();
+              localStorage.setItem(LAST_ACTIVITY_KEY, String(lastActivityRef.current));
+              setShellState("authenticated");
+            }}
+          />
         </>
       )}
     </div>

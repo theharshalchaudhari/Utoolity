@@ -14,7 +14,6 @@ import {
 } from "lucide-react";
 import { api, ApiError } from "../../lib/api";
 import { useClock } from "../shared/useClock";
-import DesktopBackground from "../desktop/DesktopBackground";
 import { saveWallpaperPreference } from "../../lib/wallpapers";
 type LockProfile = {
   id: string;
@@ -50,6 +49,7 @@ type LockcardProps = {
   initialAuthenticated?: boolean;
   initialState?: LockscreenState;
   onUnlock?: () => void;
+  isVisible?: boolean;
 };
 type LockscreenState = "sleep" | "locked";
 const HOSTNAME_STORAGE_KEY = "utoolity.hostname";
@@ -117,6 +117,7 @@ function Lockcard({
   initialAuthenticated = false,
   initialState = "locked",
   onUnlock,
+  isVisible = true,
 }: LockcardProps) {
   const cardRef = useRef<HTMLElement>(null);
   const transitionTimerRef = useRef<ReturnType<typeof setTimeout> | undefined>(
@@ -431,12 +432,18 @@ function Lockcard({
   return (
     <section
       ref={cardRef}
-      _aria-label_="Lock screen"
-      className={`lockscreen-shell fixed inset-0 z-50 isolate flex h-dvh min-h-dvh w-full flex-col items-center justify-center overflow-hidden rounded-none bg-transparent text-foreground ${
-        leaving ? "lockscreen-exit" : "lockscreen-enter"
+      aria-label="Lock screen"
+      aria-hidden={!isVisible}
+      inert={!isVisible || undefined}
+      className={`lockscreen-shell fixed inset-0 z-[110] flex h-dvh min-h-dvh w-full flex-col items-center justify-center overflow-hidden rounded-none bg-transparent text-foreground transition-opacity duration-200 ease-out motion-reduce:transition-none ${
+        isVisible ? "pointer-events-auto opacity-100" : "pointer-events-none opacity-0"
       }`}
     >
-      <DesktopBackground />
+      <div
+        className={`lockscreen-content relative z-10 flex w-full flex-col items-center transition-[opacity,transform] duration-350 ease-out motion-reduce:transition-none ${
+          leaving ? "translate-y-[-12px] opacity-0" : isVisible ? "translate-y-0 opacity-100" : "translate-y-0 opacity-0"
+        }`}
+      >
       <button
         type="button"
         onClick={toggleFullscreen}
@@ -447,7 +454,7 @@ function Lockcard({
       >
         <Maximize className="size-4" />
       </button>
-      <div className="lockscreen-frost-panel relative z-10 flex w-full flex-col items-center px-5 py-8 text-center transition-all duration-300">
+      <div className="lockscreen-frost-panel relative flex w-full flex-col items-center px-5 py-8 text-center">
         <p className="text-xl font-bold tracking-[0.24em] text-white/80">
           {getGreeting(now)}
         </p>
@@ -562,6 +569,7 @@ function Lockcard({
           Connection lost
         </div>
       )}
+      </div>
     </section>
   );
 }

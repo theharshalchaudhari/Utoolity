@@ -5,7 +5,7 @@ import {DEFAULT_WALLPAPER_ID,getWallpaper,getWallpaperUrl,preloadWallpaper,readW
 type Layer={wallpaper:Wallpaper;url:string;key:number};type Mode="dark"|"light";
 const mode=():Mode=>document.documentElement.classList.contains("dark")?"dark":"light";
 export default function DesktopBackground(){
- const [active,setActive]=useState<Layer|null>(null),[previous,setPrevious]=useState<Layer|null>(null),[visible,setVisible]=useState(false),[theme,setTheme]=useState<Mode>("dark");
+ const [active,setActive]=useState<Layer|null>(null),[previous,setPrevious]=useState<Layer|null>(null),[visible,setVisible]=useState(false),[theme,setTheme]=useState<Mode>(() => typeof document !== "undefined" && document.documentElement.classList.contains("dark") ? "dark" : "light");
  useEffect(()=>{let cancelled=false,key=0,request=0,current:Layer|null=null;
  const apply=async(id:string,t=mode())=>{const token=++request,w=getWallpaper(id),url=getWallpaperUrl(w,t);setTheme(t);if(current?.url===url)return;let next=w,nextUrl=url,fallbackUsed=false;
  try{await preloadWallpaper(url);}catch{if(cancelled||token!==request)return;next=getWallpaper(DEFAULT_WALLPAPER_ID);nextUrl=getWallpaperUrl(next,t);fallbackUsed=true;if(current?.url===nextUrl)return;try{await preloadWallpaper(nextUrl);}catch{return;}}

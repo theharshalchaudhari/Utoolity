@@ -373,38 +373,23 @@
     opacity: 0.16;
   }
 
-  .lockscreen-enter {
-    animation: lockscreen-drop-in 350ms cubic-bezier(0.22, 1, 0.36, 1)
-      both;
+  .lockscreen-shell {
+    isolation: auto;
+    background: transparent;
+    box-shadow: none;
   }
 
-  .lockscreen-exit {
-    animation: lockscreen-rise-out 350ms cubic-bezier(0.55, 0, 1, 0.45)
-      both;
-    pointer-events: none;
+  .lockscreen-frost-panel {
+    max-height: calc(100dvh - 2rem);
+    overflow-y: auto;
+    border: 1px solid color-mix(in oklab, white 22%, transparent);
+    border-radius: 2rem;
+    background: color-mix(in oklab, #101827 38%, transparent);
+    box-shadow: 0 24px 80px rgb(0 0 0 / 18%);
+    backdrop-filter: blur(30px) saturate(1.25);
+    -webkit-backdrop-filter: blur(30px) saturate(1.25);
   }
 
-  @keyframes lockscreen-drop-in {
-    from {
-      opacity: 0;
-      transform: translateY(-100%);
-    }
-    to {
-      opacity: 1;
-      transform: translateY(0);
-    }
-  }
-
-  @keyframes lockscreen-rise-out {
-    from {
-      opacity: 1;
-      transform: translateY(0);
-    }
-    to {
-      opacity: 0;
-      transform: translateY(-100%);
-    }
-  }
 }
 
 :root {
