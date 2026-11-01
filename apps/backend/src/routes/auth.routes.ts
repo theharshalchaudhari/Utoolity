@@ -1675,7 +1675,10 @@ export default async function authRoutes(app: FastifyInstance) {
 
         return {
           success: true,
-          user: publicUser(user),
+          user: {
+            ...publicUser(user),
+            preferences: { ...defaultPreferences, ...(user.preferences ?? {}) },
+          },
         };
       } catch (error) {
         request.log.error(error, "Lockscreen authentication failed");
