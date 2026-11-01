@@ -8,7 +8,7 @@ import { api, ApiError } from "@/lib/api";
 import Image from "next/image";
 import IssueReporter from "@/components/shared/IssueReporter";
 import { cookies } from "next/headers";
-import { DEFAULT_WALLPAPER_ID, getWallpaper, getWallpaperUrl, WALLPAPER_STORAGE_KEY } from "@/lib/wallpapers";
+import { DEFAULT_WALLPAPER_ID, getWallpaper, WALLPAPER_STORAGE_KEY } from "@/lib/wallpapers";
 
 type ShellState = "checking" | "authenticated" | "sleep" | "locked";
 const AUTHENTICATED_SESSION_KEY = "utoolity.authenticated";
@@ -24,8 +24,6 @@ export default async function Home() {
   const initialWallpaperId = getWallpaper(cookieStore.get(WALLPAPER_STORAGE_KEY)?.value ?? DEFAULT_WALLPAPER_ID).id;
   const initialThemeCookie = cookieStore.get("utoolity.theme")?.value;
   const initialTheme = initialThemeCookie === "dark" ? "dark" : "light";
-  const initialWallpaper = getWallpaper(initialWallpaperId);
-  const initialWallpaperUrl = getWallpaperUrl(initialWallpaper, initialTheme);
   const [shellState, setShellState] = useState<ShellState>("checking");
   const lastActivityRef = useRef(Date.now());
   const busyRef = useRef(false);
