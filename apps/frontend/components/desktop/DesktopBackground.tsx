@@ -18,37 +18,29 @@ type Mode = "dark" | "light";
 const mode = (): Mode =>
   document.documentElement.classList.contains("dark") ? "dark" : "light";
 
-const initialLayer = (): Layer => {
-  const wallpaper = getWallpaper(readWallpaperPreference());
-  const theme =
-    typeof document !== "undefined" &&
-    document.documentElement.classList.contains("dark")
-      ? "dark"
-      : "light";
-
-  return {
-    wallpaper,
-    url: getWallpaperUrl(wallpaper, theme),
-    key: 0,
-  };
+const serverInitialLayer = (id: string, theme: Mode): Layer => {
+  const wallpaper = getWallpaper(id);
+  return { wallpaper, url: getWallpaperUrl(wallpaper, theme), key: 0 };
 };
 
-export default function DesktopBackground() {
-  const [active, setActive] = useState<Layer | null>(initialLayer);
-  const [previous, setPrevious] = useState<Layer | null>(null);
-  const [visible, setVisible] = useState(true);
-  const [theme, setTheme] = useState<Mode>(() =>
-    typeof document !== "undefined" &&
-    document.documentElement.classList.contains("dark")
-      ? "dark"
-      : "light",
+export default function DesktopBackground({
+  initialWallpaperId,
+  initialTheme,
+}: {
+  initialWallpaperId: string;
+  initialTheme: Mode;
+}) {
+  const [active, setActive] = useState<Layer>(() =>
+    serverInitialLayer(initialWallpaperId, initialTheme),
   );
+  const [previous, setPrevious] = useState<Layer | null>(null);
+  const [theme, setTheme] = useState<Mode>(initialTheme);
 
   useEffect(() => {
     let cancelled = false;
     let key = 0;
     let request = 0;
-    let current = initialLayer();
+    let current = serverInitialLayer(initialWallpaperId, initialTheme);
 
     const apply = async (id: string, nextTheme = mode()) => {
       const token = ++request;
@@ -56,52 +48,39 @@ export default function DesktopBackground() {
       const url = getWallpaperUrl(wallpaper, nextTheme);
 
       setTheme(nextTheme);
-      if (current?.url === url) return;
+      if (current.url === url) return;
 
       const layer = { wallpaper, url, key: ++key };
 
-      // Keep the existing wallpaper visible while the replacement loads.
-      if (wallpaper.kind === "image") {
-        try {
-          await preloadWallpaper(url);
-        } catch {
-          if (cancelled || token !== request) return;
-          const fallback = getWallpaper(DEFAULT_WALLPAPER_ID);
-          const fallbackUrl = getWallpaperUrl(fallback, nextTheme);
-          const fallbackLayer = {
-            wallpaper: fallback,
-            url: fallbackUrl,
-            key: ++key,
-          };
-          setPrevious(current);
-          current = fallbackLayer;
-          setActive(fallbackLayer);
-          return;
-        }
-      } else {
-        // Live wallpapers keep the existing frame until the video has data.
-        try {
-          await preloadWallpaper(url);
-        } catch {
-          if (cancelled || token !== request) return;
-          return;
-        }
+      // Keep the existing wallpaper visible until the next layer is ready.
+      try {
+        await preloadWallpaper(url);
+      } catch {
+        if (cancelled || token !== request) return;
+        if (wallpaper.kind === "live") return;
+        const fallback = getWallpaper(DEFAULT_WALLPAPER_ID);
+        const fallbackLayer = {
+          wallpaper: fallback,
+          url: getWallpaperUrl(fallback, nextTheme),
+          key: ++key,
+        };
+        setPrevious(current);
+        current = fallbackLayer;
+        setActive(fallbackLayer);
+        return;
       }
 
       if (
         cancelled ||
         token !== request ||
-        getWallpaperUrl(
-          getWallpaper(readWallpaperPreference()),
-          mode(),
-        ) !== url
+        getWallpaperUrl(getWallpaper(readWallpaperPreference()), mode()) !==
+          url
       ) {
         return;
       }
 
       setPrevious(current);
       current = layer;
-      setVisible(true);
       setActive(layer);
     };
 
@@ -109,22 +88,17 @@ export default function DesktopBackground() {
       void apply(
         (event as CustomEvent<string>).detail || readWallpaperPreference(),
       );
-
     const storage = (event: StorageEvent) => {
-      if (event.key === WALLPAPER_STORAGE_KEY) {
+      if (event.key === WALLPAPER_STORAGE_KEY)
         void apply(event.newValue || DEFAULT_WALLPAPER_ID);
-      }
     };
-
-    const observer = new MutationObserver(() => {
-      void apply(readWallpaperPreference(), mode());
-    });
-
+    const observer = new MutationObserver(() =>
+      void apply(readWallpaperPreference(), mode()),
+    );
     observer.observe(document.documentElement, {
       attributes: true,
       attributeFilter: ["class"],
     });
-
     window.addEventListener("utoolity:wallpaper-changed", change);
     window.addEventListener("storage", storage);
 
@@ -136,7 +110,6 @@ export default function DesktopBackground() {
       };
     }
 
-    // Revalidate the initial layer against the preferred wallpaper and theme.
     void apply(readWallpaperPreference(), mode());
 
     return () => {
@@ -146,13 +119,13 @@ export default function DesktopBackground() {
       window.removeEventListener("storage", storage);
       channel?.close();
     };
-  }, []);
+  }, [initialWallpaperId, initialTheme]);
 
   useEffect(() => {
-    if (!active) return;
+    if (!previous) return;
     const timeout = window.setTimeout(() => setPrevious(null), 900);
     return () => window.clearTimeout(timeout);
-  }, [active]);
+  }, [previous]);
 
   const render = (layer: Layer) =>
     layer.wallpaper.kind === "live" ? (
@@ -181,10 +154,10 @@ export default function DesktopBackground() {
       aria-hidden
       className="desktop-background pointer-events-none fixed inset-0 z-0 overflow-hidden"
       data-wallpaper-theme={theme}
-      data-wallpaper-ready={active ? "true" : "false"}
+      data-wallpaper-ready="true"
     >
       {previous && render(previous)}
-      {active && render(active)}
+      {render(active)}
       <div className="absolute inset-0 top-[75%] left-[85%]">
         <Image
           src="/Logo.svg"
