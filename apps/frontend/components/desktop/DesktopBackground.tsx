@@ -85,9 +85,16 @@ export default function DesktopBackground({
 
       const layer = { wallpaper, url, key: ++key };
 
-      // Keep the existing wallpaper visible until the next layer is ready.
+      // Keep the existing wallpaper visible until the selected asset has
+      // been fetched and decoded. The browser cache then serves the same URL
+      // on refresh without waiting for the preference endpoint.
       try {
-        await preloadWallpaper(url);
+        if (wallpaper.kind === "image") {
+          cacheWallpaperImage(url);
+          await loadWallpaperImage(url);
+        } else {
+          await preloadWallpaper(url);
+        }
       } catch {
         if (cancelled || token !== request) return;
         if (wallpaper.kind === "live") return;
