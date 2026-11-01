@@ -46,10 +46,19 @@ export default function CustomCursor() {
         return;
       }
 
-      const target = event.target;
-      const interactive =
-        target instanceof Element &&
-        Boolean(target.closest(INTERACTIVE_SELECTOR));
+      // Pointer events bubble through React-managed SVGs and portals.
+      // Avoid DOM traversal from the global listener: SVG instance nodes can
+      // throw cross-origin access errors in some browser extension contexts.
+      let interactive = false;
+      try {
+        const target = event.target;
+        interactive =
+          target instanceof Element &&
+          Boolean(target.closest(INTERACTIVE_SELECTOR));
+      } catch {
+        // Cursor rendering is decorative; a restricted target must not break
+        // the application's pointer event processing.
+      }
 
       setPosition({
         x: event.clientX,
