@@ -53,7 +53,7 @@ const INACTIVITY_TIMEOUT_MS = 60_000;
 function applyProfilePreferences(preferences?: Record<string, string>) {
   const root = document.documentElement;
   const wallpaperId = preferences?.["utoolity.wallpaper"];
-  saveWallpaperPreference(wallpaperId || "Default");
+  if (wallpaperId) saveWallpaperPreference(wallpaperId);
 
   const theme = preferences?.["utoolity.theme"];
   if (theme === "dark" || theme === "light") {
