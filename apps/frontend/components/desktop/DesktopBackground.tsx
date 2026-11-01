@@ -1,7 +1,7 @@
 "use client";
 
 import Image from "next/image";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import {
   DEFAULT_WALLPAPER_ID,
   getWallpaper,
@@ -17,6 +17,39 @@ type Mode = "dark" | "light";
 
 const mode = (): Mode =>
   document.documentElement.classList.contains("dark") ? "dark" : "light";
+
+// Browser cache metadata is only a rendering optimization. The server/user
+// preference selects an ID; this cache never decides which wallpaper is active.
+const decodedWallpaperUrls = new Set<string>();
+const wallpaperImageCache = new Map<string, HTMLImageElement>();
+
+function loadWallpaperImage(url: string): Promise<void> {
+  if (decodedWallpaperUrls.has(url)) return Promise.resolve();
+  const cached = wallpaperImageCache.get(url);
+  if (cached?.complete && cached.naturalWidth > 0) {
+    decodedWallpaperUrls.add(url);
+    return Promise.resolve();
+  }
+  return preloadWallpaper(url).then(async () => {
+    const image = wallpaperImageCache.get(url);
+    if (image?.decode) {
+      try {
+        await image.decode();
+      } catch {
+        // onload is sufficient when decode() is unsupported for this format.
+      }
+    }
+    decodedWallpaperUrls.add(url);
+  });
+}
+
+function cacheWallpaperImage(url: string) {
+  if (wallpaperImageCache.has(url)) return;
+  const image = new Image();
+  image.decoding = "async";
+  image.src = url;
+  wallpaperImageCache.set(url, image);
+}
 
 const serverInitialLayer = (id: string, theme: Mode): Layer => {
   const wallpaper = getWallpaper(id);
