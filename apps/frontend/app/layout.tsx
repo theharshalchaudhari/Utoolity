@@ -39,10 +39,15 @@ export default async function RootLayout({
   const sessionCookie = cookieStore.get("sessionId")?.value;
   if (sessionCookie) {
     try {
-      const response = await fetch("http://127.0.0.1:4000/api/auth/preferences", {
-        headers: { cookie: `sessionId=${sessionCookie}` },
-        cache: "no-store",
-      });
+      const backendHost = process.env.BACKEND_HOST ?? "127.0.0.1";
+      const backendPort = process.env.BACKEND_PORT ?? "4000";
+      const response = await fetch(
+        `http://${backendHost}:${backendPort}/api/auth/preferences`,
+        {
+          headers: { cookie: `sessionId=${sessionCookie}` },
+          cache: "no-store",
+        },
+      );
       if (response.ok) {
         const payload = (await response.json()) as {
           preferences?: Record<string, string>;
