@@ -18,6 +18,9 @@ export default function Theme() {
       root.classList.toggle("dark", dark);
       root.classList.toggle("light", !dark);
       root.style.colorScheme = dark ? "dark" : "light";
+      try {
+        document.cookie = `utoolity.theme=${dark ? "dark" : "light"}; Path=/; Max-Age=31536000; SameSite=Lax`;
+      } catch {}
       window.dispatchEvent(
         new CustomEvent("utoolity:theme-changed", {
           detail: dark ? "dark" : "light",
