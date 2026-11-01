@@ -254,8 +254,26 @@ function normalizeUserRecord(value: unknown): InternUser {
   };
   const requestedWallpaper = oldWallpaper
     ? (wallpaperAliases[oldWallpaper] ?? oldWallpaper)
-    : "Default";
+    : undefined;
   const theme = oldPreferences["utoolity.theme"];
+  const preferences: Record<string, string> = {
+    ...oldPreferences,
+    "utoolity.icon-size": oldPreferences["utoolity.icon-size"] ?? "large",
+      "utoolity.grain": oldPreferences["utoolity.grain"] ?? "none",
+    "utoolity.theme":
+      theme === "dark" || theme === "light" ? theme : "device",
+  };
+
+  // An absent wallpaper is a real "not configured" state. Only invalid
+  // non-empty values are repaired to Default; a selected ID remains untouched.
+  if (requestedWallpaper) {
+    preferences["utoolity.wallpaper"] = validWallpaperIds.has(requestedWallpaper)
+      ? requestedWallpaper
+      : "Default";
+  } else {
+    delete preferences["utoolity.wallpaper"];
+  }
+
   return {
     ...profile,
     id: hostname,
@@ -263,16 +281,7 @@ function normalizeUserRecord(value: unknown): InternUser {
     deviceId: hostname,
     role: user.role === "admin" ? "admin" : "intern",
     password: typeof user.password === "string" ? user.password : "",
-    preferences: {
-      ...oldPreferences,
-      "utoolity.wallpaper": validWallpaperIds.has(requestedWallpaper)
-        ? requestedWallpaper
-        : "Default",
-      "utoolity.icon-size": oldPreferences["utoolity.icon-size"] ?? "large",
-      "utoolity.grain": oldPreferences["utoolity.grain"] ?? "none",
-      "utoolity.theme":
-        theme === "dark" || theme === "light" ? theme : "device",
-    },
+    preferences,
   };
 }
 
@@ -715,6 +724,9 @@ export default async function authRoutes(app: FastifyInstance) {
         preferences: {
           ...defaultPreferences,
           ...(user.preferences ?? {}),
+          ...(user.preferences?.["utoolity.wallpaper"]
+            ? { "utoolity.wallpaper": user.preferences["utoolity.wallpaper"] }
+            : { "utoolity.wallpaper": "Default" }),
         },
       };
     } catch (error) {
