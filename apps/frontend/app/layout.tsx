@@ -1,4 +1,6 @@
 import type { Metadata } from "next";
+import { cookies } from "next/headers";
+import { DEFAULT_WALLPAPER_ID, getWallpaper, WALLPAPER_STORAGE_KEY } from "@/lib/wallpapers";
 import { Nunito } from "next/font/google";
 import { TooltipProvider } from "@repo/ui/shadcn/tooltip";
 import Sidebar from "@/components/shared/Sidebar";
@@ -18,11 +20,18 @@ export const metadata: Metadata = {
   description: "Your utility application",
 };
 
-export default function RootLayout({
+export default async function RootLayout({
   children,
 }: Readonly<{
   children: React.ReactNode;
 }>) {
+  const cookieStore = await cookies();
+  const initialWallpaperId = getWallpaper(
+    cookieStore.get(WALLPAPER_STORAGE_KEY)?.value ?? DEFAULT_WALLPAPER_ID,
+  ).id;
+  const themeCookie = cookieStore.get("utoolity.theme")?.value;
+  const initialTheme = themeCookie === "dark" ? "dark" : "light";
+
   return (
     <html
       lang="en"
@@ -53,7 +62,9 @@ export default function RootLayout({
           <div className="flex min-h-screen">
             {/* <Sidebar /> */}
 
-            <main className="min-w-0 flex-1">{children}</main>
+            <main className="min-w-0 flex-1">
+              {children}
+            </main>
           </div>
         </TooltipProvider>
       </body>
