@@ -43,14 +43,32 @@ export default async function RootLayout({
           dangerouslySetInnerHTML={{
             __html: `(() => {
               try {
+                const root = document.documentElement;
+                const wallpaperKey = "utoolity.wallpaper";
+                const wallpaperCookie = document.cookie
+                  .split("; ")
+                  .find((value) => value.startsWith(wallpaperKey + "="))
+                  ?.slice(wallpaperKey.length + 1);
+                const savedWallpaper = localStorage.getItem(wallpaperKey);
+                const wallpaper = savedWallpaper || wallpaperCookie;
+                if (wallpaper) {
+                  document.cookie = wallpaperKey + "=" + encodeURIComponent(wallpaper) + "; Path=/; Max-Age=31536000; SameSite=Lax";
+                }
+
                 const saved = localStorage.getItem("utoolity.theme");
+                const themeCookie = document.cookie
+                  .split("; ")
+                  .find((value) => value.startsWith("utoolity.theme="))
+                  ?.slice("utoolity.theme=".length);
                 const theme = saved === "dark" || saved === "light"
                   ? saved
-                  : (window.matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light");
-                const root = document.documentElement;
+                  : themeCookie === "dark" || themeCookie === "light"
+                    ? themeCookie
+                    : (window.matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light");
                 root.classList.toggle("dark", theme === "dark");
                 root.classList.toggle("light", theme === "light");
                 root.style.colorScheme = theme;
+                document.cookie = "utoolity.theme=" + theme + "; Path=/; Max-Age=31536000; SameSite=Lax";
               } catch {}
             })();`,
           }}
