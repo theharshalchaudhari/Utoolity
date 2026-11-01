@@ -102,21 +102,41 @@ export default function Home() {
   }, [shellState]);
 
   useEffect(() => {
+    let latestSelection = 0;
+    let writeQueue = Promise.resolve();
+
     const persistWallpaper = (event: Event) => {
       const wallpaperId = (event as CustomEvent<string>).detail;
-      if (
-        typeof wallpaperId !== "string" ||
-        !wallpaperId ||
-        localStorage.getItem(AUTHENTICATED_SESSION_KEY) !== "true" ||
-        !localStorage.getItem("utoolity.authenticated-user-id")
-      ) return;
+      if (typeof wallpaperId !== "string" || !wallpaperId) return;
 
-      void api("/api/auth/preferences", {
-        method: "PATCH",
-        body: JSON.stringify({ [WALLPAPER_STORAGE_KEY]: wallpaperId }),
-      }).catch((error) => {
-        console.warn("Unable to persist profile wallpaper.", error);
-      });
+      const selection = ++latestSelection;
+      writeQueue = writeQueue
+        .catch(() => undefined)
+        .then(async () => {
+          // The server session is authoritative. Do not gate this write on
+          // localStorage flags, which can lag after an unlock or account switch.
+          const response = await api<{ preferences: Record<string, string> }>(
+            "/api/auth/preferences",
+            {
+              method: "PATCH",
+              body: JSON.stringify({ [WALLPAPER_STORAGE_KEY]: wallpaperId }),
+            },
+          );
+
+          // The latest selection is already persisted by the queue. Older
+          // responses must not rewrite local selection or cookie state.
+          if (selection !== latestSelection) return;
+          const persistedId = response.preferences[WALLPAPER_STORAGE_KEY];
+          if (persistedId && persistedId !== wallpaperId) {
+            console.warn("Server returned a different wallpaper preference.", {
+              requested: wallpaperId,
+              persisted: persistedId,
+            });
+          }
+        })
+        .catch((error) => {
+          console.warn("Unable to persist profile wallpaper.", error);
+        });
     };
 
     window.addEventListener("utoolity:wallpaper-changed", persistWallpaper);
