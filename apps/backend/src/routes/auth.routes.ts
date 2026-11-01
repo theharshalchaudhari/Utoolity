@@ -720,13 +720,7 @@ export default async function authRoutes(app: FastifyInstance) {
           .send({ message: "Session user no longer exists." });
       }
       return {
-        preferences: {
-          ...defaultPreferences,
-          ...(user.preferences ?? {}),
-          ...(user.preferences?.["utoolity.wallpaper"]
-            ? { "utoolity.wallpaper": user.preferences["utoolity.wallpaper"] }
-            : {}),
-        },
+        preferences: { ...defaultPreferences, ...(user.preferences ?? {}) },
       };
     } catch (error) {
       request.log.error(error, "Unable to load user preferences");
