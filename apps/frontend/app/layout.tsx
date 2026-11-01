@@ -7,6 +7,7 @@ import Sidebar from "@/components/shared/Sidebar";
 import DeviceTheme from "@/components/shared/DeviceTheme";
 import BrowserGuards from "@/components/shared/BrowserGuards";
 import CustomCursor from "@/components/shared/CustomCursor";
+import { InitialDesktopPreferencesProvider } from "@/components/shared/InitialDesktopPreferences";
 import "./globals.css";
 
 const nunito = Nunito({
@@ -58,11 +59,15 @@ export default async function RootLayout({
         <CustomCursor />
         <BrowserGuards />
         <TooltipProvider delayDuration={200}>
-          <div className="flex min-h-screen">
-            {/* <Sidebar /> */}
+          <InitialDesktopPreferencesProvider
+            value={{ wallpaperId: initialWallpaperId, theme: initialTheme }}
+          >
+            <div className="flex min-h-screen">
+              {/* <Sidebar /> */}
 
-            <main className="min-w-0 flex-1">{children}</main>
-          </div>
+              <main className="min-w-0 flex-1">{children}</main>
+            </div>
+          </InitialDesktopPreferencesProvider>
         </TooltipProvider>
       </body>
     </html>
