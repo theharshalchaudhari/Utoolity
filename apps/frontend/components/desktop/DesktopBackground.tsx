@@ -110,7 +110,12 @@ export default function DesktopBackground({
       };
     }
 
-    void apply(readWallpaperPreference(), mode());
+    const clientWallpaperId = readWallpaperPreference();
+    if (clientWallpaperId !== initialWallpaperId) {
+      void apply(clientWallpaperId, mode());
+    } else if (mode() !== initialTheme) {
+      void apply(clientWallpaperId, mode());
+    }
 
     return () => {
       cancelled = true;
