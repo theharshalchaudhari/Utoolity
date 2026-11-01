@@ -58,7 +58,6 @@ const preferenceKeys = new Set([
   "utoolity.icon-size",
 ]);
 const defaultPreferences: Record<string, string> = {
-  "utoolity.wallpaper": "Default",
   "utoolity.icon-size": "large",
   "utoolity.grain": "none",
   "utoolity.theme": "device",
