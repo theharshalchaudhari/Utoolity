@@ -791,9 +791,9 @@ export default function Desktop({
           root.style.colorScheme = deviceTheme;
           setIsDark(deviceTheme === "dark");
         }
-        if (preferences["utoolity.wallpaper"]) {
-          saveWallpaperPreference(preferences["utoolity.wallpaper"]);
-        }
+        // Wallpaper was selected before desktop hydration. Do not apply it
+        // again from this late preference response; the loaded client layer is
+        // the display cache, while the saved preference is only the selector.
         if (preferences["utoolity.animations"]) {
           root.dataset.animations =
             preferences["utoolity.animations"].toLowerCase();
