@@ -553,7 +553,7 @@ function Lockcard({
           <Maximize className="size-4" />
         </button>
 
-        <div className="backdrop-blur-xs h-screen relative flex w-full flex-col items-center px-5 py-8 text-center">
+        <div className="backdrop-blur-xs h-screen relative flex w-full flex-col items-center top-30 px-5 py-8 text-center">
           <p className="text-xl font-bold tracking-[0.24em] text-white/80">
             {getGreeting(now)}
           </p>
@@ -574,7 +574,7 @@ function Lockcard({
               day: "numeric",
             })}
           </p>
-          <div className="mt-12 flex w-full flex-col items-center">
+          <div className="mt-[20vh] flex w-full flex-col items-center">
             <div className="mb-4 flex size-20 items-center justify-center rounded-full border border-white/25 bg-black/15 shadow-lg backdrop-blur-sm">
               <LockKeyhole
                 className={`size-8 text-white/90 transition-opacity duration-500 ${
