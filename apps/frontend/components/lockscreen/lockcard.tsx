@@ -459,6 +459,7 @@ function Lockcard({
         return;
       }
       const user = response.user ?? profile;
+      applyProfilePreferences(user.preferences);
       setProfile({ ...user, locked: false });
       setHostname(user.hostname);
       window.localStorage.setItem("utoolity.authenticated-user-id", user.id);
