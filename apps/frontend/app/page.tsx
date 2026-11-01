@@ -5,6 +5,7 @@ import Desktop from "@/components/desktop/Desktop";
 import DesktopBackground from "@/components/desktop/DesktopBackground";
 import Lockcard from "@/components/lockscreen/lockcard";
 import { api, ApiError } from "@/lib/api";
+import { WALLPAPER_STORAGE_KEY } from "@/lib/wallpapers";
 import Image from "next/image";
 import IssueReporter from "@/components/shared/IssueReporter";
 import { useInitialDesktopPreferences } from "@/components/shared/InitialDesktopPreferences";
@@ -99,6 +100,29 @@ export default function Home() {
   useEffect(() => {
     shellStateRef.current = shellState;
   }, [shellState]);
+
+  useEffect(() => {
+    const persistWallpaper = (event: Event) => {
+      const wallpaperId = (event as CustomEvent<string>).detail;
+      if (
+        typeof wallpaperId !== "string" ||
+        !wallpaperId ||
+        localStorage.getItem(AUTHENTICATED_SESSION_KEY) !== "true" ||
+        !localStorage.getItem("utoolity.authenticated-user-id")
+      ) return;
+
+      void api("/api/auth/preferences", {
+        method: "PATCH",
+        body: JSON.stringify({ [WALLPAPER_STORAGE_KEY]: wallpaperId }),
+      }).catch((error) => {
+        console.warn("Unable to persist profile wallpaper.", error);
+      });
+    };
+
+    window.addEventListener("utoolity:wallpaper-changed", persistWallpaper);
+    return () =>
+      window.removeEventListener("utoolity:wallpaper-changed", persistWallpaper);
+  }, []);
 
   useEffect(() => {
     const handleInvalidSession = () => {
