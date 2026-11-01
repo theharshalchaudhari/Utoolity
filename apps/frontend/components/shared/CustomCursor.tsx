@@ -41,23 +41,28 @@ export default function CustomCursor() {
 
   useEffect(() => {
     const updateCursor = (event: PointerEvent) => {
+      // Ignore events whose target belongs to another document or is an SVG
+      // instance node that cannot be safely inspected from this document.
+      let target: EventTarget | null;
+      try {
+        target = event.composedPath()[0] ?? event.target;
+        if (!(target instanceof Element)) target = null;
+      } catch {
+        return;
+      }
+
       if (event.pointerType && event.pointerType !== "mouse") {
         setPosition((current) => ({ ...current, visible: false }));
         return;
       }
 
-      // Pointer events bubble through React-managed SVGs and portals.
-      // Avoid DOM traversal from the global listener: SVG instance nodes can
-      // throw cross-origin access errors in some browser extension contexts.
       let interactive = false;
-      try {
-        const target = event.target;
-        interactive =
-          target instanceof Element &&
-          Boolean(target.closest(INTERACTIVE_SELECTOR));
-      } catch {
-        // Cursor rendering is decorative; a restricted target must not break
-        // the application's pointer event processing.
+      if (target) {
+        try {
+          interactive = Boolean(target.closest(INTERACTIVE_SELECTOR));
+        } catch {
+          // Cursor styling must never interrupt the underlying pointer event.
+        }
       }
 
       setPosition({
