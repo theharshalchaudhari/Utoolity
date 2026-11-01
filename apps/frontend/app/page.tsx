@@ -7,6 +7,7 @@ import Lockcard from "@/components/lockscreen/lockcard";
 import { api, ApiError } from "@/lib/api";
 import Image from "next/image";
 import IssueReporter from "@/components/shared/IssueReporter";
+import { useInitialDesktopPreferences } from "@/components/shared/InitialDesktopPreferences";
 
 type ShellState = "checking" | "authenticated" | "sleep" | "locked";
 const AUTHENTICATED_SESSION_KEY = "utoolity.authenticated";
@@ -17,13 +18,9 @@ const SLEEP_AFTER_MS = 5 * 60 * 1000;
 const LOCK_AFTER_MS = 2 * 60 * 1000;
 const SLEEP_WARNING_BEFORE_MS = 30 * 1000;
 
-export default function Home({
-  initialWallpaperId,
-  initialTheme,
-}: {
-  initialWallpaperId: string;
-  initialTheme: "dark" | "light";
-}) {
+export default function Home() {
+  const { wallpaperId: initialWallpaperId, theme: initialTheme } =
+    useInitialDesktopPreferences();
   const [shellState, setShellState] = useState<ShellState>("checking");
   const lastActivityRef = useRef(Date.now());
   const busyRef = useRef(false);
