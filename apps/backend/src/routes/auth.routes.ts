@@ -1566,7 +1566,7 @@ export default async function authRoutes(app: FastifyInstance) {
         success: true,
         user: {
           ...publicUser(user),
-          preferences: { ...(user.preferences ?? {}), ...defaultPreferences, ...(user.preferences ?? {}) },
+          preferences: { ...defaultPreferences, ...(user.preferences ?? {}) },
         },
       });
     } catch (error) {
@@ -1617,7 +1617,7 @@ export default async function authRoutes(app: FastifyInstance) {
       return {
         user: {
           ...publicUser(user),
-          preferences: { ...(user.preferences ?? {}), ...defaultPreferences, ...(user.preferences ?? {}) },
+          preferences: { ...defaultPreferences, ...(user.preferences ?? {}) },
           locked: true,
         },
       };
