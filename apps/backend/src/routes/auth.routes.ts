@@ -1549,7 +1549,11 @@ export default async function authRoutes(app: FastifyInstance) {
         password,
         deviceId: hostname,
         role: "intern",
-        preferences: { ...defaultPreferences },
+        // New profiles are explicitly initialized with the default wallpaper.
+        preferences: {
+          ...defaultPreferences,
+          "utoolity.wallpaper": "Default",
+        },
       };
       await writeUsers([...users, user]);
       await establishSession(request, user);
@@ -1562,7 +1566,7 @@ export default async function authRoutes(app: FastifyInstance) {
         success: true,
         user: {
           ...publicUser(user),
-          preferences: { ...defaultPreferences, ...(user.preferences ?? {}) },
+          preferences: { ...(user.preferences ?? {}), ...defaultPreferences, ...(user.preferences ?? {}) },
         },
       });
     } catch (error) {
@@ -1613,7 +1617,7 @@ export default async function authRoutes(app: FastifyInstance) {
       return {
         user: {
           ...publicUser(user),
-          preferences: { ...defaultPreferences, ...(user.preferences ?? {}) },
+          preferences: { ...(user.preferences ?? {}), ...defaultPreferences, ...(user.preferences ?? {}) },
           locked: true,
         },
       };
