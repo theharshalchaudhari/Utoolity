@@ -2,7 +2,6 @@ import type { Metadata } from "next";
 import { cookies } from "next/headers";
 import { DEFAULT_WALLPAPER_ID, WALLPAPER_STORAGE_KEY } from "@/lib/wallpapers";
 import { api } from "@/lib/api";
-import { api } from "@/lib/api";
 import { Nunito } from "next/font/google";
 import { TooltipProvider } from "@repo/ui/shadcn/tooltip";
 import Sidebar from "@/components/shared/Sidebar";
@@ -39,15 +38,22 @@ export default async function RootLayout({
   const sessionCookie = cookieStore.get("sessionId")?.value;
   if (sessionCookie) {
     try {
-      const response = await api<{ preferences?: Record<string, string> }>(
-        "/api/auth/preferences",
+      const backendHost = process.env.BACKEND_HOST ?? "127.0.0.1";
+      const backendPort = process.env.BACKEND_PORT ?? "4000";
+      const response = await fetch(
+        `http://${backendHost}:${backendPort}/api/auth/preferences`,
         {
           headers: { cookie: `sessionId=${sessionCookie}` },
           cache: "no-store",
         },
       );
-      initialWallpaperId =
-        response.preferences?.[WALLPAPER_STORAGE_KEY] ?? DEFAULT_WALLPAPER_ID;
+      if (response.ok) {
+        const payload = (await response.json()) as {
+          preferences?: Record<string, string>;
+        };
+        initialWallpaperId =
+          payload.preferences?.[WALLPAPER_STORAGE_KEY] ?? DEFAULT_WALLPAPER_ID;
+      }
     } catch {
       // Keep the last cached selection when the backend is unavailable.
     }
