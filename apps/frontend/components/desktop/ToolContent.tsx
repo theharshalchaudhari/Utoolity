@@ -1,18 +1,7 @@
 "use client";
 
-import Settings from "@/components/settings/Settings";
-import FileManager from "@/components/files/FileManager";
-import PolygonAnnotationPage from "@/app/tools/polygon-annotation/page";
-import VideoConverterPage from "@/app/tools/video-converter/page";
-import ImageConverterPage from "@/app/tools/image-converter/page";
-import ImageClassificationPage from "@/app/tools/image-classification/page";
-import VideoTrimPage from "@/app/tools/video-trim/page";
-import VideoMergePage from "@/app/tools/video-merge/page";
-import VideoToImagesPage from "@/app/tools/video-to-images/page";
-import BoundingBoxPage from "@/app/tools/bounding-box/page";
-import AugmentationPage from "@/app/tools/augmentation/page";
-import Gallery from "@/components/files/Gallery";
-import Notepad from "@/components/files/Notepad";
+import dynamic from "next/dynamic";
+import type { ComponentType } from "react";
 
 export type DesktopAppId =
   | "files"
@@ -45,6 +34,25 @@ export const appTitles: Record<DesktopAppId, string> = {
   notepad: "Notepad",
 };
 
+const toolComponents: Record<
+  DesktopAppId,
+  ComponentType<{ filePath?: string; onOpenFile?: (path: string, type: "image" | "text") => void }>
+> = {
+  files: dynamic(() => import("@/components/files/FileManager")),
+  settings: dynamic(() => import("@/components/settings/Settings")),
+  "polygon-annotation": dynamic(() => import("@/components/polygon-annotation/PolygonAnnotationStudio")),
+  "video-converter": dynamic(() => import("@/app/tools/video-converter/page")),
+  "image-converter": dynamic(() => import("@/app/tools/image-converter/page")),
+  "image-classification": dynamic(() => import("@/app/tools/image-classification/page")),
+  "video-trim": dynamic(() => import("@/app/tools/video-trim/page")),
+  "video-merge": dynamic(() => import("@/app/tools/video-merge/page")),
+  "video-to-images": dynamic(() => import("@/app/tools/video-to-images/page")),
+  "bounding-box": dynamic(() => import("@/components/bounding-box/BoundingBoxStudio")),
+  augmentation: dynamic(() => import("@/app/tools/augmentation/page")),
+  gallery: dynamic(() => import("@/components/files/Gallery")),
+  notepad: dynamic(() => import("@/components/files/Notepad")),
+};
+
 export default function ToolContent({
   app,
   filePath,
@@ -54,32 +62,6 @@ export default function ToolContent({
   filePath?: string;
   onOpenFile?: (path: string, type: "image" | "text") => void;
 }) {
-  switch (app) {
-    case "files":
-      return <FileManager onOpenFile={onOpenFile} />;
-    case "settings":
-      return <Settings />;
-    case "polygon-annotation":
-      return <PolygonAnnotationPage />;
-    case "video-converter":
-      return <VideoConverterPage />;
-    case "image-converter":
-      return <ImageConverterPage />;
-    case "image-classification":
-      return <ImageClassificationPage />;
-    case "video-trim":
-      return <VideoTrimPage />;
-    case "video-merge":
-      return <VideoMergePage />;
-    case "video-to-images":
-      return <VideoToImagesPage />;
-    case "bounding-box":
-      return <BoundingBoxPage />;
-    case "augmentation":
-      return <AugmentationPage />;
-    case "gallery":
-      return <Gallery initialPath={filePath} />;
-    case "notepad":
-      return <Notepad initialPath={filePath} />;
-  }
+  const ActiveTool = toolComponents[app];
+  return <ActiveTool filePath={filePath} onOpenFile={onOpenFile} />;
 }
