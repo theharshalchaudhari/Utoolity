@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import { cookies } from "next/headers";
-import { DEFAULT_WALLPAPER_ID, getWallpaper, WALLPAPER_STORAGE_KEY } from "@/lib/wallpapers";
+import { DEFAULT_WALLPAPER_ID, WALLPAPER_STORAGE_KEY } from "@/lib/wallpapers";
 import { Nunito } from "next/font/google";
 import { TooltipProvider } from "@repo/ui/shadcn/tooltip";
 import Sidebar from "@/components/shared/Sidebar";
@@ -26,9 +26,8 @@ export default async function RootLayout({
   children: React.ReactNode;
 }>) {
   const cookieStore = await cookies();
-  const initialWallpaperId = getWallpaper(
-    cookieStore.get(WALLPAPER_STORAGE_KEY)?.value ?? DEFAULT_WALLPAPER_ID,
-  ).id;
+  const initialWallpaperId =
+    cookieStore.get(WALLPAPER_STORAGE_KEY)?.value ?? DEFAULT_WALLPAPER_ID;
   const themeCookie = cookieStore.get("utoolity.theme")?.value;
   const initialTheme = themeCookie === "dark" ? "dark" : "light";
 
