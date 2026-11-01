@@ -724,9 +724,6 @@ export default async function authRoutes(app: FastifyInstance) {
         preferences: {
           ...defaultPreferences,
           ...(user.preferences ?? {}),
-          ...(user.preferences?.["utoolity.wallpaper"]
-            ? { "utoolity.wallpaper": user.preferences["utoolity.wallpaper"] }
-            : { "utoolity.wallpaper": "Default" }),
         },
       };
     } catch (error) {
