@@ -7,6 +7,8 @@ import Lockcard from "@/components/lockscreen/lockcard";
 import { api, ApiError } from "@/lib/api";
 import Image from "next/image";
 import IssueReporter from "@/components/shared/IssueReporter";
+import { cookies } from "next/headers";
+import { DEFAULT_WALLPAPER_ID, getWallpaper, getWallpaperUrl, WALLPAPER_STORAGE_KEY } from "@/lib/wallpapers";
 
 type ShellState = "checking" | "authenticated" | "sleep" | "locked";
 const AUTHENTICATED_SESSION_KEY = "utoolity.authenticated";
@@ -17,7 +19,13 @@ const SLEEP_AFTER_MS = 5 * 60 * 1000;
 const LOCK_AFTER_MS = 2 * 60 * 1000;
 const SLEEP_WARNING_BEFORE_MS = 30 * 1000;
 
-export default function Home() {
+export default async function Home() {
+  const cookieStore = await cookies();
+  const initialWallpaperId = getWallpaper(cookieStore.get(WALLPAPER_STORAGE_KEY)?.value ?? DEFAULT_WALLPAPER_ID).id;
+  const initialThemeCookie = cookieStore.get("utoolity.theme")?.value;
+  const initialTheme = initialThemeCookie === "dark" ? "dark" : "light";
+  const initialWallpaper = getWallpaper(initialWallpaperId);
+  const initialWallpaperUrl = getWallpaperUrl(initialWallpaper, initialTheme);
   const [shellState, setShellState] = useState<ShellState>("checking");
   const lastActivityRef = useRef(Date.now());
   const busyRef = useRef(false);
@@ -426,7 +434,10 @@ export default function Home() {
 
   return (
     <div className="relative h-dvh min-h-dvh overflow-hidden font-sans text-foreground">
-      <DesktopBackground />
+      <DesktopBackground
+        initialWallpaperId={initialWallpaperId}
+        initialTheme={initialTheme}
+      />
       <IssueReporter />
       {shellState !== "checking" ? (
         <>
