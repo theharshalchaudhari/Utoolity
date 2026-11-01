@@ -61,14 +61,7 @@ export default async function RootLayout({
           <div className="flex min-h-screen">
             {/* <Sidebar /> */}
 
-            <main className="min-w-0 flex-1">
-              {React.isValidElement(children)
-                ? React.cloneElement(children as React.ReactElement<{ initialWallpaperId?: string; initialTheme?: "dark" | "light" }>, {
-                    initialWallpaperId,
-                    initialTheme,
-                  })
-                : children}
-            </main>
+            <main className="min-w-0 flex-1">{children}</main>
           </div>
         </TooltipProvider>
       </body>
