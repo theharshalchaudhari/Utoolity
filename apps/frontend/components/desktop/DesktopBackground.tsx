@@ -1,4 +1,5 @@
 "use client";
+
 import Image from "next/image";
 import { useEffect, useState } from "react";
 import {
@@ -10,87 +11,140 @@ import {
   WALLPAPER_STORAGE_KEY,
   type Wallpaper,
 } from "../../lib/wallpapers";
+
 type Layer = { wallpaper: Wallpaper; url: string; key: number };
 type Mode = "dark" | "light";
+
 const mode = (): Mode =>
   document.documentElement.classList.contains("dark") ? "dark" : "light";
+
+const initialLayer = (): Layer => {
+  const wallpaper = getWallpaper(readWallpaperPreference());
+  const theme =
+    typeof document !== "undefined" &&
+    document.documentElement.classList.contains("dark")
+      ? "dark"
+      : "light";
+
+  return {
+    wallpaper,
+    url: getWallpaperUrl(wallpaper, theme),
+    key: 0,
+  };
+};
+
 export default function DesktopBackground() {
-  const [active, setActive] = useState<Layer | null>(null),
-    [previous, setPrevious] = useState<Layer | null>(null),
-    [visible, setVisible] = useState(false),
-    [theme, setTheme] = useState<Mode>(() =>
-      typeof document !== "undefined" &&
-      document.documentElement.classList.contains("dark")
-        ? "dark"
-        : "light",
-    );
+  const [active, setActive] = useState<Layer | null>(initialLayer);
+  const [previous, setPrevious] = useState<Layer | null>(null);
+  const [visible, setVisible] = useState(true);
+  const [theme, setTheme] = useState<Mode>(() =>
+    typeof document !== "undefined" &&
+    document.documentElement.classList.contains("dark")
+      ? "dark"
+      : "light",
+  );
+
   useEffect(() => {
-    let cancelled = false,
-      key = 0,
-      request = 0,
-      current: Layer | null = null;
-    const apply = async (id: string, t = mode()) => {
-      const token = ++request,
-        w = getWallpaper(id),
-        url = getWallpaperUrl(w, t);
-      setTheme(t);
+    let cancelled = false;
+    let key = 0;
+    let request = 0;
+    let current = active;
+
+    const apply = async (id: string, nextTheme = mode()) => {
+      const token = ++request;
+      const wallpaper = getWallpaper(id);
+      const url = getWallpaperUrl(wallpaper, nextTheme);
+
+      setTheme(nextTheme);
       if (current?.url === url) return;
-      let next = w,
-        nextUrl = url,
-        fallbackUsed = false;
-      try {
-        await preloadWallpaper(url);
-      } catch {
-        if (cancelled || token !== request) return;
-        next = getWallpaper(DEFAULT_WALLPAPER_ID);
-        nextUrl = getWallpaperUrl(next, t);
-        fallbackUsed = true;
-        if (current?.url === nextUrl) return;
+
+      const layer = { wallpaper, url, key: ++key };
+
+      // Keep the previous wallpaper visible while its replacement loads.
+      // On a cold refresh, the initial persisted wallpaper is rendered before
+      // this preload completes, preventing a blank/white desktop flash.
+      if (wallpaper.kind === "image") {
+        setPrevious(current);
+        current = layer;
+        setVisible(true);
+        setActive(layer);
         try {
-          await preloadWallpaper(nextUrl);
+          await preloadWallpaper(url);
         } catch {
+          if (cancelled || token !== request) return;
+          const fallback = getWallpaper(DEFAULT_WALLPAPER_ID);
+          const fallbackUrl = getWallpaperUrl(fallback, nextTheme);
+          const fallbackLayer = {
+            wallpaper: fallback,
+            url: fallbackUrl,
+            key: ++key,
+          };
+          current = fallbackLayer;
+          setActive(fallbackLayer);
+          setPrevious(null);
           return;
         }
+      } else {
+        // Live wallpapers keep the existing frame until the video has data.
+        try {
+          await preloadWallpaper(url);
+        } catch {
+          if (cancelled || token !== request) return;
+          return;
+        }
+        if (cancelled || token !== request) return;
+        setPrevious(current);
+        current = layer;
+        setVisible(true);
+        setActive(layer);
       }
+
       if (
         cancelled ||
         token !== request ||
-        (!fallbackUsed &&
-          getWallpaperUrl(getWallpaper(readWallpaperPreference()), mode()) !==
-            nextUrl)
-      )
+        getWallpaperUrl(
+          getWallpaper(readWallpaperPreference()),
+          mode(),
+        ) !== url
+      ) {
         return;
-      const layer = { wallpaper: next, url: nextUrl, key: ++key };
-      setPrevious(current);
-      current = layer;
-      setVisible(false);
-      setActive(layer);
+      }
     };
-    const change = (e: Event) =>
+
+    const change = (event: Event) =>
       void apply(
-        (e as CustomEvent<string>).detail || readWallpaperPreference(),
+        (event as CustomEvent<string>).detail || readWallpaperPreference(),
       );
-    const storage = (e: StorageEvent) => {
-      if (e.key === WALLPAPER_STORAGE_KEY)
-        void apply(e.newValue || DEFAULT_WALLPAPER_ID);
+
+    const storage = (event: StorageEvent) => {
+      if (event.key === WALLPAPER_STORAGE_KEY) {
+        void apply(event.newValue || DEFAULT_WALLPAPER_ID);
+      }
     };
-    const observer = new MutationObserver(
-      () => void apply(readWallpaperPreference(), mode()),
-    );
+
+    const observer = new MutationObserver(() => {
+      void apply(readWallpaperPreference(), mode());
+    });
+
     observer.observe(document.documentElement, {
       attributes: true,
       attributeFilter: ["class"],
     });
+
     window.addEventListener("utoolity:wallpaper-changed", change);
     window.addEventListener("storage", storage);
+
     let channel: BroadcastChannel | undefined;
     if ("BroadcastChannel" in window) {
       channel = new BroadcastChannel("utoolity:wallpaper");
-      channel.onmessage = (e) => {
-        if (e.data?.id) void apply(e.data.id);
+      channel.onmessage = (event) => {
+        if (event.data?.id) void apply(event.data.id);
       };
     }
+
+    // Revalidate the initial layer against the preferred wallpaper and theme.
     void apply(readWallpaperPreference(), mode());
+
     return () => {
       cancelled = true;
       observer.disconnect();
@@ -99,27 +153,20 @@ export default function DesktopBackground() {
       channel?.close();
     };
   }, []);
+
   useEffect(() => {
     if (!active) return;
-    const f = requestAnimationFrame(() => setVisible(true)),
-      t = setTimeout(() => setPrevious(null), 900);
-    return () => {
-      cancelAnimationFrame(f);
-      clearTimeout(t);
-    };
+    const timeout = window.setTimeout(() => setPrevious(null), 900);
+    return () => window.clearTimeout(timeout);
   }, [active]);
-  const render = (l: Layer, on: boolean) => {
-    const opacity = on
-      ? visible
-        ? "opacity-100"
-        : "opacity-0"
-      : "opacity-100";
-    return l.wallpaper.kind === "live" ? (
+
+  const render = (layer: Layer) =>
+    layer.wallpaper.kind === "live" ? (
       <video
-        key={l.key}
+        key={layer.key}
         aria-hidden
-        className={`absolute inset-0 h-full w-full object-cover transition-opacity duration-850 ease-in-out motion-reduce:transition-none ${opacity}`}
-        src={l.url}
+        className="absolute inset-0 h-full w-full object-cover"
+        src={layer.url}
         autoPlay
         muted
         loop
@@ -128,21 +175,22 @@ export default function DesktopBackground() {
       />
     ) : (
       <div
-        key={l.key}
+        key={layer.key}
         aria-hidden
-        className={`absolute inset-0 bg-cover bg-center transition-opacity duration-850 ease-in-out motion-reduce:transition-none ${opacity}`}
-        style={{ backgroundImage: `url("${l.url}")` }}
+        className="absolute inset-0 bg-cover bg-center"
+        style={{ backgroundImage: `url("${layer.url}")` }}
       />
     );
-  };
+
   return (
     <div
       aria-hidden
       className="desktop-background pointer-events-none fixed inset-0 z-0 overflow-hidden"
       data-wallpaper-theme={theme}
+      data-wallpaper-ready={active ? "true" : "false"}
     >
-      {previous && render(previous, false)}
-      {active && render(active, true)}
+      {previous && render(previous)}
+      {active && render(active)}
       <div className="absolute inset-0 top-[75%] left-[85%]">
         <Image
           src="/Logo.svg"
