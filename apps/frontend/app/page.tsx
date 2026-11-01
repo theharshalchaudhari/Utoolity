@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import Desktop from "@/components/desktop/Desktop";
 import DesktopBackground from "@/components/desktop/DesktopBackground";
-import Lockcard from "@/components/lockscreen/LockcardEntry";
+import Lockcard from "@/components/lockscreen/lockcard";
 import { api, ApiError } from "@/lib/api";
 import Image from "next/image";
 import IssueReporter from "@/components/shared/IssueReporter";
@@ -263,11 +263,12 @@ export default function Home() {
         }
 
         localStorage.setItem(AUTHENTICATED_SESSION_KEY, "true");
+        // A successful /auth/me response confirms the server session. A stale
+        // local "locked" marker must not override that valid session after refresh.
+        // Sleep is the only client state restored while the session remains valid.
         const savedState = localStorage.getItem(SHELL_STATE_KEY);
         const nextState: ShellState =
-          savedState === "locked" || savedState === "sleep"
-            ? savedState
-            : "authenticated";
+          savedState === "sleep" ? "sleep" : "authenticated";
         localStorage.setItem(SHELL_STATE_KEY, nextState);
         setShellState(nextState);
         const lastActivity = Number(
@@ -425,10 +426,11 @@ export default function Home() {
 
   return (
     <div className="relative h-dvh min-h-dvh overflow-hidden font-sans text-foreground">
+      <DesktopBackground />
       <IssueReporter />
       {shellState === "checking" ? (
         <div
-          className="flex min-h-screen items-center justify-center bg-background"
+          className="pointer-events-none absolute inset-0 z-10 flex items-center justify-center"
           aria-label="Loading"
         >
           <Image
@@ -442,7 +444,6 @@ export default function Home() {
         </div>
       ) : (
         <>
-          <DesktopBackground />
           <Desktop
             onSleep={enterSleep}
             onLock={enterLocked}
