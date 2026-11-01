@@ -8,6 +8,7 @@ import { api, ApiError } from "@/lib/api";
 import Image from "next/image";
 import IssueReporter from "@/components/shared/IssueReporter";
 import { useInitialDesktopPreferences } from "@/components/shared/InitialDesktopPreferences";
+import { WALLPAPER_STORAGE_KEY } from "@/lib/wallpapers";
 
 type ShellState = "checking" | "authenticated" | "sleep" | "locked";
 const AUTHENTICATED_SESSION_KEY = "utoolity.authenticated";
@@ -99,6 +100,33 @@ export default function Home() {
   useEffect(() => {
     shellStateRef.current = shellState;
   }, [shellState]);
+
+  useEffect(() => {
+    let queuedWrite = Promise.resolve();
+
+    const persistWallpaper = (event: Event) => {
+      const wallpaperId = (event as CustomEvent<string>).detail;
+      if (typeof wallpaperId !== "string" || !wallpaperId) return;
+
+      queuedWrite = queuedWrite
+        .catch(() => undefined)
+        .then(async () => {
+          // The server-side session cookie is authoritative. Do not block on
+          // localStorage flags; those are UI cache and can lag at unlock time.
+          await api("/api/auth/preferences", {
+            method: "PATCH",
+            body: JSON.stringify({ [WALLPAPER_STORAGE_KEY]: wallpaperId }),
+          });
+        })
+        .catch((error) => {
+          console.warn("Unable to persist wallpaper preference.", error);
+        });
+    };
+
+    window.addEventListener("utoolity:wallpaper-changed", persistWallpaper);
+    return () =>
+      window.removeEventListener("utoolity:wallpaper-changed", persistWallpaper);
+  }, []);
 
   useEffect(() => {
     const handleInvalidSession = () => {
