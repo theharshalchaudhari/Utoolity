@@ -161,8 +161,22 @@ export default function DesktopBackground({
       data-wallpaper-theme={theme}
       data-wallpaper-ready="true"
     >
-      {previous && render(previous)}
-      {render(active)}
+      {previous && (
+        <div
+          key={previous.key}
+          aria-hidden
+          className="absolute inset-0 animate-[wallpaper-fade-out_650ms_ease-in-out_forwards]"
+        >
+          {render(previous)}
+        </div>
+      )}
+      <div
+        key={active.key}
+        aria-hidden
+        className="absolute inset-0 animate-[wallpaper-fade-in_650ms_ease-in-out_both]"
+      >
+        {render(active)}
+      </div>
       <div className="absolute inset-0 top-[75%] left-[85%]">
         <Image
           src="/Logo.svg"
