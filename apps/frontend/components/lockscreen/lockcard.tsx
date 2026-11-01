@@ -190,9 +190,8 @@ function Lockcard({
     async function loadProfile() {
       const hasAuthenticatedSession = initialAuthenticated;
 
-      // Home already verifies /api/auth/me before rendering this lock screen.
-      // Avoid issuing the same unauthenticated request a second time here.
-
+      // Home owns session verification. Resolve only the device profile here;
+      // the lock card must not write auth identity or attempt a second auth flow.
       if (!active) return;
       setAuthenticated(hasAuthenticatedSession);
       setLockscreenState(
@@ -251,10 +250,6 @@ function Lockcard({
         window.localStorage.setItem(
           "utoolity.cached-user",
           JSON.stringify(resolvedUser),
-        );
-        window.localStorage.setItem(
-          "utoolity.authenticated-user-id",
-          resolvedUser.id,
         );
         window.localStorage.setItem(
           HOSTNAME_STORAGE_KEY,
@@ -380,10 +375,6 @@ function Lockcard({
       window.localStorage.setItem(
         "utoolity.cached-user",
         JSON.stringify(response.user),
-      );
-      window.localStorage.setItem(
-        "utoolity.authenticated-user-id",
-        response.user.id,
       );
       setHostname(response.user.hostname);
       setProfile({ ...response.user, locked: true });
