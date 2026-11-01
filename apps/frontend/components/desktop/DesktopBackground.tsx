@@ -1,12 +1,11 @@
 "use client";
 
 import Image from "next/image";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useState } from "react";
 import {
   DEFAULT_WALLPAPER_ID,
   getWallpaper,
   getWallpaperUrl,
-  preloadWallpaper,
   readWallpaperPreference,
   WALLPAPER_STORAGE_KEY,
   WALLPAPERS,
@@ -19,38 +18,34 @@ type Mode = "dark" | "light";
 const mode = (): Mode =>
   document.documentElement.classList.contains("dark") ? "dark" : "light";
 
-// Decoded assets are retained for the lifetime of this document. The
-// selected ID still comes from the authenticated profile; this cache only
-// supplies the bytes needed to render it.
+// One shared request per asset URL. The Promise remains cached after success;
+// failed requests are removed so a later selection can retry.
 const imageLoads = new Map<string, Promise<void>>();
 const videoLoads = new Map<string, Promise<void>>();
 
-function loadImage(url: string): Promise<void> {
-  const existing = imageLoads.get(url);
-  if (existing) return existing;
-  const promise = new Promise<void>((resolve, reject) => {
-    const image = new Image();
+function loadImage(url: string, priority: "high" | "low" = "high"): Promise<void> {
+  const cached = imageLoads.get(url);
+  if (cached) return cached;
+
+  const request = new Promise<void>((resolve, reject) => {
+    const image = new window.Image();
     image.decoding = "async";
-    image.onload = async () => {
-      try {
-        await image.decode?.();
-      } catch {
-        // Some browsers reject decode after onload; the image is still usable.
-      }
-      resolve();
-    };
+    image.fetchPriority = priority;
+    image.onload = () => resolve();
     image.onerror = () => reject(new Error(`Unable to load wallpaper: ${url}`));
     image.src = url;
   });
-  imageLoads.set(url, promise);
-  void promise.catch(() => imageLoads.delete(url));
-  return promise;
+
+  imageLoads.set(url, request);
+  void request.catch(() => imageLoads.delete(url));
+  return request;
 }
 
 function loadVideo(url: string): Promise<void> {
-  const existing = videoLoads.get(url);
-  if (existing) return existing;
-  const promise = new Promise<void>((resolve, reject) => {
+  const cached = videoLoads.get(url);
+  if (cached) return cached;
+
+  const request = new Promise<void>((resolve, reject) => {
     const video = document.createElement("video");
     video.preload = "auto";
     video.muted = true;
@@ -59,34 +54,30 @@ function loadVideo(url: string): Promise<void> {
     video.src = url;
     video.load();
   });
-  videoLoads.set(url, promise);
-  void promise.catch(() => videoLoads.delete(url));
-  return promise;
+
+  videoLoads.set(url, request);
+  void request.catch(() => videoLoads.delete(url));
+  return request;
 }
 
 function preloadAllWallpapers(theme: Mode, selectedId: string) {
-  // Selected first, then remaining assets at browser-default priority.
   const selected = getWallpaper(selectedId);
-  const others = WALLPAPERS.filter((wallpaper) => wallpaper.id !== selected.id);
-  for (const wallpaper of [selected, ...others]) {
+  const ordered = [
+    selected,
+    ...WALLPAPERS.filter((wallpaper) => wallpaper.id !== selected.id),
+  ];
+
+  // Keep image downloads low-priority and bounded by browser scheduling.
+  // The selected image is requested first and all other images warm in the
+  // background without delaying desktop interaction.
+  for (const wallpaper of ordered) {
     const url = getWallpaperUrl(wallpaper, theme);
     if (wallpaper.kind === "image") {
-      void loadImage(url).catch(() => undefined);
-    } else {
-      // Do not eagerly decode every video; metadata/data is fetched in the
-      // background without competing aggressively with the active wallpaper.
-      void loadVideoMetadata(url);
+      void loadImage(url, wallpaper.id === selected.id ? "high" : "low").catch(
+        () => undefined,
+      );
     }
   }
-}
-
-function loadVideoMetadata(url: string) {
-  if (videoLoads.has(url)) return;
-  const video = document.createElement("video");
-  video.preload = "metadata";
-  video.muted = true;
-  video.src = url;
-  video.load();
 }
 
 const serverInitialLayer = (id: string, theme: Mode): Layer => {
@@ -123,19 +114,20 @@ export default function DesktopBackground({
 
       try {
         if (wallpaper.kind === "image") {
-          await loadImage(url);
+          await loadImage(url, "high");
         } else {
           await loadVideo(url);
         }
-      } catch {
-        // Keep the currently displayed wallpaper if the selected asset fails.
+      } catch (error) {
+        console.error("Unable to load selected wallpaper.", error);
         return;
       }
 
       if (cancelled || token !== request) return;
+      const nextLayer = { wallpaper, url, key: ++key };
       setPrevious(current);
-      current = { wallpaper, url, key: ++key };
-      setActive(current);
+      current = nextLayer;
+      setActive(nextLayer);
     };
 
     const change = (event: Event) => {
@@ -148,9 +140,10 @@ export default function DesktopBackground({
       if (event.key === WALLPAPER_STORAGE_KEY && event.newValue)
         void apply(event.newValue);
     };
-    const observer = new MutationObserver(() =>
-      void apply(readWallpaperPreference(), mode()),
-    );
+    const observer = new MutationObserver(() => {
+      const nextMode = mode();
+      if (nextMode !== theme) void apply(current.wallpaper.id, nextMode);
+    });
     observer.observe(document.documentElement, {
       attributes: true,
       attributeFilter: ["class"],
@@ -173,9 +166,11 @@ export default function DesktopBackground({
     // preference during mount.
     // The selected wallpaper is the initial layer. Warm other images in the
     // background only after the current paint has been committed.
-    void Promise.resolve().then(() => {
-      preloadAllWallpapers(initialTheme, initialWallpaperId);
-    });
+    void loadImage(getWallpaperUrl(current.wallpaper, initialTheme), "high")
+      .catch(() => undefined)
+      .finally(() => {
+        if (!cancelled) preloadAllWallpapers(initialTheme, current.wallpaper.id);
+      });
     if (mode() !== initialTheme) void apply(initialWallpaperId, mode());
 
     return () => {
