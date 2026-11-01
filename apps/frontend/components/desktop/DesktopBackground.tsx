@@ -9,6 +9,7 @@ import {
   preloadWallpaper,
   readWallpaperPreference,
   WALLPAPER_STORAGE_KEY,
+  WALLPAPERS,
   type Wallpaper,
 } from "../../lib/wallpapers";
 
@@ -18,37 +19,74 @@ type Mode = "dark" | "light";
 const mode = (): Mode =>
   document.documentElement.classList.contains("dark") ? "dark" : "light";
 
-// Browser cache metadata is only a rendering optimization. The server/user
-// preference selects an ID; this cache never decides which wallpaper is active.
-const decodedWallpaperUrls = new Set<string>();
-const wallpaperImageCache = new Map<string, HTMLImageElement>();
+// Decoded assets are retained for the lifetime of this document. The
+// selected ID still comes from the authenticated profile; this cache only
+// supplies the bytes needed to render it.
+const imageLoads = new Map<string, Promise<void>>();
+const videoLoads = new Map<string, Promise<void>>();
 
-function loadWallpaperImage(url: string): Promise<void> {
-  if (decodedWallpaperUrls.has(url)) return Promise.resolve();
-  const cached = wallpaperImageCache.get(url);
-  if (cached?.complete && cached.naturalWidth > 0) {
-    decodedWallpaperUrls.add(url);
-    return Promise.resolve();
-  }
-  return preloadWallpaper(url).then(async () => {
-    const image = wallpaperImageCache.get(url);
-    if (image?.decode) {
+function loadImage(url: string): Promise<void> {
+  const existing = imageLoads.get(url);
+  if (existing) return existing;
+  const promise = new Promise<void>((resolve, reject) => {
+    const image = new Image();
+    image.decoding = "async";
+    image.onload = async () => {
       try {
-        await image.decode();
+        await image.decode?.();
       } catch {
-        // onload is sufficient when decode() is unsupported for this format.
+        // Some browsers reject decode after onload; the image is still usable.
       }
-    }
-    decodedWallpaperUrls.add(url);
+      resolve();
+    };
+    image.onerror = () => reject(new Error(`Unable to load wallpaper: ${url}`));
+    image.src = url;
   });
+  imageLoads.set(url, promise);
+  void promise.catch(() => imageLoads.delete(url));
+  return promise;
 }
 
-function cacheWallpaperImage(url: string) {
-  if (wallpaperImageCache.has(url)) return;
-  const image = new Image();
-  image.decoding = "async";
-  image.src = url;
-  wallpaperImageCache.set(url, image);
+function loadVideo(url: string): Promise<void> {
+  const existing = videoLoads.get(url);
+  if (existing) return existing;
+  const promise = new Promise<void>((resolve, reject) => {
+    const video = document.createElement("video");
+    video.preload = "auto";
+    video.muted = true;
+    video.onloadeddata = () => resolve();
+    video.onerror = () => reject(new Error(`Unable to load wallpaper: ${url}`));
+    video.src = url;
+    video.load();
+  });
+  videoLoads.set(url, promise);
+  void promise.catch(() => videoLoads.delete(url));
+  return promise;
+}
+
+function preloadAllWallpapers(theme: Mode, selectedId: string) {
+  // Selected first, then remaining assets at browser-default priority.
+  const selected = getWallpaper(selectedId);
+  const others = WALLPAPERS.filter((wallpaper) => wallpaper.id !== selected.id);
+  for (const wallpaper of [selected, ...others]) {
+    const url = getWallpaperUrl(wallpaper, theme);
+    if (wallpaper.kind === "image") {
+      void loadImage(url).catch(() => undefined);
+    } else {
+      // Do not eagerly decode every video; metadata/data is fetched in the
+      // background without competing aggressively with the active wallpaper.
+      void loadVideoMetadata(url);
+    }
+  }
+}
+
+function loadVideoMetadata(url: string) {
+  if (videoLoads.has(url)) return;
+  const video = document.createElement("video");
+  video.preload = "metadata";
+  video.muted = true;
+  video.src = url;
+  video.load();
 }
 
 const serverInitialLayer = (id: string, theme: Mode): Layer => {
@@ -83,45 +121,21 @@ export default function DesktopBackground({
       setTheme(nextTheme);
       if (current.url === url) return;
 
-      const layer = { wallpaper, url, key: ++key };
-
-      // Keep the existing wallpaper visible until the selected asset has
-      // been fetched and decoded. The browser cache then serves the same URL
-      // on refresh without waiting for the preference endpoint.
       try {
         if (wallpaper.kind === "image") {
-          cacheWallpaperImage(url);
-          await loadWallpaperImage(url);
+          await loadImage(url);
         } else {
-          await preloadWallpaper(url);
+          await loadVideo(url);
         }
       } catch {
-        if (cancelled || token !== request) return;
-        if (wallpaper.kind === "live") return;
-        const fallback = getWallpaper(DEFAULT_WALLPAPER_ID);
-        const fallbackLayer = {
-          wallpaper: fallback,
-          url: getWallpaperUrl(fallback, nextTheme),
-          key: ++key,
-        };
-        setPrevious(current);
-        current = fallbackLayer;
-        setActive(fallbackLayer);
+        // Keep the currently displayed wallpaper if the selected asset fails.
         return;
       }
 
-      if (
-        cancelled ||
-        token !== request ||
-        getWallpaperUrl(getWallpaper(readWallpaperPreference()), mode()) !==
-          url
-      ) {
-        return;
-      }
-
+      if (cancelled || token !== request) return;
       setPrevious(current);
-      current = layer;
-      setActive(layer);
+      current = { wallpaper, url, key: ++key };
+      setActive(current);
     };
 
     const change = (event: Event) =>
@@ -129,8 +143,8 @@ export default function DesktopBackground({
         (event as CustomEvent<string>).detail || readWallpaperPreference(),
       );
     const storage = (event: StorageEvent) => {
-      if (event.key === WALLPAPER_STORAGE_KEY)
-        void apply(event.newValue || DEFAULT_WALLPAPER_ID);
+      if (event.key === WALLPAPER_STORAGE_KEY && event.newValue)
+        void apply(event.newValue);
     };
     const observer = new MutationObserver(() =>
       void apply(readWallpaperPreference(), mode()),
@@ -150,12 +164,11 @@ export default function DesktopBackground({
       };
     }
 
-    const clientWallpaperId = readWallpaperPreference();
-    if (clientWallpaperId !== initialWallpaperId) {
-      void apply(clientWallpaperId, mode());
-    } else if (mode() !== initialTheme) {
-      void apply(clientWallpaperId, mode());
-    }
+    // Preload the catalogue while keeping the server-selected wallpaper
+    // active. Browser storage is not allowed to override an authenticated SSR
+    // preference during mount.
+    preloadAllWallpapers(initialTheme, initialWallpaperId);
+    if (mode() !== initialTheme) void apply(initialWallpaperId, mode());
 
     return () => {
       cancelled = true;
