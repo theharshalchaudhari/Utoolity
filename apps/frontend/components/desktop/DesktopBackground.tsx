@@ -138,10 +138,12 @@ export default function DesktopBackground({
       setActive(current);
     };
 
-    const change = (event: Event) =>
-      void apply(
-        (event as CustomEvent<string>).detail || readWallpaperPreference(),
-      );
+    const change = (event: Event) => {
+      const selectedId = (event as CustomEvent<string>).detail;
+      if (typeof selectedId === "string" && selectedId.length > 0) {
+        void apply(selectedId);
+      }
+    };
     const storage = (event: StorageEvent) => {
       if (event.key === WALLPAPER_STORAGE_KEY && event.newValue)
         void apply(event.newValue);
@@ -160,14 +162,20 @@ export default function DesktopBackground({
     if ("BroadcastChannel" in window) {
       channel = new BroadcastChannel("utoolity:wallpaper");
       channel.onmessage = (event) => {
-        if (event.data?.id) void apply(event.data.id);
+        if (typeof event.data?.id === "string" && event.data.id.length > 0) {
+          void apply(event.data.id);
+        }
       };
     }
 
     // Preload the catalogue while keeping the server-selected wallpaper
     // active. Browser storage is not allowed to override an authenticated SSR
     // preference during mount.
-    preloadAllWallpapers(initialTheme, initialWallpaperId);
+    // The selected wallpaper is the initial layer. Warm other images in the
+    // background only after the current paint has been committed.
+    void Promise.resolve().then(() => {
+      preloadAllWallpapers(initialTheme, initialWallpaperId);
+    });
     if (mode() !== initialTheme) void apply(initialWallpaperId, mode());
 
     return () => {
