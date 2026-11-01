@@ -48,7 +48,7 @@ export default function DesktopBackground() {
     let cancelled = false;
     let key = 0;
     let request = 0;
-    let current = active;
+    let current = initialLayer();
 
     const apply = async (id: string, nextTheme = mode()) => {
       const token = ++request;
@@ -60,14 +60,8 @@ export default function DesktopBackground() {
 
       const layer = { wallpaper, url, key: ++key };
 
-      // Keep the previous wallpaper visible while its replacement loads.
-      // On a cold refresh, the initial persisted wallpaper is rendered before
-      // this preload completes, preventing a blank/white desktop flash.
+      // Keep the existing wallpaper visible while the replacement loads.
       if (wallpaper.kind === "image") {
-        setPrevious(current);
-        current = layer;
-        setVisible(true);
-        setActive(layer);
         try {
           await preloadWallpaper(url);
         } catch {
@@ -79,9 +73,9 @@ export default function DesktopBackground() {
             url: fallbackUrl,
             key: ++key,
           };
+          setPrevious(current);
           current = fallbackLayer;
           setActive(fallbackLayer);
-          setPrevious(null);
           return;
         }
       } else {
@@ -92,11 +86,6 @@ export default function DesktopBackground() {
           if (cancelled || token !== request) return;
           return;
         }
-        if (cancelled || token !== request) return;
-        setPrevious(current);
-        current = layer;
-        setVisible(true);
-        setActive(layer);
       }
 
       if (
@@ -109,6 +98,11 @@ export default function DesktopBackground() {
       ) {
         return;
       }
+
+      setPrevious(current);
+      current = layer;
+      setVisible(true);
+      setActive(layer);
     };
 
     const change = (event: Event) =>
