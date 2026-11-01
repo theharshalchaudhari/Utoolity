@@ -53,13 +53,10 @@ const INACTIVITY_TIMEOUT_MS = 60_000;
 function applyProfilePreferences(preferences?: Record<string, string>) {
   const root = document.documentElement;
   const wallpaperId = preferences?.["utoolity.wallpaper"];
-  if (wallpaperId) {
-    saveWallpaperPreference(wallpaperId);
-  } else {
-    // No selection is only a first-configuration case. The backend returns
-    // no wallpaper key for such users, so select Default and persist it once.
-    saveWallpaperPreference("Default");
-  }
+  // Missing preferences on an existing legacy profile must not overwrite the
+  // current cached selection during unlock. New-user registration initializes
+  // Default on the server before this function is called.
+  if (wallpaperId) saveWallpaperPreference(wallpaperId);
 
   const theme = preferences?.["utoolity.theme"];
   if (theme === "dark" || theme === "light") {
