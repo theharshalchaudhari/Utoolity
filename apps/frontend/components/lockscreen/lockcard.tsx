@@ -36,6 +36,7 @@ type UnlockResponse = {
     displayName: string;
     role: "intern" | "admin";
     passwordConfigured: boolean;
+    preferences?: Record<string, string>;
   };
 };
 type LockcardProps = {
