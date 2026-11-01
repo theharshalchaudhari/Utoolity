@@ -553,7 +553,7 @@ function Lockcard({
           <Maximize className="size-4" />
         </button>
 
-        <div className="backdrop-blur-xs h-screen relative flex w-full flex-col items-center top-30 px-5 py-8 text-center">
+        <div className="relative flex h-full min-h-0 w-full flex-col items-center justify-between overflow-y-auto px-5 py-[5dvh] text-center backdrop-blur-xs">
           <p className="text-xl font-bold tracking-[0.24em] text-white/80">
             {getGreeting(now)}
           </p>
@@ -574,7 +574,7 @@ function Lockcard({
               day: "numeric",
             })}
           </p>
-          <div className="mt-[20vh] flex w-full flex-col items-center">
+          <div className="mt-[clamp(2rem,8dvh,6rem)] flex w-full flex-col items-center">
             <div className="mb-4 flex size-20 items-center justify-center rounded-full border border-white/25 bg-black/15 shadow-lg backdrop-blur-sm">
               <LockKeyhole
                 className={`size-8 text-white/90 transition-opacity duration-500 ${
@@ -710,7 +710,7 @@ function Lockcard({
                 )}
               </form>
             ) : (
-              <p className="mt-18 text-sm font-medium tracking-wide text-foreground/80">
+              <p className="mt-[clamp(2rem,8dvh,6rem)] text-sm font-medium tracking-wide text-foreground/80">
                 Tap or press any key to wake
               </p>
             )}
