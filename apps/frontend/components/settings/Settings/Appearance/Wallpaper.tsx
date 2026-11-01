@@ -23,17 +23,6 @@ export default function Wallpaper() {
       );
     };
     sync();
-    // Warm image thumbnails in the background so selecting a wallpaper is
-    // a local cache hit after the appearance panel has been opened.
-    for (const wallpaper of WALLPAPERS) {
-      if (wallpaper.kind !== "image") continue;
-      const image = new window.Image();
-      image.decoding = "async";
-      image.src = getWallpaperUrl(
-        wallpaper,
-        document.documentElement.classList.contains("dark") ? "dark" : "light",
-      );
-    }
     window.addEventListener("utoolity:wallpaper-changed", sync);
     const observer = new MutationObserver(sync);
     observer.observe(document.documentElement, {
