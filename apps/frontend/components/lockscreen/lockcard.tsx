@@ -53,7 +53,13 @@ const INACTIVITY_TIMEOUT_MS = 60_000;
 function applyProfilePreferences(preferences?: Record<string, string>) {
   const root = document.documentElement;
   const wallpaperId = preferences?.["utoolity.wallpaper"];
-  if (wallpaperId) saveWallpaperPreference(wallpaperId);
+  if (wallpaperId) {
+    saveWallpaperPreference(wallpaperId);
+  } else {
+    // No selection is only a first-configuration case. The backend returns
+    // no wallpaper key for such users, so select Default and persist it once.
+    saveWallpaperPreference("Default");
+  }
 
   const theme = preferences?.["utoolity.theme"];
   if (theme === "dark" || theme === "light") {
