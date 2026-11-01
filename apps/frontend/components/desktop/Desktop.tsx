@@ -713,40 +713,6 @@ export default function Desktop({
   };
 
   useEffect(() => {
-    // Wallpaper selection uses saveWallpaperPreference() rather than the
-    // useUserPreference hook, so persist its change event explicitly.
-    // Theme, grain, lockscreen and icon size already persist through their hook.
-    const persistWallpaper = (event: Event) => {
-      const wallpaperId = (event as CustomEvent<string>).detail;
-      if (typeof wallpaperId !== "string" || !wallpaperId) return;
-
-      // Lock-screen identity lookups may resolve a device profile before the
-      // user has an authenticated session. Local wallpaper changes must not
-      // trigger protected preference writes until Home verifies the session.
-      if (
-        document.documentElement.dataset.shellState !== "authenticated" ||
-        localStorage.getItem("utoolity.authenticated") !== "true" ||
-        !localStorage.getItem("utoolity.authenticated-user-id")
-      ) {
-        return;
-      }
-
-      void api("/api/auth/preferences", {
-        method: "PATCH",
-        body: JSON.stringify({ "utoolity.wallpaper": wallpaperId }),
-      }).catch((error) => {
-        console.warn("Unable to persist profile wallpaper.", error);
-      });
-    };
-    window.addEventListener("utoolity:wallpaper-changed", persistWallpaper);
-    return () =>
-      window.removeEventListener(
-        "utoolity:wallpaper-changed",
-        persistWallpaper,
-      );
-  }, []);
-
-  useEffect(() => {
     const root = document.documentElement;
     const values = [
       ["lockscreen", "utoolity.lockscreen"],
