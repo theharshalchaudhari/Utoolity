@@ -428,21 +428,7 @@ export default function Home() {
     <div className="relative h-dvh min-h-dvh overflow-hidden font-sans text-foreground">
       <DesktopBackground />
       <IssueReporter />
-      {shellState === "checking" ? (
-        <div
-          className="pointer-events-none absolute inset-0 z-10 flex items-center justify-center"
-          aria-label="Loading"
-        >
-          <Image
-            src="/Logo.svg"
-            alt=""
-            width={96}
-            height={96}
-            priority
-            className="h-24 w-24 brightness-0 invert opacity-90"
-          />
-        </div>
-      ) : (
+      {shellState !== "checking" ? (
         <>
           <Desktop
             onSleep={enterSleep}
@@ -468,7 +454,7 @@ export default function Home() {
             }}
           />
         </>
-      )}
+      ) : null}
     </div>
   );
 }
