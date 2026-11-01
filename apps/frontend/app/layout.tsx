@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { cookies } from "next/headers";
 import { DEFAULT_WALLPAPER_ID, WALLPAPER_STORAGE_KEY } from "@/lib/wallpapers";
+import { api } from "@/lib/api";
 import { Nunito } from "next/font/google";
 import { TooltipProvider } from "@repo/ui/shadcn/tooltip";
 import Sidebar from "@/components/shared/Sidebar";
@@ -27,10 +28,32 @@ export default async function RootLayout({
   children: React.ReactNode;
 }>) {
   const cookieStore = await cookies();
-  const initialWallpaperId =
+  const initialThemeCookie = cookieStore.get("utoolity.theme")?.value;
+  const initialTheme = initialThemeCookie === "dark" ? "dark" : "light";
+
+  // Resolve the selected wallpaper from the authenticated users.json profile.
+  // Device cookies are only a fallback for an unauthenticated/new profile and
+  // are never authoritative over an existing user's saved preference.
+  let initialWallpaperId =
     cookieStore.get(WALLPAPER_STORAGE_KEY)?.value ?? DEFAULT_WALLPAPER_ID;
-  const themeCookie = cookieStore.get("utoolity.theme")?.value;
-  const initialTheme = themeCookie === "dark" ? "dark" : "light";
+  const sessionCookie = cookieStore.get("sessionId")?.value;
+  if (sessionCookie) {
+    try {
+      const response = await fetch("http://127.0.0.1:4000/api/auth/preferences", {
+        headers: { cookie: `sessionId=${sessionCookie}` },
+        cache: "no-store",
+      });
+      if (response.ok) {
+        const payload = (await response.json()) as {
+          preferences?: Record<string, string>;
+        };
+        initialWallpaperId =
+          payload.preferences?.[WALLPAPER_STORAGE_KEY] ?? DEFAULT_WALLPAPER_ID;
+      }
+    } catch {
+      // Keep the last cached selection when the backend is unavailable.
+    }
+  }
 
   return (
     <html
