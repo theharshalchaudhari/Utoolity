@@ -9,7 +9,6 @@ import {
 import { LockKeyhole, Maximize, ShieldCheck, WifiOff } from "lucide-react";
 import { api, ApiError } from "../../lib/api";
 import { useClock } from "../shared/useClock";
-import { saveWallpaperPreference } from "../../lib/wallpapers";
 type LockProfile = {
   id: string;
   hostname: string;
@@ -51,11 +50,8 @@ const HOSTNAME_STORAGE_KEY = "utoolity.hostname";
 const INACTIVITY_TIMEOUT_MS = 60_000;
 function applyProfilePreferences(preferences?: Record<string, string>) {
   const root = document.documentElement;
-  if (preferences?.["utoolity.wallpaper"]) {
-    saveWallpaperPreference(preferences["utoolity.wallpaper"]);
-  } else {
-    saveWallpaperPreference("default.jpg");
-  }
+  // Lock-screen profile lookup is only for device identity and unlock UX.
+  // It must never select a wallpaper before the authenticated user is known.
   const theme = preferences?.["utoolity.theme"];
   if (theme === "dark" || theme === "light") {
     localStorage.setItem("utoolity.theme", theme);
