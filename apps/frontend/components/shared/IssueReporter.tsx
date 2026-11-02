@@ -13,6 +13,8 @@ export default function IssueReporter() {
   const [details, setDetails] = useState("");
   const [source, setSource] = useState("");
   const [requestId, setRequestId] = useState("");
+  const [source, setSource] = useState("");
+  const [requestId, setRequestId] = useState("");
   const [description, setDescription] = useState("");
   const [submitting, setSubmitting] = useState(false);
   const [status, setStatus] = useState("");
@@ -142,7 +144,7 @@ export default function IssueReporter() {
         body: JSON.stringify({ appName, errorName, details, description, source, requestId }),
       });
       setReported(true);
-      setStatus("Issue report saved. You can continue using the desktop.");
+      setStatus("Issue report sent. You can continue using the desktop.");
     } catch (error) {
       setStatus(
         error instanceof Error ? error.message : "Unable to report this issue.",
