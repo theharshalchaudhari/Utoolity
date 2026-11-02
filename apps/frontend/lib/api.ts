@@ -174,6 +174,7 @@ async function performApi<T>(
     }
 
     const errorPayload = typeof body === "object" && body !== null ? body as Record<string, unknown> : {};
+    const serverRequestId = response.headers.get("x-request-id");
     const message =
       typeof errorPayload.message === "string"
         ? errorPayload.message
@@ -185,7 +186,7 @@ async function performApi<T>(
       `HTTP ${response.status}`,
       `Message: ${message}`,
       typeof errorPayload.code === "string" ? `Code: ${errorPayload.code}` : "",
-      typeof errorPayload.requestId === "string" ? `Request ID: ${errorPayload.requestId}` : `Request ID: ${requestId}`,
+      typeof errorPayload.requestId === "string" ? `Request ID: ${errorPayload.requestId}` : `Request ID: ${serverRequestId || requestId}`,
       typeof errorPayload.stack === "string" ? `Server stack:\\n${errorPayload.stack}` : "",
     ].filter(Boolean).join("\\n");
 
@@ -210,7 +211,7 @@ async function performApi<T>(
               : document.title || "Utoolity Desktop",
             errorName: `HTTP ${response.status}${typeof errorPayload.code === "string" ? ` · ${errorPayload.code}` : ""}`,
             source: `${requestMethod} ${path}`,
-            requestId: typeof errorPayload.requestId === "string" ? errorPayload.requestId : requestId,
+            requestId: typeof errorPayload.requestId === "string" ? errorPayload.requestId : serverRequestId || requestId,
             details: diagnostic,
           },
         }),
