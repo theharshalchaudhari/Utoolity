@@ -998,11 +998,26 @@ export default async function authRoutes(app: FastifyInstance) {
     };
 
     socket.on("message", async (raw: Buffer | ArrayBuffer | Buffer[]) => {
-      let message: Record<string, unknown>;
+      type CollaborationSocketMessage = {
+        type?: unknown;
+        deviceId?: unknown;
+        workspace?: unknown;
+        text?: unknown;
+        targetUserId?: unknown;
+        payload?: unknown;
+        x?: unknown;
+        y?: unknown;
+        roomId?: unknown;
+        approved?: unknown;
+        permission?: unknown;
+        command?: unknown;
+      };
+
+      let message: CollaborationSocketMessage;
       try {
         const parsed: unknown = JSON.parse(raw.toString());
         if (!parsed || typeof parsed !== "object" || Array.isArray(parsed)) return;
-        message = parsed as Record<string, unknown>;
+        message = parsed as CollaborationSocketMessage;
       } catch {
         return;
       }
