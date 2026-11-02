@@ -1615,7 +1615,19 @@ export default async function authRoutes(app: FastifyInstance) {
     }
 
     try {
-      const users = await readUsers();
+      let users: InternUser[];
+      try {
+        users = await readUsers();
+      } catch (error) {
+        request.log.error(
+          { err: error, usersFilePath, code: (error as NodeJS.ErrnoException).code },
+          "Unable to read runtime user profiles",
+        );
+        return reply.code(500).send({
+          message: "The device profile store is unavailable. Check backend data-directory access.",
+          code: (error as NodeJS.ErrnoException).code ?? "USER_STORE_UNAVAILABLE",
+        });
+      }
       const deviceId = getDeviceId(request, "");
       let user: InternUser | undefined;
 
