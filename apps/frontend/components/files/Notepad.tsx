@@ -11,18 +11,18 @@ import {
   DialogTitle,
 } from "@repo/ui/shadcn/dialog";
 
-export default function Notepad({ initialPath }: { initialPath?: string }) {
-  const [path, setPath] = useState(initialPath ?? "");
+export default function Notepad({ filePath }: { filePath?: string }) {
+  const [path, setPath] = useState(filePath ?? "");
   const [value, setValue] = useState("");
   const [message, setMessage] = useState("");
   const [saveAsOpen, setSaveAsOpen] = useState(false);
   const [saveAsPath, setSaveAsPath] = useState(
-    initialPath ?? "server/untitled.txt",
+    filePath ?? "server/untitled.txt",
   );
 
   useEffect(() => {
     const query =
-      initialPath ?? new URLSearchParams(window.location.search).get("path");
+      filePath ?? new URLSearchParams(window.location.search).get("path");
     if (!query) return;
     setPath(query);
     void api<{ content: string }>(
@@ -34,7 +34,7 @@ export default function Notepad({ initialPath }: { initialPath?: string }) {
           error instanceof Error ? error.message : "Unable to open file.",
         ),
       );
-  }, [initialPath]);
+  }, [filePath]);
 
   const save = async () => {
     if (!path) {
