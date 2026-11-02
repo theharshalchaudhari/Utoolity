@@ -91,6 +91,9 @@ app.addHook("preHandler", async (request, reply) => {
 
   const pathname = request.url.split("?")[0] ?? request.url;
   if (pathname === "/api/auth/socket") return;
+  // Issue reports are intentionally public so startup and lock-screen failures
+  // can be reported before a profile is configured. The route validates and caps payloads.
+  if (pathname === "/api/auth/report-issue" && request.method === "POST") return;
   if (pathname === "/api/lockscreen/register") return;
 
   if (lockscreenIdentityPaths.has(pathname)) {
