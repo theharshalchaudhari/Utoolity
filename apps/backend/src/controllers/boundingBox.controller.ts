@@ -3,10 +3,10 @@ import * as service from "../services/boundingBox.service.js";
 import { parseUploadedFiles } from "./uploaded-files.js";
 import { mkdir, writeFile, readFile } from "node:fs/promises";
 import path from "node:path";
-import { fileURLToPath } from "node:url";
 
-const usersFilePath = fileURLToPath(
-  new URL("../data/users.json", import.meta.url),
+const usersFilePath = path.resolve(
+  process.env.BACKEND_DATA_DIR ?? path.join(process.cwd(), "data"),
+  "users.json",
 );
 
 const storageRoot = path.resolve(
