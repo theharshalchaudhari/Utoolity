@@ -1,5 +1,6 @@
 import type { FastifyInstance, FastifyRequest } from "fastify";
-import { readFile, writeFile } from "node:fs/promises";
+import { mkdir, readFile, writeFile } from "node:fs/promises";
+import path from "node:path";
 import { fileURLToPath } from "node:url";
 
 type InternUser = {
@@ -209,15 +210,12 @@ async function updateSessionRecord(
   await write;
 }
 
-const usersFilePath = fileURLToPath(
-  new URL("../data/users.json", import.meta.url),
+const runtimeDataDirectory = path.resolve(
+  process.env.BACKEND_DATA_DIR ?? path.join(process.cwd(), "data"),
 );
-const workspacesFilePath = fileURLToPath(
-  new URL("../data/workspaces.json", import.meta.url),
-);
-const sessionsFilePath = fileURLToPath(
-  new URL("../data/sessions.json", import.meta.url),
-);
+const usersFilePath = path.join(runtimeDataDirectory, "users.json");
+const workspacesFilePath = path.join(runtimeDataDirectory, "workspaces.json");
+const sessionsFilePath = path.join(runtimeDataDirectory, "sessions.json");
 
 const validWallpaperIds = new Set([
   "Default",
@@ -285,7 +283,22 @@ function normalizeUserRecord(value: unknown): InternUser {
 }
 
 async function readUsers(): Promise<InternUser[]> {
-  const raw = await readFile(usersFilePath, "utf8");
+  let raw: string;
+  try {
+    raw = await readFile(usersFilePath, "utf8");
+  } catch (error) {
+    if ((error as NodeJS.ErrnoException).code !== "ENOENT") throw error;
+    await mkdir(runtimeDataDirectory, { recursive: true });
+    try {
+      await writeFile(usersFilePath, '{"users":[]}\n', {
+        encoding: "utf8",
+        flag: "wx",
+      });
+    } catch (createError) {
+      if ((createError as NodeJS.ErrnoException).code !== "EEXIST") throw createError;
+    }
+    raw = await readFile(usersFilePath, "utf8");
+  }
   const parsed: unknown = JSON.parse(raw);
 
   if (
@@ -1636,10 +1649,14 @@ export default async function authRoutes(app: FastifyInstance) {
         },
       };
     } catch (error) {
-      request.log.error(error, "Unable to load lockscreen profile");
-      return reply
-        .code(500)
-        .send({ message: "Unable to load the device profile." });
+      request.log.error(
+        { err: error, usersFilePath, code: (error as NodeJS.ErrnoException).code },
+        "Unable to load lockscreen profile",
+      );
+      return reply.code(500).send({
+        message: "Unable to load the device profile.",
+        code: (error as NodeJS.ErrnoException).code ?? "LOCKSCREEN_PROFILE_LOAD_FAILED",
+      });
     }
   });
 
