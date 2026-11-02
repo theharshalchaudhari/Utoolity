@@ -13,8 +13,6 @@ export default function IssueReporter() {
   const [details, setDetails] = useState("");
   const [source, setSource] = useState("");
   const [requestId, setRequestId] = useState("");
-  const [source, setSource] = useState("");
-  const [requestId, setRequestId] = useState("");
   const [description, setDescription] = useState("");
   const [submitting, setSubmitting] = useState(false);
   const [status, setStatus] = useState("");
@@ -30,6 +28,8 @@ export default function IssueReporter() {
       setDetails(
         detail.details?.slice(0, 12000) || "An application issue was detected.",
       );
+      setSource(detail.source?.slice(0, 500) || "Runtime / component error");
+      setRequestId(detail.requestId?.slice(0, 128) || "");
       setDescription("");
       setStatus("");
       setReported(false);
@@ -99,6 +99,7 @@ export default function IssueReporter() {
               reason instanceof Error
                 ? reason.name
                 : "Unhandled promise rejection",
+            source: "Unhandled promise rejection",
             details:
               reason instanceof Error
                 ? reason.stack || reason.message
@@ -194,7 +195,7 @@ export default function IssueReporter() {
           </button>
         </div>
 
-        <form onSubmit={submit} className="mt-5 space-y-3">
+        <form onSubmit={submit} className="mt-5 max-h-[min(75dvh,42rem)] space-y-3 overflow-y-auto pr-1">
           <label className="block text-sm font-medium">
             App name
             <input
@@ -215,6 +216,18 @@ export default function IssueReporter() {
               className="mt-1 w-full rounded-lg border border-input bg-background px-3 py-2 text-sm"
             />
           </label>
+          <label className="block text-sm font-medium">
+            Origin / service
+            <input
+              value={source}
+              onChange={(e) => setSource(e.target.value)}
+              maxLength={500}
+              className="mt-1 w-full rounded-lg border border-input bg-background px-3 py-2 text-sm"
+            />
+          </label>
+          {requestId && (
+            <p className="text-xs text-muted-foreground">Request ID: {requestId}</p>
+          )}
           <label className="block text-sm font-medium">
             Error details
             <textarea
