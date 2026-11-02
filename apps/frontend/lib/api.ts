@@ -26,11 +26,17 @@ export function getDeviceId(): string | undefined {
 
 export class ApiError extends Error {
   readonly status: number;
+  readonly path: string;
+  readonly method: string;
+  readonly requestId?: string;
 
-  constructor(message: string, status: number) {
+  constructor(message: string, status: number, path = "", method = "GET", requestId?: string) {
     super(message);
     this.name = "ApiError";
     this.status = status;
+    this.path = path;
+    this.method = method;
+    this.requestId = requestId;
   }
 }
 
@@ -39,6 +45,8 @@ async function performApi<T>(
   options: RequestInit = {},
 ): Promise<T> {
   const hasBody = options.body != null;
+  const requestMethod = (options.method ?? "GET").toUpperCase();
+  const requestId = typeof crypto?.randomUUID === "function" ? crypto.randomUUID() : `${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 8)}`;
 
   const isFormData =
     typeof FormData !== "undefined" && options.body instanceof FormData;
@@ -87,6 +95,7 @@ async function performApi<T>(
         headers,
         credentials: "include",
         cache: "no-store",
+        headers: new Headers([...headers.entries(), ["X-Request-Id", requestId]]),
       });
 
       if ([500, 502, 503, 504].includes(nextResponse.status)) {
@@ -161,12 +170,21 @@ async function performApi<T>(
       );
     }
 
+    const errorPayload = typeof body === "object" && body !== null ? body as Record<string, unknown> : {};
     const message =
-      typeof body === "object" && body !== null && "message" in body
-        ? String(body.message)
+      typeof errorPayload.message === "string"
+        ? errorPayload.message
         : typeof body === "string" && body.trim()
           ? body
           : `Request failed (${response.status}).`;
+    const diagnostic = [
+      `${requestMethod} ${path}`,
+      `HTTP ${response.status}`,
+      `Message: ${message}`,
+      typeof errorPayload.code === "string" ? `Code: ${errorPayload.code}` : "",
+      typeof errorPayload.requestId === "string" ? `Request ID: ${errorPayload.requestId}` : `Request ID: ${requestId}`,
+      typeof errorPayload.stack === "string" ? `Server stack:\\n${errorPayload.stack}` : "",
+    ].filter(Boolean).join("\\n");
 
     const expectedAuthFailure =
       path === "/api/auth/report-issue" ||
@@ -180,7 +198,7 @@ async function performApi<T>(
       path === "/api/lockscreen/register" ||
       path === "/api/lockscreen/me" ||
       path === "/api/auth/me";
-    if (!expectedAuthFailure && response.status >= 400) {
+    if ((!expectedAuthFailure || response.status >= 500) && response.status >= 400) {
       const isStorageRequest = path.startsWith("/api/storage/");
       window.dispatchEvent(
         new CustomEvent("utoolity:issue-detected", {
@@ -188,14 +206,16 @@ async function performApi<T>(
             appName: isStorageRequest
               ? "File Manager"
               : document.title || "Utoolity Desktop",
-            errorName: `HTTP ${response.status}`,
-            details: `${options.method ?? "GET"} ${path}\\n${message}`,
+            errorName: `HTTP ${response.status}${typeof errorPayload.code === "string" ? ` · ${errorPayload.code}` : ""}`,
+            source: `${requestMethod} ${path}`,
+            requestId: typeof errorPayload.requestId === "string" ? errorPayload.requestId : requestId,
+            details: diagnostic,
           },
         }),
       );
     }
 
-    throw new ApiError(message, response.status);
+    throw new ApiError(message, response.status, path, requestMethod, requestId);
   }
 
   if (!text) {
