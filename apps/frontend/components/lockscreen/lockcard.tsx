@@ -83,12 +83,25 @@ function recordLockscreenError(
   message: string,
   errorName = "Lockscreen error",
 ) {
+  const details = [
+    "Source: apps/frontend/components/lockscreen/lockcard.tsx",
+    `Operation: ${title}`,
+    `Error: ${errorName}: ${message}`,
+    `Page: ${window.location.pathname}`,
+    `Timestamp: ${new Date().toISOString()}`,
+  ].join("\n");
   const notice = {
     id: `lockscreen-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
     type: "error" as const,
     title,
     message: `${errorName}: ${message}`,
     createdAt: Date.now(),
+    issue: {
+      appName: "Utoolity Desktop",
+      errorName,
+      source: "apps/frontend/components/lockscreen/lockcard.tsx",
+      details,
+    },
   };
   // Persist before dispatch so startup errors survive refresh and do not depend
   // on whether the tray listener has mounted yet.
@@ -117,6 +130,16 @@ function recordLockscreenError(
   }
   window.dispatchEvent(
     new CustomEvent("utoolity:notification", { detail: notice }),
+  );
+  window.dispatchEvent(
+    new CustomEvent("utoolity:issue-detected", {
+      detail: {
+        appName: "Utoolity Desktop",
+        errorName,
+        source: "apps/frontend/components/lockscreen/lockcard.tsx",
+        details,
+      },
+    }),
   );
 }
 
