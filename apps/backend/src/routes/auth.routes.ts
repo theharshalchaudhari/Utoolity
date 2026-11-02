@@ -417,11 +417,10 @@ export default async function authRoutes(app: FastifyInstance) {
       errorName?: string;
       details?: string;
       description?: string;
+      source?: string;
+      requestId?: string;
     };
   }>("/auth/report-issue", async (request, reply) => {
-    const userId = getSession(request).userId;
-    if (!userId) return reply.code(401).send({ message: "Not authenticated." });
-
     const body = request.body ?? {};
     const appName =
       typeof body.appName === "string"
@@ -439,6 +438,12 @@ export default async function authRoutes(app: FastifyInstance) {
       typeof body.description === "string"
         ? body.description.trim().slice(0, 4000)
         : "";
+    const source =
+      typeof body.source === "string" ? body.source.trim().slice(0, 500) : "";
+    const requestId =
+      typeof body.requestId === "string"
+        ? body.requestId.trim().slice(0, 128)
+        : "";
     if (!appName || !errorName || (!details && !description)) {
       return reply.code(400).send({
         message:
@@ -447,12 +452,29 @@ export default async function authRoutes(app: FastifyInstance) {
     }
 
     try {
-      const users = await readUsers();
-      const user = findById(users, userId);
-      if (!user)
-        return reply
-          .code(401)
-          .send({ message: "Session user no longer exists." });
+      const userId = getSession(request).userId;
+      let reportedBy: Record<string, string> = {
+        type: "unconfigured_device",
+        label: "Unconfigured device",
+      };
+      if (userId) {
+        try {
+          const users = await readUsers();
+          const user = findById(users, userId);
+          if (user) {
+            reportedBy = {
+              type: "authenticated_device",
+              id: user.id,
+              hostname: user.hostname,
+              displayName: user.displayName,
+              role: user.role,
+            };
+          }
+        } catch (error) {
+          request.log.warn({ err: error }, "Unable to resolve issue reporter identity");
+        }
+      }
+
       const reportsFilePath = fileURLToPath(
         new URL("../data/issue-reports.json", import.meta.url),
       );
@@ -472,21 +494,19 @@ export default async function authRoutes(app: FastifyInstance) {
         errorName,
         details,
         description,
-        reportedBy: {
-          id: user.id,
-          hostname: user.hostname,
-          displayName: user.displayName,
-          role: user.role,
-        },
+        source,
+        requestId,
+        reportedBy,
         reportedAt: new Date().toISOString(),
         status: "open",
       };
       reports.push(report);
       await writeFile(
         reportsFilePath,
-        `${JSON.stringify({ reports }, null, 2)}\n`,
+        `${JSON.stringify({ reports }, null, 2)}\\n`,
         "utf8",
       );
+      request.log.warn({ reportId: report.id, reportedBy: reportedBy.type }, "Issue report received");
       return reply.code(201).send({ success: true, reportId: report.id });
     } catch (error) {
       request.log.error(error, "Unable to save issue report");
