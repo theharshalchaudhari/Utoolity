@@ -1,5 +1,6 @@
 import type { FastifyInstance, FastifyRequest } from "fastify";
 import { createReadStream } from "node:fs";
+import { fileURLToPath } from "node:url";
 import { execFile } from "node:child_process";
 import { promisify } from "node:util";
 import {
@@ -25,6 +26,10 @@ type SessionRequest = FastifyRequest & {
 
 type UserRecord = { id: string; hostname: string; displayName: string };
 type PathBody = { path?: string; destination?: string; name?: string };
+
+const usersFilePath = fileURLToPath(
+  new URL("../data/users.json", import.meta.url),
+);
 
 const storageRoot = path.resolve(
   process.env.STORAGE_ROOT ?? path.join(process.cwd(), "data"),
@@ -76,8 +81,10 @@ async function getUser(request: FastifyRequest): Promise<UserRecord> {
   const session = (request as SessionRequest).session;
   const userId = session.collaborationOwnerUserId ?? session.userId;
   if (!userId) throw new Error("Not authenticated.");
-  const raw = await import("../data/users.json", { with: { type: "json" } });
-  const user = (raw.default.users as UserRecord[]).find(
+  const raw = JSON.parse(await readFile(usersFilePath, "utf8")) as {
+    users?: UserRecord[];
+  };
+  const user = (Array.isArray(raw.users) ? raw.users : []).find(
     (candidate) => candidate.id === userId,
   );
   if (!user) throw new Error("Session user no longer exists.");
@@ -164,11 +171,11 @@ export default async function storageRoutes(app: FastifyInstance) {
   app.get("/storage/users", async (request, reply) => {
     try {
       const currentUser = await getUser(request);
-      const raw = await import("../data/users.json", {
-        with: { type: "json" },
-      });
+      const raw = JSON.parse(await readFile(usersFilePath, "utf8")) as {
+        users?: UserRecord[];
+      };
       return {
-        users: (raw.default.users as UserRecord[])
+        users: (Array.isArray(raw.users) ? raw.users : [])
           .filter((user) => user.id !== currentUser.id)
           .map(({ id, displayName, hostname }) => ({
             id,
