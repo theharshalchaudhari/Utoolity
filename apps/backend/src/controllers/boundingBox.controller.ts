@@ -1,8 +1,13 @@
 import type { FastifyReply, FastifyRequest } from "fastify";
 import * as service from "../services/boundingBox.service.js";
 import { parseUploadedFiles } from "./uploaded-files.js";
-import { mkdir, writeFile } from "node:fs/promises";
+import { mkdir, writeFile, readFile } from "node:fs/promises";
 import path from "node:path";
+import { fileURLToPath } from "node:url";
+
+const usersFilePath = fileURLToPath(
+  new URL("../data/users.json", import.meta.url),
+);
 
 const storageRoot = path.resolve(
   process.env.STORAGE_ROOT ?? path.join(process.cwd(), "data"),
@@ -89,14 +94,14 @@ export async function saveAnnotations(
         message: "View-only collaborators cannot modify annotations.",
       });
     }
-    const users = await import("../data/users.json", {
-      with: { type: "json" },
-    });
-    const allUsers = users.default.users as Array<{
-      id: string;
-      displayName: string;
-      hostname: string;
-    }>;
+    const usersFile = JSON.parse(await readFile(usersFilePath, "utf8")) as {
+      users?: Array<{
+        id: string;
+        displayName: string;
+        hostname: string;
+      }>;
+    };
+    const allUsers = Array.isArray(usersFile.users) ? usersFile.users : [];
     const actor = allUsers.find((item) => item.id === userId);
     const user = allUsers.find(
       (item) => item.id === (session.collaborationOwnerUserId ?? userId),
