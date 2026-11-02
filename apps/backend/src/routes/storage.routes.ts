@@ -1,6 +1,5 @@
 import type { FastifyInstance, FastifyRequest } from "fastify";
 import { createReadStream } from "node:fs";
-import { fileURLToPath } from "node:url";
 import { execFile } from "node:child_process";
 import { promisify } from "node:util";
 import {
@@ -27,8 +26,9 @@ type SessionRequest = FastifyRequest & {
 type UserRecord = { id: string; hostname: string; displayName: string };
 type PathBody = { path?: string; destination?: string; name?: string };
 
-const usersFilePath = fileURLToPath(
-  new URL("../data/users.json", import.meta.url),
+const usersFilePath = path.resolve(
+  process.env.BACKEND_DATA_DIR ?? path.join(process.cwd(), "data"),
+  "users.json",
 );
 
 const storageRoot = path.resolve(
