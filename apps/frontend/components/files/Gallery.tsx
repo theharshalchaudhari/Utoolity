@@ -11,7 +11,7 @@ type Entry = {
 };
 const imagePattern = /\.(avif|bmp|gif|jpe?g|png|svg|webp)$/i;
 
-export default function Gallery({ initialPath }: { initialPath?: string }) {
+export default function Gallery({ filePath, onOpenFile }: { filePath?: string; onOpenFile?: (path: string, type: "image" | "text") => void }) {
   const [images, setImages] = useState<Entry[]>([]);
   const [index, setIndex] = useState(0);
   const [loadError, setLoadError] = useState<string | null>(null);
@@ -22,9 +22,9 @@ export default function Gallery({ initialPath }: { initialPath?: string }) {
     setLoadError(null);
     setImages([]);
     setImageUrl(null);
-    if (initialPath) {
-      const name = initialPath.split("/").filter(Boolean).pop() ?? initialPath;
-      setImages([{ name, path: initialPath, type: "file", size: 0 }]);
+    if (filePath) {
+      const name = filePath.split("/").filter(Boolean).pop() ?? filePath;
+      setImages([{ name, path: filePath, type: "file", size: 0 }]);
       setIndex(0);
       return;
     }
@@ -57,7 +57,7 @@ export default function Gallery({ initialPath }: { initialPath?: string }) {
     return () => {
       active = false;
     };
-  }, [initialPath]);
+  }, [filePath]);
 
   useEffect(() => {
     if (!image) return;
@@ -106,7 +106,7 @@ export default function Gallery({ initialPath }: { initialPath?: string }) {
 
   useEffect(() => {
     const move = (event: KeyboardEvent) => {
-      if (!images.length || initialPath) return;
+      if (!images.length || filePath) return;
       if (event.key === "ArrowRight")
         setIndex((value) => (value + 1) % images.length);
       if (event.key === "ArrowLeft")
@@ -114,7 +114,7 @@ export default function Gallery({ initialPath }: { initialPath?: string }) {
     };
     window.addEventListener("keydown", move);
     return () => window.removeEventListener("keydown", move);
-  }, [images.length, initialPath]);
+  }, [images.length, filePath]);
 
   return (
     <main className="flex h-full min-h-105 flex-col bg-background p-5 text-foreground">
