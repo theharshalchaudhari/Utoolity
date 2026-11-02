@@ -4,13 +4,15 @@ import { useEffect, useState } from "react";
 import type { FormEvent } from "react";
 import { api } from "@/lib/api";
 
-type IssueDetected = { appName?: string; errorName?: string; details?: string };
+type IssueDetected = { appName?: string; errorName?: string; details?: string; source?: string; requestId?: string };
 
 export default function IssueReporter() {
   const [open, setOpen] = useState(false);
   const [appName, setAppName] = useState("Utoolity Desktop");
   const [errorName, setErrorName] = useState("Application error");
   const [details, setDetails] = useState("");
+  const [source, setSource] = useState("");
+  const [requestId, setRequestId] = useState("");
   const [description, setDescription] = useState("");
   const [submitting, setSubmitting] = useState(false);
   const [status, setStatus] = useState("");
@@ -137,7 +139,7 @@ export default function IssueReporter() {
     try {
       await api("/api/auth/report-issue", {
         method: "POST",
-        body: JSON.stringify({ appName, errorName, details, description }),
+        body: JSON.stringify({ appName, errorName, details, description, source, requestId }),
       });
       setReported(true);
       setStatus("Issue report saved. You can continue using the desktop.");
