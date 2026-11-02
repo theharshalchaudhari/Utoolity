@@ -27,7 +27,7 @@ export function errorMiddleware(
       ? undefined
       : error.stack?.slice(0, 8000);
 
-  reply.code(statusCode).send({
+  reply.header("X-Request-Id", requestId).code(statusCode).send({
     message: statusCode >= 500 ? "Internal server error." : error.message,
     code: error.code,
     requestId,
