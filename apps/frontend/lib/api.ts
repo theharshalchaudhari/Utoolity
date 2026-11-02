@@ -46,12 +46,16 @@ async function performApi<T>(
 ): Promise<T> {
   const hasBody = options.body != null;
   const requestMethod = (options.method ?? "GET").toUpperCase();
-  const requestId = typeof crypto?.randomUUID === "function" ? crypto.randomUUID() : `${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 8)}`;
 
   const isFormData =
     typeof FormData !== "undefined" && options.body instanceof FormData;
 
   const headers = new Headers(options.headers);
+  const requestId =
+    typeof window !== "undefined" && typeof window.crypto?.randomUUID === "function"
+      ? window.crypto.randomUUID()
+      : `${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 8)}`;
+  headers.set("X-Request-Id", requestId);
   // Cached device identity is only used before the shell has an authenticated
   // profile (the lock-screen flow). Normal app requests rely on the session cookie.
   const identityPath = path.split("?")[0];
@@ -95,7 +99,6 @@ async function performApi<T>(
         headers,
         credentials: "include",
         cache: "no-store",
-        headers: new Headers([...headers.entries(), ["X-Request-Id", requestId]]),
       });
 
       if ([500, 502, 503, 504].includes(nextResponse.status)) {
@@ -187,7 +190,6 @@ async function performApi<T>(
     ].filter(Boolean).join("\\n");
 
     const expectedAuthFailure =
-      path === "/api/auth/report-issue" ||
       path === "/api/auth/preferences" ||
       path === "/api/auth/workspace" ||
       path === "/api/auth/activity" ||
