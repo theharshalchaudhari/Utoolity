@@ -5,7 +5,6 @@ import Desktop from "@/components/desktop/Desktop";
 import DesktopBackground from "@/components/desktop/DesktopBackground";
 import Lockcard from "@/components/lockscreen/lockcard";
 import { api, ApiError } from "@/lib/api";
-import Image from "next/image";
 import IssueReporter from "@/components/shared/IssueReporter";
 import { useInitialDesktopPreferences } from "@/components/shared/InitialDesktopPreferences";
 import { WALLPAPER_STORAGE_KEY } from "@/lib/wallpapers";

@@ -3,7 +3,6 @@ import { cookies } from "next/headers";
 import { DEFAULT_WALLPAPER_ID, WALLPAPER_STORAGE_KEY } from "@/lib/wallpapers";
 import { Nunito } from "next/font/google";
 import { TooltipProvider } from "@repo/ui/shadcn/tooltip";
-import Sidebar from "@/components/shared/Sidebar";
 import DeviceTheme from "@/components/shared/DeviceTheme";
 import BrowserGuards from "@/components/shared/BrowserGuards";
 import CustomCursor from "@/components/shared/CustomCursor";

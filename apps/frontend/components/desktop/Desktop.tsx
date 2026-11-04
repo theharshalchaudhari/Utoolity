@@ -7,7 +7,6 @@ import {
   useState,
   type MouseEvent,
 } from "react";
-import DesktopBackground from "./DesktopBackground";
 import DesktopWindow, { type WindowState } from "./DesktopWindow";
 import Profile from "./Profile";
 import SystemTray from "./SystemTray";
@@ -116,13 +115,10 @@ export default function Desktop({
     },
     [isSharedViewer, sharedPermission],
   );
-  // Derive maximized visibility from persisted window state as well as the
-  // immediate expanded-window flag. This also covers restored maximized windows.
   const hasMaximizedWindow = openApps.some(
     (item) =>
       item.window?.maximized === true && item.window?.minimized !== true,
   );
-  // Keep the desktop chrome mounted; app windows render above it by z-index.
   const hideDesktopChrome = !showChrome;
 
   const windowSummaries: WindowSummary[] = openApps.map((item) => {

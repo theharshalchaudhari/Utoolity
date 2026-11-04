@@ -7,6 +7,9 @@
     "lint": "turbo run lint",
     "format": "prettier --write \"**/*.{ts,tsx,md}\"",
     "check-types": "turbo run check-types",
+    "wraith": "node scripts/maintenance/cli.cjs",
+    "postgresql": "node tools/database/postgres.cjs",
+    "redis:up": "node scripts/redis/start.cjs",
     "clean": "node scripts/clear_unwanted/script.cjs"
   },
   "devDependencies": {
