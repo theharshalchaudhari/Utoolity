@@ -1,7 +1,3 @@
--- Utoolity PostgreSQL foundation
--- Apply with: node tools/database/postgres.cjs apps/backend/infrastructure/migrations/001_initial_schema.sql
--- The target database (utoolity) must exist before this migration is executed.
-
 BEGIN;
 
 CREATE TABLE IF NOT EXISTS schema_migrations (
